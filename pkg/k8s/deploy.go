@@ -1,51 +1,37 @@
 package k8s
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"os/exec"
+	"text/template"
 
 	"github.com/bborbe/world"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"os"
-	"os/exec"
-	"bytes"
-	"text/template"
 )
 
-func DeployerForApp(app world.App) (*Deployer, error) {
-	buildInstruction, err := world.BuildInstructionForName(app.Name)
-	if err != nil {
-		return nil, errors.Wrap(err, "find build instruction failed")
-	}
-	return &Deployer{
-		Context:  app.Context,
-		Name:     app.Name,
-		Registry: buildInstruction.Registry,
-		Image:    buildInstruction.Image,
-		Version:  app.Version,
-		Domains:  app.Domains,
-	}, nil
-}
-
 type Deployer struct {
-	Context  world.Context
-	Name     world.Name
-	Registry world.Registry
-	Image    world.Image
-	Version  world.Version
-	Domains  []world.Domain
+	Context world.Context
+	Name    world.Name
+	Image   world.Image
+	Domains []world.Domain
+	Args    []world.Arg
+	Port    world.Port
+	Env     world.Env
 }
 
 func (b *Deployer) Deploy(ctx context.Context) error {
-	glog.V(2).Infof("run k8s deploy ...")
+	glog.V(2).Infof("deploy %s to %s ...", b.Name, b.Context)
 
-	if err := b.apply(ctx, `{{$out := .}}
+	if err := b.apply(ctx, `{{ $out := . }}
 apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    app: {{.Name}}
-  name: {{.Name}}
+    app: {{ .Name }}
+  name: {{ .Name }}
 `, struct {
 		Name string
 	}{
@@ -54,14 +40,14 @@ metadata:
 		return errors.Wrap(err, "apply namespace failed")
 	}
 
-	if err := b.apply(ctx, `{{$out := .}}
+	if err := b.apply(ctx, `{{ $out := . }}
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: {{.Name}}
-  name: {{.Name}}
-  namespace: {{.Name}}
+    app: {{ .Name }}
+  name: {{ .Name }}
+  namespace: {{ .Name }}
 spec:
   ports:
   - name: web
@@ -69,7 +55,7 @@ spec:
     protocol: TCP
     targetPort: http
   selector:
-    app: {{.Name}}
+    app: {{ .Name }}
 `, struct {
 		Name string
 	}{
@@ -78,7 +64,7 @@ spec:
 		return errors.Wrap(err, "apply namespace failed")
 	}
 
-	if err := b.apply(ctx, `{{$out := .}}
+	if err := b.apply(ctx, `{{ $out := . }}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -86,20 +72,20 @@ metadata:
     kubernetes.io/ingress.class: traefik
     traefik.frontend.priority: "10000"
   labels:
-    app: {{.Name}}
-  name: {{.Name}}
-  namespace: {{.Name}}
+    app: {{ .Name }}
+  name: {{ .Name }}
+  namespace: {{ .Name }}
 spec:
   rules:
-{{range $domain := .Domains}}
-  - host: {{$domain}}
+{{ range $domain := .Domains }}
+  - host: {{ $domain }}
     http:
       paths:
       - backend:
-          serviceName: {{$out.Name}}
+          serviceName: {{ $out.Name }}
           servicePort: web
         path: /
-{{end}}
+{{ end }}
 `, struct {
 		Name    world.Name
 		Domains []world.Domain
@@ -110,21 +96,21 @@ spec:
 		return errors.Wrap(err, "apply namespace failed")
 	}
 
-	if err := b.apply(ctx, `{{$out := .}}
+	if err := b.apply(ctx, `{{ $out := . }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    app: {{.Name}}
-  name: {{.Name}}
-  namespace: {{.Name}}
+    app: {{ .Name }}
+  name: {{ .Name }}
+  namespace: {{ .Name }}
 spec:
   replicas: 1
   revisionHistoryLimit: 2
   selector:
     matchLabels:
-      app: {{.Name}}
+      app: {{ .Name }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -134,19 +120,22 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        app: {{.Name}}
+        app: {{ .Name }}
     spec:
       containers:
       - args:
-        - -logtostderr
-        - -v=2
+{{ range $arg := .Args }}
+        - {{ $arg }}
+{{ end }}
         env:
-        - name: PORT
-          value: "8080"
-        image: {{.Registry}}/{{.Image}}:{{.Version}}
-        name: {{.Name}}
+{{ range $key, $value := .Env }}
+        - name: {{ $key }}
+          value: "{{ $value }}"
+{{ end }}
+        image: {{ .Image }}
+        name: {{ .Name }}
         ports:
-        - containerPort: 8080
+        - containerPort: {{ .Port }}
           name: http
           protocol: TCP
         resources:
@@ -157,15 +146,17 @@ spec:
             cpu: 10m
             memory: 10Mi
 `, struct {
-		Name     string
-		Registry string
-		Image    string
-		Version  string
+		Name  string
+		Image string
+		Args  []world.Arg
+		Port  world.Port
+		Env   world.Env
 	}{
-		Name:     b.Name.String(),
-		Registry: b.Registry.String(),
-		Image:    b.Image.String(),
-		Version:  b.Version.String(),
+		Name:  b.Name.String(),
+		Image: b.Image.String(),
+		Args:  b.Args,
+		Env:   b.Env,
+		Port:  b.Port,
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}

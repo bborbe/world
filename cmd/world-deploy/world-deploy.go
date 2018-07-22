@@ -8,7 +8,7 @@ import (
 	"runtime"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/configuration"
 	"github.com/golang/glog"
 )
 
@@ -20,21 +20,16 @@ func main() {
 	namePtr := flag.String("name", "", "name")
 	flag.Parse()
 
-	glog.V(1).Infof("deploying %s ...", *namePtr)
-
-	app, err := world.GetApp(world.Name(*namePtr))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(1)
-	}
-	deployer, err := k8s.DeployerForApp(*app)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(1)
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err := deployer.Deploy(ctx); err != nil {
+
+	glog.V(1).Infof("deploying %s ...", *namePtr)
+	app, err := configuration.Apps().WithName(world.Name(*namePtr))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+		os.Exit(1)
+	}
+	if err := app.Deployer.Deploy(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "deploy failed: %v", err)
 		os.Exit(1)
 	}

@@ -10,17 +10,14 @@ import (
 )
 
 type DeployAll struct {
+	Apps world.Apps
 }
 
 func (b *DeployAll) Deploy(ctx context.Context) error {
 	glog.V(1).Infof("deploy all ...")
 	var list []run.RunFunc
-	for _, app := range world.Apps {
-		deployer, err := DeployerForApp(app)
-		if err != nil {
-			return errors.Wrap(err, "get deployer for app failed")
-		}
-		list = append(list, deployer.Deploy)
+	for _, app := range b.Apps {
+		list = append(list, app.Deployer.Deploy)
 	}
 	glog.V(1).Infof("found %d deploys", len(list))
 	return errors.Wrap(run.CancelOnFirstError(ctx, list...), "deploy all failed")

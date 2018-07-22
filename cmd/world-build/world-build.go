@@ -7,8 +7,9 @@ import (
 	"runtime"
 
 	flag "github.com/bborbe/flagenv"
+	"github.com/bborbe/run"
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/configuration"
 	"github.com/golang/glog"
 )
 
@@ -20,21 +21,20 @@ func main() {
 	namePtr := flag.String("name", "", "name")
 	flag.Parse()
 
-	glog.V(1).Infof("building app %s ...", *namePtr)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	app, err := world.GetApp(world.Name(*namePtr))
+	glog.V(1).Infof("building app %s ...", *namePtr)
+	app, err := configuration.Apps().WithName(world.Name(*namePtr))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "app %s not found", *namePtr)
 		os.Exit(1)
 	}
-	builder, err := docker.BuilderForApp(*app)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "builder for app %s not found", *namePtr)
-		os.Exit(1)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	if err := builder.Build(ctx); err != nil {
+	if err := run.Sequential(
+		ctx,
+		app.Builder.Build,
+		app.Uploader.Upload,
+	); err != nil {
 		fmt.Fprintf(os.Stderr, "build failed: %v", err)
 		os.Exit(1)
 	}
