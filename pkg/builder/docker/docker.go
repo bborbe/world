@@ -59,3 +59,17 @@ func (b *Builder) Build(ctx context.Context) error {
 	}
 	return nil
 }
+
+func (b *Builder) Validate(ctx context.Context) error {
+	if err := b.Image.Validate(ctx); err != nil {
+		return err
+	}
+	if b.GitRepo == "" {
+		return errors.New("git repo missing")
+	}
+	return nil
+}
+
+func (b *Builder) GetImage() world.Image {
+	return b.Image
+}

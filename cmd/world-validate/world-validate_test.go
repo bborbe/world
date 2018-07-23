@@ -8,14 +8,14 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("World Deploy All", func() {
+var _ = Describe("World Validate", func() {
 	It("compiles", func() {
-		_, err := gexec.Build("github.com/bborbe/world/cmd/world-deploy-all")
+		_, err := gexec.Build("github.com/bborbe/world/cmd/world-validate")
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "World Deploy All Suite")
+	RunSpecs(t, "World Validate Suite")
 }

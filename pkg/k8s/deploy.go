@@ -7,23 +7,25 @@ import (
 	"os/exec"
 	"text/template"
 
+	"fmt"
+
 	"github.com/bborbe/world"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Deployer struct {
-	Context world.Context
-	Name    world.Name
-	Image   world.Image
-	Domains []world.Domain
-	Args    []world.Arg
-	Port    world.Port
-	Env     world.Env
+	Context   world.Context
+	Namespace world.Namespace
+	Domains   []world.Domain
+	Args      []world.Arg
+	Port      world.Port
+	Env       world.Env
+	Uploader  world.Uploader
 }
 
 func (b *Deployer) Deploy(ctx context.Context) error {
-	glog.V(2).Infof("deploy %s to %s ...", b.Name, b.Context)
+	glog.V(2).Infof("deploy %s to %s ...", b.Namespace, b.Context)
 
 	if err := b.apply(ctx, `{{ $out := . }}
 apiVersion: v1
@@ -35,7 +37,7 @@ metadata:
 `, struct {
 		Name string
 	}{
-		Name: b.Name.String(),
+		Name: b.Namespace.String(),
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}
@@ -57,9 +59,9 @@ spec:
   selector:
     app: {{ .Name }}
 `, struct {
-		Name string
+		Name world.Namespace
 	}{
-		Name: b.Name.String(),
+		Name: b.Namespace,
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}
@@ -87,10 +89,10 @@ spec:
         path: /
 {{ end }}
 `, struct {
-		Name    world.Name
+		Name    world.Namespace
 		Domains []world.Domain
 	}{
-		Name:    b.Name,
+		Name:    b.Namespace,
 		Domains: b.Domains,
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
@@ -146,14 +148,14 @@ spec:
             cpu: 10m
             memory: 10Mi
 `, struct {
-		Name  string
-		Image string
+		Name  world.Namespace
+		Image world.Image
 		Args  []world.Arg
 		Port  world.Port
 		Env   world.Env
 	}{
-		Name:  b.Name.String(),
-		Image: b.Image.String(),
+		Name:  b.Namespace,
+		Image: b.Uploader.GetBuilder().GetImage(),
 		Args:  b.Args,
 		Env:   b.Env,
 		Port:  b.Port,
@@ -181,4 +183,30 @@ func (d *Deployer) apply(ctx context.Context, manifest string, data interface{})
 		cmd.Stderr = os.Stderr
 	}
 	return errors.Wrap(cmd.Run(), "deploy k8s image failed")
+}
+
+func (d *Deployer) Validate(ctx context.Context) error {
+	if d.Uploader == nil {
+		return fmt.Errorf("%s has no builder", d.Namespace)
+	}
+	if err := d.Uploader.Validate(ctx); err != nil {
+		return err
+	}
+	if d.Context == "" {
+		return errors.New("context missing")
+	}
+	if d.Namespace == "" {
+		return errors.New("namespace missing")
+	}
+	if len(d.Domains) == 0 {
+		return errors.New("domains empty")
+	}
+	if d.Port <= 0 || d.Port > 65535 {
+		return errors.New("port missing")
+	}
+	return nil
+}
+
+func (d *Deployer) GetUploader() world.Uploader {
+	return d.Uploader
 }

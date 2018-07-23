@@ -15,7 +15,7 @@ var _ = Describe("World Build", func() {
 	})
 })
 
-func TestWorldDockerBuild(t *testing.T) {
+func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "World Build Suite")
 }

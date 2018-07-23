@@ -38,8 +38,8 @@ func build(ctx context.Context, apps world.Apps) error {
 		list = append(list, func(ctx context.Context) error {
 			return run.Sequential(
 				ctx,
-				app.Builder.Build,
-				app.Uploader.Upload,
+				app.Deployer.GetUploader().GetBuilder().Build,
+				app.Deployer.GetUploader().Upload,
 			)
 		})
 	}

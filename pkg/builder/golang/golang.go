@@ -59,3 +59,26 @@ ENTRYPOINT ["/{{.Name}}"]
 	}
 	return errors.Wrap(cmd.Run(), "build docker image failed")
 }
+
+func (b *Builder) Validate(ctx context.Context) error {
+	if err := b.Image.Validate(ctx); err != nil {
+		return err
+	}
+	if b.Name == "" {
+		return errors.New("name missing")
+	}
+	if b.SourceDirectory == "" {
+		return errors.New("source directory missing")
+	}
+	if b.GitRepo == "" {
+		return errors.New("git repo missing")
+	}
+	if b.Package == "" {
+		return errors.New("package missing")
+	}
+	return nil
+}
+
+func (b *Builder) GetImage() world.Image {
+	return b.Image
+}
