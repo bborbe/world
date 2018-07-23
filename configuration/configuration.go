@@ -36,6 +36,31 @@ func Apps() world.Apps {
 			},
 		},
 		{
+			Name: "password",
+			Deployer: &k8s.Deployer{
+				Namespace: "password",
+				Context:   "netcup",
+				Domains: []world.Domain{
+					"password.benjamin-borbe.de",
+				},
+				Args: []world.Arg{"-logtostderr", "-v=2"},
+				Port: 8080,
+				Uploader: &uploader.Uploader{
+					Builder: &golang.Builder{
+						Name:            "password",
+						GitRepo:         "https://github.com/bborbe/password.git",
+						SourceDirectory: "github.com/bborbe/password",
+						Package:         "github.com/bborbe/password/cmd/password-server",
+						Image: world.Image{
+							Registry:   "docker.io",
+							Repository: "bborbe/password",
+							Tag:        "1.1.0",
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "hello-world",
 			Deployer: &k8s.Deployer{
 				Namespace: "hello-world",
