@@ -7,6 +7,8 @@ install:
 	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-deploy-all/*.go
 	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-build/*.go
 	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-build-all/*.go
+	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-upload/*.go
+	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-upload-all/*.go
 	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-validate/*.go
 	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-validate-all/*.go
 

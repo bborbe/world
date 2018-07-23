@@ -77,18 +77,21 @@ func (b BuilderType) String() string {
 type Builder interface {
 	Build(ctx context.Context) error
 	Validate(ctx context.Context) error
+	Satisfied(ctx context.Context) (bool, error)
 	GetImage() Image
 }
 
 type Uploader interface {
 	Upload(ctx context.Context) error
 	Validate(ctx context.Context) error
+	Satisfied(ctx context.Context) (bool, error)
 	GetBuilder() Builder
 }
 
 type Deployer interface {
 	Deploy(ctx context.Context) error
 	Validate(ctx context.Context) error
+	Satisfied(ctx context.Context) (bool, error)
 	GetUploader() Uploader
 }
 
@@ -138,7 +141,7 @@ type Image struct {
 	Tag        Tag
 }
 
-func (i *Image) String() string {
+func (i Image) String() string {
 	return i.Registry.String() + "/" + i.Repository.String() + ":" + i.Tag.String()
 }
 

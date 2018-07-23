@@ -8,7 +8,7 @@ import (
 
 	flag "github.com/bborbe/flagenv"
 	"github.com/bborbe/world/configuration"
-	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/deploy"
 	"github.com/golang/glog"
 )
 
@@ -22,7 +22,7 @@ func main() {
 	defer cancel()
 
 	glog.V(1).Infof("deploying all ...")
-	deployer := &k8s.DeployAll{
+	deployer := &deploy.DeployAll{
 		Apps: configuration.Apps(),
 	}
 	if err := deployer.Deploy(ctx); err != nil {

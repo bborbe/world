@@ -4,7 +4,7 @@ import (
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/builder/docker"
 	"github.com/bborbe/world/pkg/builder/golang"
-	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/deploy/k8s"
 	"github.com/bborbe/world/pkg/uploader"
 )
 

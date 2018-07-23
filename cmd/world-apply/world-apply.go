@@ -8,6 +8,7 @@ import (
 
 	flag "github.com/bborbe/flagenv"
 	"github.com/bborbe/world/configuration"
+	"github.com/bborbe/world/pkg/apply"
 	"github.com/golang/glog"
 )
 
@@ -21,7 +22,10 @@ func main() {
 	defer cancel()
 
 	glog.V(1).Infof("apply all ...")
-	if err := configuration.Apps().Validate(ctx); err != nil {
+	applier := &apply.ApplyAll{
+		Apps: configuration.Apps(),
+	}
+	if err := applier.Apply(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "build failed: %v", err)
 		os.Exit(1)
 	}

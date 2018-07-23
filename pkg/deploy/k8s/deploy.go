@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/uploader"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -24,10 +25,14 @@ type Deployer struct {
 	Uploader  world.Uploader
 }
 
-func (b *Deployer) Deploy(ctx context.Context) error {
-	glog.V(2).Infof("deploy %s to %s ...", b.Namespace, b.Context)
+func (d *Deployer) Deploy(ctx context.Context) error {
+	glog.V(2).Infof("deploy %s to %s ...", d.Namespace, d.Context)
 
-	if err := b.apply(ctx, `{{ $out := . }}
+	if err := uploader.UploadIfNeeded(ctx, d.Uploader); err != nil {
+		return err
+	}
+
+	if err := d.apply(ctx, `{{ $out := . }}
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -37,12 +42,12 @@ metadata:
 `, struct {
 		Name string
 	}{
-		Name: b.Namespace.String(),
+		Name: d.Namespace.String(),
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}
 
-	if err := b.apply(ctx, `{{ $out := . }}
+	if err := d.apply(ctx, `{{ $out := . }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -61,12 +66,12 @@ spec:
 `, struct {
 		Name world.Namespace
 	}{
-		Name: b.Namespace,
+		Name: d.Namespace,
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}
 
-	if err := b.apply(ctx, `{{ $out := . }}
+	if err := d.apply(ctx, `{{ $out := . }}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -92,13 +97,13 @@ spec:
 		Name    world.Namespace
 		Domains []world.Domain
 	}{
-		Name:    b.Namespace,
-		Domains: b.Domains,
+		Name:    d.Namespace,
+		Domains: d.Domains,
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}
 
-	if err := b.apply(ctx, `{{ $out := . }}
+	if err := d.apply(ctx, `{{ $out := . }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -134,7 +139,7 @@ spec:
         - name: {{ $key }}
           value: "{{ $value }}"
 {{ end }}
-        image: {{ .Image }}
+        image: {{ .Image.String }}
         name: {{ .Name }}
         ports:
         - containerPort: {{ .Port }}
@@ -154,15 +159,15 @@ spec:
 		Port  world.Port
 		Env   world.Env
 	}{
-		Name:  b.Namespace,
-		Image: b.Uploader.GetBuilder().GetImage(),
-		Args:  b.Args,
-		Env:   b.Env,
-		Port:  b.Port,
+		Name:  d.Namespace,
+		Image: d.Uploader.GetBuilder().GetImage(),
+		Args:  d.Args,
+		Env:   d.Env,
+		Port:  d.Port,
 	}); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}
-
+	glog.V(2).Infof("deploy %s to %s finished", d.Namespace, d.Context)
 	return nil
 }
 
@@ -209,4 +214,8 @@ func (d *Deployer) Validate(ctx context.Context) error {
 
 func (d *Deployer) GetUploader() world.Uploader {
 	return d.Uploader
+}
+
+func (d *Deployer) Satisfied(ctx context.Context) (bool, error) {
+	return false, nil
 }

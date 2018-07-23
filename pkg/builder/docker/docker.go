@@ -2,12 +2,12 @@ package docker
 
 import (
 	"context"
-
 	"io/ioutil"
 	"os"
 	"os/exec"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/builder"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -18,7 +18,7 @@ type Builder struct {
 }
 
 func (b *Builder) Build(ctx context.Context) error {
-	glog.V(1).Infof("build docker image ...")
+	glog.V(1).Infof("build docker image %s ...", b.Image.String())
 
 	glog.V(4).Infof("find build dir ...")
 	dir, err := ioutil.TempDir("", "build")
@@ -57,6 +57,7 @@ func (b *Builder) Build(ctx context.Context) error {
 	if err := os.RemoveAll(dir); err != nil {
 		return errors.Wrap(err, "remove build dir failed")
 	}
+	glog.V(1).Infof("build docker image %s finished", b.Image.String())
 	return nil
 }
 
@@ -72,4 +73,8 @@ func (b *Builder) Validate(ctx context.Context) error {
 
 func (b *Builder) GetImage() world.Image {
 	return b.Image
+}
+
+func (b *Builder) Satisfied(ctx context.Context) (bool, error) {
+	return builder.DockerImageExists(ctx, b.Image)
 }

@@ -8,7 +8,7 @@ import (
 
 	flag "github.com/bborbe/flagenv"
 	"github.com/bborbe/world/configuration"
-	"github.com/bborbe/world/pkg/builder"
+	"github.com/bborbe/world/pkg/uploader"
 	"github.com/golang/glog"
 )
 
@@ -22,10 +22,10 @@ func main() {
 	defer cancel()
 
 	glog.V(1).Infof("building all ...")
-	buildAll := &builder.BuildAll{
+	uploader := &uploader.UploadAll{
 		Apps: configuration.Apps(),
 	}
-	if err := buildAll.Build(ctx); err != nil {
+	if err := uploader.Upload(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "build failed: %v", err)
 		os.Exit(1)
 	}
