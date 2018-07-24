@@ -74,6 +74,7 @@ func (b BuilderType) String() string {
 	return string(b)
 }
 
+//go:generate counterfeiter -o mocks/builder.go --fake-name Builder . Builder
 type Builder interface {
 	Build(ctx context.Context) error
 	Validate(ctx context.Context) error
@@ -81,6 +82,7 @@ type Builder interface {
 	GetImage() Image
 }
 
+//go:generate counterfeiter -o mocks/uploader.go --fake-name Uploader . Uploader
 type Uploader interface {
 	Upload(ctx context.Context) error
 	Validate(ctx context.Context) error
@@ -88,6 +90,7 @@ type Uploader interface {
 	GetBuilder() Builder
 }
 
+//go:generate counterfeiter -o mocks/deployer.go --fake-name Deployer . Deployer
 type Deployer interface {
 	Deploy(ctx context.Context) error
 	Validate(ctx context.Context) error
@@ -160,6 +163,67 @@ func (b *Image) Validate(ctx context.Context) error {
 
 type Port int
 
+type HostPort int
+
 type Arg string
 
 type Env map[string]string
+
+type CpuLimit string
+
+func (b CpuLimit) String() string {
+	return string(b)
+}
+
+type MemoryLimit string
+
+func (b MemoryLimit) String() string {
+	return string(b)
+}
+
+type CpuRequest string
+
+func (b CpuRequest) String() string {
+	return string(b)
+}
+
+type MemoryRequest string
+
+func (b MemoryRequest) String() string {
+	return string(b)
+}
+
+type MountName string
+type MountTarget string
+type MountReadOnly bool
+type MountNfsPath string
+type MountNfsServer string
+
+type Mount struct {
+	Name      MountName
+	Target    MountTarget
+	ReadOnly  MountReadOnly
+	NfsPath   MountNfsPath
+	NfsServer MountNfsServer
+}
+
+func (m *Mount) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validating mount %s", m.Name)
+	if m.Name == "" {
+		return errors.New("name missing")
+	}
+	if m.Target == "" {
+		return errors.New("target missing")
+	}
+	if m.NfsPath == "" {
+		return errors.New("nfs path missing")
+	}
+	if m.NfsServer == "" {
+		return errors.New("nfs server missing")
+	}
+	glog.V(4).Infof("mount %s is valid", m.Name)
+	return nil
+}
+
+type LivenessProbe bool
+type ReadinessProbe bool
