@@ -163,6 +163,10 @@ func (b *Image) Validate(ctx context.Context) error {
 
 type Port int
 
+func (p Port) Int() int {
+	return int(p)
+}
+
 type HostPort int
 
 type Arg string

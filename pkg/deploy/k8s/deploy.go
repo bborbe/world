@@ -3,16 +3,14 @@ package k8s
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
-	"text/template"
-
-	"fmt"
-
-	"io"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/uploader"
+	"github.com/go-yaml/yaml"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -42,37 +40,21 @@ func (d *Deployer) Deploy(ctx context.Context) error {
 		return err
 	}
 
-	namespace, err := d.generateNamespace()
-	if err != nil {
-		return errors.Wrap(err, "generate namespace failed")
-	}
-	if err := d.apply(ctx, namespace); err != nil {
+	if err := d.apply(ctx, d.namespace()); err != nil {
 		return errors.Wrap(err, "apply namespace failed")
 	}
 
-	service, err := d.generateService()
-	if err != nil {
-		return errors.Wrap(err, "generate service failed")
-	}
-	if err := d.apply(ctx, service); err != nil {
+	if err := d.apply(ctx, d.service()); err != nil {
 		return errors.Wrap(err, "apply service failed")
 	}
 
 	if len(d.Domains) > 0 {
-		ingress, err := d.generateIngress()
-		if err != nil {
-			return errors.Wrap(err, "generate ingress failed")
-		}
-		if err := d.apply(ctx, ingress); err != nil {
-			return errors.Wrap(err, "apply deployment failed")
+		if err := d.apply(ctx, d.ingress()); err != nil {
+			return errors.Wrap(err, "apply ingress failed")
 		}
 	}
 
-	deployment, err := d.generateDeployment()
-	if err != nil {
-		return errors.Wrap(err, "generate deployment failed")
-	}
-	if err := d.apply(ctx, deployment); err != nil {
+	if err := d.apply(ctx, d.deployment()); err != nil {
 		return errors.Wrap(err, "apply deployment failed")
 	}
 
@@ -80,212 +62,14 @@ func (d *Deployer) Deploy(ctx context.Context) error {
 	return nil
 }
 
-func (d *Deployer) generateNamespace() (io.Reader, error) {
-	return generateTemplate(`{{ $out := . }}
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    app: {{ .Name }}
-  name: {{ .Name }}
-`, struct {
-		Name world.Namespace
-	}{
-		Name: d.Namespace,
-	})
-}
-
-func (d *Deployer) generateService() (io.Reader, error) {
-	return generateTemplate(`{{ $out := . }}
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: {{ .Name }}
-  name: {{ .Name }}
-  namespace: {{ .Name }}
-spec:
-  ports:
-  - name: web
-    port: {{ .Port }}
-    protocol: TCP
-    targetPort: http
-  selector:
-    app: {{ .Name }}
-`, struct {
-		Name world.Namespace
-		Port world.Port
-	}{
-		Name: d.Namespace,
-		Port: d.Port,
-	})
-}
-
-func (d *Deployer) generateIngress() (io.Reader, error) {
-	return generateTemplate(`{{ $out := . }}
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.frontend.priority: "10000"
-  labels:
-    app: {{ .Name }}
-  name: {{ .Name }}
-  namespace: {{ .Name }}
-spec:
-  rules:
-{{ range $domain := .Domains }}
-  - host: {{ $domain }}
-    http:
-      paths:
-      - backend:
-          serviceName: {{ $out.Name }}
-          servicePort: web
-        path: /
-{{ end }}
-`, struct {
-		Name    world.Namespace
-		Domains []world.Domain
-	}{
-		Name:    d.Namespace,
-		Domains: d.Domains,
-	})
-}
-
-func (d *Deployer) generateDeployment() (io.Reader, error) {
-	return generateTemplate(`{{ $out := . }}
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  creationTimestamp: null
-  labels:
-    app: {{ .Name }}
-  name: {{ .Name }}
-  namespace: {{ .Name }}
-spec:
-  replicas: 1
-  revisionHistoryLimit: 2
-  selector:
-    matchLabels:
-      app: {{ .Name }}
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
-    type: RollingUpdate
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: {{ .Name }}
-    spec:
-      containers:
-      - args:
-{{ range $arg := .Args }}
-        - {{ $arg }}
-{{ end }}
-        env:
-{{ range $key, $value := .Env }}
-        - name: {{ $key }}
-          value: "{{ $value }}"
-{{ end }}
-        image: {{ .Image.String }}
-        name: {{ .Name }}
-        ports:
-        - containerPort: {{ .Port }}
-{{ if gt .HostPort 0 }} 
-          hostPort: {{ .HostPort }}
-{{ end }}
-          name: http
-          protocol: TCP
-{{ if .LivenessProbe }} 
-        livenessProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /
-            port: {{ $out.Port }}
-            scheme: HTTP
-          initialDelaySeconds: 30
-          successThreshold: 1
-          timeoutSeconds: 5
-{{ end }}
-{{ if .ReadinessProbe }} 
-        readinessProbe:
-          httpGet:
-            path: /
-            port: {{ $out.Port }}
-            scheme: HTTP
-          initialDelaySeconds: 10
-          timeoutSeconds: 5
-{{ end }}
-        resources:
-          limits:
-            cpu: {{ .CpuLimit }}
-            memory: {{ .MemoryLimit }}
-          requests:
-            cpu: {{ .CpuRequest }}
-            memory: {{ .MemoryRequest }}
-{{ if gt (len .Mounts) 0 }} 
-        volumeMounts:
-{{ range $mount := .Mounts }}
-        - mountPath: {{ $mount.Target }}
-          name: {{ $mount.Name }}
-          readOnly: {{ $mount.ReadOnly }}
-{{ end }}
-      volumes:
-{{ range $mount := .Mounts }}
-      - name: {{ $mount.Name }}
-        nfs:
-          path: '{{ $mount.NfsPath }}'
-          server: '{{ $mount.NfsServer }}'
-{{ end }}
-{{ end }}
-`, struct {
-		Name           world.Namespace
-		Image          world.Image
-		Args           []world.Arg
-		Port           world.Port
-		HostPort       world.HostPort
-		Env            world.Env
-		CpuLimit       world.CpuLimit
-		MemoryLimit    world.MemoryLimit
-		CpuRequest     world.CpuRequest
-		MemoryRequest  world.MemoryRequest
-		LivenessProbe  world.LivenessProbe
-		ReadinessProbe world.ReadinessProbe
-		Mounts         []world.Mount
-	}{
-		Name:           d.Namespace,
-		Image:          d.Uploader.GetBuilder().GetImage(),
-		Args:           d.Args,
-		Env:            d.Env,
-		Port:           d.Port,
-		HostPort:       d.HostPort,
-		CpuLimit:       d.CpuLimit,
-		MemoryLimit:    d.MemoryLimit,
-		CpuRequest:     d.CpuRequest,
-		MemoryRequest:  d.MemoryRequest,
-		LivenessProbe:  d.LivenessProbe,
-		ReadinessProbe: d.ReadinessProbe,
-		Mounts:         d.Mounts,
-	})
-}
-
-func generateTemplate(manifest string, data interface{}) (io.Reader, error) {
-	tmpl, err := template.New("template").Parse(manifest)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse k8s manifest failed")
-	}
+func (d *Deployer) apply(ctx context.Context, data interface{}) error {
 	buf := &bytes.Buffer{}
-	err = tmpl.Execute(buf, data)
-	if err != nil {
-		return nil, errors.Wrap(err, "fill k8sfile template failed")
+	if err := yaml.NewEncoder(buf).Encode(data); err != nil {
+		return err
 	}
-	return buf, nil
-}
-
-func (d *Deployer) apply(ctx context.Context, buf io.Reader) error {
+	if glog.V(4) {
+		glog.Infof("yaml: %s", buf.String())
+	}
 	cmd := exec.CommandContext(ctx, "kubectl", "--context", d.Context.String(), "apply", "-f", "-")
 	cmd.Stdin = buf
 	if glog.V(4) {
@@ -342,4 +126,173 @@ func (d *Deployer) GetUploader() world.Uploader {
 
 func (d *Deployer) Satisfied(ctx context.Context) (bool, error) {
 	return false, nil
+}
+
+func (d *Deployer) ingress() k8s.Ingress {
+	ingress := k8s.Ingress{
+		ApiVersion: "extensions/v1beta1",
+		Kind:       "Ingress",
+		Metadata: k8s.Metadata{
+			Namespace: k8s.NamespaceName(d.Namespace),
+			Name:      k8s.Name(d.Namespace),
+			Labels: k8s.Labels{
+				"app": d.Namespace.String(),
+			},
+			Annotations: k8s.Annotations{
+				"kubernetes.io/ingress.class": "traefik",
+				"traefik.frontend.priority":   "10000",
+			},
+		},
+		Spec: k8s.IngressSpec{},
+	}
+	for _, domain := range d.Domains {
+		ingress.Spec.Rules = append(ingress.Spec.Rules, k8s.IngressRule{
+			Host: k8s.IngressHost(domain),
+			Http: k8s.IngressHttp{
+				Paths: []k8s.IngressPath{
+					{
+						Path: "/",
+						Backends: k8s.IngressBackend{
+							ServiceName: k8s.IngressBackendServiceName(d.Namespace),
+							ServicePort: "web",
+						},
+					},
+				},
+			},
+		})
+	}
+	return ingress
+}
+
+func (n *Deployer) namespace() k8s.Namespace {
+	return k8s.Namespace{
+		ApiVersion: "v1",
+		Kind:       "Namespace",
+		Metadata: k8s.Metadata{
+			Name: k8s.Name(n.Namespace),
+			Labels: k8s.Labels{
+				"app": n.Namespace.String(),
+			},
+		},
+	}
+}
+
+func (n *Deployer) service() k8s.Service {
+	return k8s.Service{
+		ApiVersion: "v1",
+		Kind:       "Service",
+		Metadata: k8s.Metadata{
+			Namespace: k8s.NamespaceName(n.Namespace),
+			Name:      k8s.Name(n.Namespace),
+			Labels: k8s.Labels{
+				"app": n.Namespace.String(),
+			},
+		},
+		Spec: k8s.ServiceSpec{
+			Ports: []k8s.Port{
+				{
+					Name:       "web",
+					Port:       k8s.PortNumber(n.Port),
+					Protocol:   "TCP",
+					TargetPort: "http",
+				},
+			},
+			Selector: k8s.ServiceSelector{
+				"app": n.Namespace.String(),
+			},
+		},
+	}
+}
+
+func (n *Deployer) deployment() k8s.Deployment {
+	var mounts []k8s.VolumeMount
+	var volumes []k8s.PodVolume
+	for _, mount := range n.Mounts {
+		volumes = append(volumes, k8s.PodVolume{
+			Name: k8s.PodVolumeName(mount.Name),
+			Nfs: k8s.PodNfs{
+				Path:   k8s.PodNfsPath(mount.NfsPath),
+				Server: k8s.PodNfsServer(mount.NfsServer),
+			},
+		})
+		mounts = append(mounts, k8s.VolumeMount{
+			MountPath: k8s.VolumeMountPath(mount.Target),
+			Name:      k8s.VolumeName(mount.Name),
+			ReadOnly:  k8s.VolumeReadOnly(mount.ReadOnly),
+		})
+	}
+	container := k8s.PodContainer{
+		Image: k8s.PodImage(n.GetUploader().GetBuilder().GetImage().String()),
+		Name:  k8s.PodName(n.Namespace.String()),
+		Ports: []k8s.PodPort{
+			{
+				ContainerPort: k8s.PodPortContainerPort(n.Port),
+				HostPort:      k8s.PodPortHostPort(n.HostPort),
+				Name:          "http",
+				Protocol:      "TCP",
+			},
+		},
+		Resources: k8s.PodResources{
+			Requests: k8s.ResourceList{
+				"cpu":    n.CpuRequest.String(),
+				"memory": n.MemoryRequest.String(),
+			},
+			Limits: k8s.ResourceList{
+				"cpu":    n.CpuLimit.String(),
+				"memory": n.MemoryLimit.String(),
+			},
+		},
+		VolumeMounts: mounts,
+	}
+	for _, arg := range n.Args {
+		container.Args = append(container.Args, k8s.PodArg(arg))
+	}
+	for k, v := range n.Env {
+		container.Env = append(container.Env, k8s.PodEnv{
+			Name:  k,
+			Value: v,
+		})
+	}
+
+	deployment := k8s.Deployment{
+		ApiVersion: "extensions/v1beta1",
+		Kind:       "Deployment",
+		Metadata: k8s.Metadata{
+			Namespace: k8s.NamespaceName(n.Namespace),
+			Name:      k8s.Name(n.Namespace),
+			Labels: k8s.Labels{
+				"app": n.Namespace.String(),
+			},
+		},
+		Spec: k8s.DeploymentSpec{
+			Replicas:             1,
+			RevisionHistoryLimit: 2,
+			Selector: k8s.DeploymentSelector{
+				MatchLabels: k8s.DeploymentMatchLabels{
+					"app": n.Namespace.String(),
+				},
+			},
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Template: k8s.DeploymentTemplate{
+				Metadata: k8s.Metadata{
+					Labels: k8s.Labels{
+						"app": n.Namespace.String(),
+					},
+				},
+				Spec: k8s.PodSpec{
+					Containers: []k8s.PodContainer{
+						container,
+					},
+					Volumes: volumes,
+				},
+			},
+		},
+	}
+	return deployment
 }
