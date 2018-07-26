@@ -44,15 +44,6 @@ type Builder struct {
 		result1 bool
 		result2 error
 	}
-	GetImageStub        func() world.Image
-	getImageMutex       sync.RWMutex
-	getImageArgsForCall []struct{}
-	getImageReturns     struct {
-		result1 world.Image
-	}
-	getImageReturnsOnCall map[int]struct {
-		result1 world.Image
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -204,46 +195,6 @@ func (fake *Builder) SatisfiedReturnsOnCall(i int, result1 bool, result2 error) 
 	}{result1, result2}
 }
 
-func (fake *Builder) GetImage() world.Image {
-	fake.getImageMutex.Lock()
-	ret, specificReturn := fake.getImageReturnsOnCall[len(fake.getImageArgsForCall)]
-	fake.getImageArgsForCall = append(fake.getImageArgsForCall, struct{}{})
-	fake.recordInvocation("GetImage", []interface{}{})
-	fake.getImageMutex.Unlock()
-	if fake.GetImageStub != nil {
-		return fake.GetImageStub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.getImageReturns.result1
-}
-
-func (fake *Builder) GetImageCallCount() int {
-	fake.getImageMutex.RLock()
-	defer fake.getImageMutex.RUnlock()
-	return len(fake.getImageArgsForCall)
-}
-
-func (fake *Builder) GetImageReturns(result1 world.Image) {
-	fake.GetImageStub = nil
-	fake.getImageReturns = struct {
-		result1 world.Image
-	}{result1}
-}
-
-func (fake *Builder) GetImageReturnsOnCall(i int, result1 world.Image) {
-	fake.GetImageStub = nil
-	if fake.getImageReturnsOnCall == nil {
-		fake.getImageReturnsOnCall = make(map[int]struct {
-			result1 world.Image
-		})
-	}
-	fake.getImageReturnsOnCall[i] = struct {
-		result1 world.Image
-	}{result1}
-}
-
 func (fake *Builder) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -253,8 +204,6 @@ func (fake *Builder) Invocations() map[string][][]interface{} {
 	defer fake.validateMutex.RUnlock()
 	fake.satisfiedMutex.RLock()
 	defer fake.satisfiedMutex.RUnlock()
-	fake.getImageMutex.RLock()
-	defer fake.getImageMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

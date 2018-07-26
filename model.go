@@ -44,12 +44,6 @@ func (p Package) String() string {
 	return string(p)
 }
 
-type Context string
-
-func (c Context) String() string {
-	return string(c)
-}
-
 type Name string
 
 func (n Name) String() string {
@@ -79,7 +73,6 @@ type Builder interface {
 	Build(ctx context.Context) error
 	Validate(ctx context.Context) error
 	Satisfied(ctx context.Context) (bool, error)
-	GetImage() Image
 }
 
 //go:generate counterfeiter -o mocks/uploader.go --fake-name Uploader . Uploader
@@ -87,7 +80,6 @@ type Uploader interface {
 	Upload(ctx context.Context) error
 	Validate(ctx context.Context) error
 	Satisfied(ctx context.Context) (bool, error)
-	GetBuilder() Builder
 }
 
 //go:generate counterfeiter -o mocks/deployer.go --fake-name Deployer . Deployer
@@ -95,15 +87,16 @@ type Deployer interface {
 	Deploy(ctx context.Context) error
 	Validate(ctx context.Context) error
 	Satisfied(ctx context.Context) (bool, error)
-	GetUploader() Uploader
 }
 
-type App struct {
+type Foo struct {
 	Name     Name
 	Deployer Deployer
+	Builder  Builder
+	Uploader Uploader
 }
 
-func (a *App) Validate(ctx context.Context) error {
+func (a *Foo) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validating app %s", a.Name)
 	if a.Name == "" {
 		return errors.New("name missing")
@@ -118,9 +111,9 @@ func (a *App) Validate(ctx context.Context) error {
 	return nil
 }
 
-type Apps []App
+type Foos []Foo
 
-func (a Apps) Validate(ctx context.Context) error {
+func (a Foos) Validate(ctx context.Context) error {
 	for _, app := range a {
 		if err := app.Validate(ctx); err != nil {
 			return errors.Wrap(err, "validate failed")
@@ -129,7 +122,7 @@ func (a Apps) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (a Apps) WithName(name Name) (*App, error) {
+func (a Foos) WithName(name Name) (*Foo, error) {
 	for _, app := range a {
 		if app.Name == name {
 			return &app, nil
@@ -198,9 +191,13 @@ func (b MemoryRequest) String() string {
 }
 
 type MountName string
+
 type MountTarget string
+
 type MountReadOnly bool
+
 type MountNfsPath string
+
 type MountNfsServer string
 
 type Mount struct {
@@ -230,4 +227,27 @@ func (m *Mount) Validate(ctx context.Context) error {
 }
 
 type LivenessProbe bool
+
 type ReadinessProbe bool
+
+type ClusterContext string
+
+func (c ClusterContext) String() string {
+	return string(c)
+}
+
+type Clusters []Cluster
+
+type Cluster struct {
+	Context ClusterContext
+	Apps    Apps
+}
+
+type App interface {
+	Validate(ctx context.Context) error
+	Builder() Builder
+	Uploader() Uploader
+	Deployer() Deployer
+}
+
+type Apps []App

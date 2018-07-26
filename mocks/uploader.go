@@ -44,15 +44,6 @@ type Uploader struct {
 		result1 bool
 		result2 error
 	}
-	GetBuilderStub        func() world.Builder
-	getBuilderMutex       sync.RWMutex
-	getBuilderArgsForCall []struct{}
-	getBuilderReturns     struct {
-		result1 world.Builder
-	}
-	getBuilderReturnsOnCall map[int]struct {
-		result1 world.Builder
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -204,46 +195,6 @@ func (fake *Uploader) SatisfiedReturnsOnCall(i int, result1 bool, result2 error)
 	}{result1, result2}
 }
 
-func (fake *Uploader) GetBuilder() world.Builder {
-	fake.getBuilderMutex.Lock()
-	ret, specificReturn := fake.getBuilderReturnsOnCall[len(fake.getBuilderArgsForCall)]
-	fake.getBuilderArgsForCall = append(fake.getBuilderArgsForCall, struct{}{})
-	fake.recordInvocation("GetBuilder", []interface{}{})
-	fake.getBuilderMutex.Unlock()
-	if fake.GetBuilderStub != nil {
-		return fake.GetBuilderStub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.getBuilderReturns.result1
-}
-
-func (fake *Uploader) GetBuilderCallCount() int {
-	fake.getBuilderMutex.RLock()
-	defer fake.getBuilderMutex.RUnlock()
-	return len(fake.getBuilderArgsForCall)
-}
-
-func (fake *Uploader) GetBuilderReturns(result1 world.Builder) {
-	fake.GetBuilderStub = nil
-	fake.getBuilderReturns = struct {
-		result1 world.Builder
-	}{result1}
-}
-
-func (fake *Uploader) GetBuilderReturnsOnCall(i int, result1 world.Builder) {
-	fake.GetBuilderStub = nil
-	if fake.getBuilderReturnsOnCall == nil {
-		fake.getBuilderReturnsOnCall = make(map[int]struct {
-			result1 world.Builder
-		})
-	}
-	fake.getBuilderReturnsOnCall[i] = struct {
-		result1 world.Builder
-	}{result1}
-}
-
 func (fake *Uploader) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -253,8 +204,6 @@ func (fake *Uploader) Invocations() map[string][][]interface{} {
 	defer fake.validateMutex.RUnlock()
 	fake.satisfiedMutex.RLock()
 	defer fake.satisfiedMutex.RUnlock()
-	fake.getBuilderMutex.RLock()
-	defer fake.getBuilderMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

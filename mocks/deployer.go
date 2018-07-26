@@ -44,15 +44,6 @@ type Deployer struct {
 		result1 bool
 		result2 error
 	}
-	GetUploaderStub        func() world.Uploader
-	getUploaderMutex       sync.RWMutex
-	getUploaderArgsForCall []struct{}
-	getUploaderReturns     struct {
-		result1 world.Uploader
-	}
-	getUploaderReturnsOnCall map[int]struct {
-		result1 world.Uploader
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -204,46 +195,6 @@ func (fake *Deployer) SatisfiedReturnsOnCall(i int, result1 bool, result2 error)
 	}{result1, result2}
 }
 
-func (fake *Deployer) GetUploader() world.Uploader {
-	fake.getUploaderMutex.Lock()
-	ret, specificReturn := fake.getUploaderReturnsOnCall[len(fake.getUploaderArgsForCall)]
-	fake.getUploaderArgsForCall = append(fake.getUploaderArgsForCall, struct{}{})
-	fake.recordInvocation("GetUploader", []interface{}{})
-	fake.getUploaderMutex.Unlock()
-	if fake.GetUploaderStub != nil {
-		return fake.GetUploaderStub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.getUploaderReturns.result1
-}
-
-func (fake *Deployer) GetUploaderCallCount() int {
-	fake.getUploaderMutex.RLock()
-	defer fake.getUploaderMutex.RUnlock()
-	return len(fake.getUploaderArgsForCall)
-}
-
-func (fake *Deployer) GetUploaderReturns(result1 world.Uploader) {
-	fake.GetUploaderStub = nil
-	fake.getUploaderReturns = struct {
-		result1 world.Uploader
-	}{result1}
-}
-
-func (fake *Deployer) GetUploaderReturnsOnCall(i int, result1 world.Uploader) {
-	fake.GetUploaderStub = nil
-	if fake.getUploaderReturnsOnCall == nil {
-		fake.getUploaderReturnsOnCall = make(map[int]struct {
-			result1 world.Uploader
-		})
-	}
-	fake.getUploaderReturnsOnCall[i] = struct {
-		result1 world.Uploader
-	}{result1}
-}
-
 func (fake *Deployer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -253,8 +204,6 @@ func (fake *Deployer) Invocations() map[string][][]interface{} {
 	defer fake.validateMutex.RUnlock()
 	fake.satisfiedMutex.RLock()
 	defer fake.satisfiedMutex.RUnlock()
-	fake.getUploaderMutex.RLock()
-	defer fake.getUploaderMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

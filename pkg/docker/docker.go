@@ -1,4 +1,4 @@
-package builder
+package docker
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func DockerImageExists(ctx context.Context, image world.Image) (bool, error) {
+func ImageExists(ctx context.Context, image world.Image) (bool, error) {
 	cmd := exec.CommandContext(ctx, "docker", "image", "inspect", image.String())
 	if glog.V(4) {
 		cmd.Stdout = os.Stdout

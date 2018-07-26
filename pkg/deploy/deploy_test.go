@@ -1,11 +1,10 @@
-package k8s
+package deploy
 
 import (
 	"bytes"
 	"testing"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/mocks"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,16 +16,12 @@ var _ = Describe("Deployer", func() {
 	format.TruncatedDiff = true
 	var deployer *Deployer
 	BeforeEach(func() {
-		builder := &mocks.Builder{}
-		builder.GetImageReturns(world.Image{
-			Registry:   "docker.io",
-			Repository: "bborbe/test",
-			Tag:        "latest",
-		})
-		uploader := &mocks.Uploader{}
-		uploader.GetBuilderReturns(builder)
 		deployer = &Deployer{
-			Uploader:  uploader,
+			Image: world.Image{
+				Registry:   "docker.io",
+				Repository: "bborbe/test",
+				Tag:        "latest",
+			},
 			Port:      1337,
 			Namespace: "banana",
 			Domains:   []world.Domain{"example.com"},

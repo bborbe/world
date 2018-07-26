@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/builder"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -76,5 +75,5 @@ func (b *Builder) GetImage() world.Image {
 }
 
 func (b *Builder) Satisfied(ctx context.Context) (bool, error) {
-	return builder.DockerImageExists(ctx, b.Image)
+	return ImageExists(ctx, b.Image)
 }

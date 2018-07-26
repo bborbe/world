@@ -1,8 +1,11 @@
 package k8s
 
 type PortName string
+
 type PortNumber int
+
 type PortProtocol string
+
 type PortTarget string
 
 type Port struct {
