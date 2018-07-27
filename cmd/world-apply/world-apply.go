@@ -23,65 +23,24 @@ func main() {
 	defer cancel()
 
 	glog.V(1).Infof("apply all ...")
-	applier := &Applier{
+	applierAll := &ApplierAll{
 		Apps: configuration.Apps(),
 	}
-	if err := applier.Apply(ctx); err != nil {
+	if err := applierAll.Apply(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "build failed: %v", err)
 		os.Exit(1)
 	}
 	glog.V(1).Infof("apply all finished")
 }
 
-type Applier struct {
+type ApplierAll struct {
 	Apps world.Apps
 }
 
-func (a *Applier) Apply(ctx context.Context) error {
+func (a *ApplierAll) Apply(ctx context.Context) error {
 	var list []run.RunFunc
 	for _, app := range a.Apps {
-		list = append(list, buildFunc(app))
+		list = append(list, app.Apply)
 	}
 	return run.All(ctx, list...)
-}
-
-func buildFunc(app world.App) run.RunFunc {
-	return func(ctx context.Context) error {
-		glog.V(4).Infof("apply app ...")
-		defer glog.V(4).Infof("apply app finished")
-		return run.Sequential(
-			ctx,
-			app.Validate,
-			func(ctx context.Context) error {
-				ok, err := app.Builder().Satisfied(ctx)
-				if err != nil {
-					return err
-				}
-				if ok {
-					return nil
-				}
-				return app.Builder().Build(ctx)
-			},
-			func(ctx context.Context) error {
-				ok, err := app.Uploader().Satisfied(ctx)
-				if err != nil {
-					return err
-				}
-				if ok {
-					return nil
-				}
-				return app.Uploader().Upload(ctx)
-			},
-			func(ctx context.Context) error {
-				ok, err := app.Deployer().Satisfied(ctx)
-				if err != nil {
-					return err
-				}
-				if ok {
-					return nil
-				}
-				return app.Deployer().Deploy(ctx)
-			},
-		)
-	}
 }

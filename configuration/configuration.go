@@ -2,18 +2,17 @@ package configuration
 
 import (
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/configuration/download"
-	"github.com/bborbe/world/configuration/hello_world"
-	"github.com/bborbe/world/configuration/ip"
-	"github.com/bborbe/world/configuration/mumble"
-	"github.com/bborbe/world/configuration/password"
+	"github.com/bborbe/world/configuration/app/download"
+	"github.com/bborbe/world/configuration/app/hello_world"
+	"github.com/bborbe/world/configuration/app/ip"
+	"github.com/bborbe/world/configuration/app/mumble"
+	"github.com/bborbe/world/configuration/app/password"
 )
 
 func Apps() world.Apps {
 	return world.Apps{
 		&download.App{
 			Context: "netcup",
-			Tag:     "latest",
 			Domains: []world.Domain{
 				"dl.benjamin-borbe.de",
 			},

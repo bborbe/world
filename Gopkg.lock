@@ -14,7 +14,13 @@
     ".",
     "errors"
   ]
-  revision = "464dc7d50f17ab28c8aba84e6c678f18873a682c"
+  revision = "5531e6c5367b287ac0c3d2dda55cb1af7f8172f5"
+
+[[projects]]
+  name = "github.com/go-yaml/yaml"
+  packages = ["."]
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [[projects]]
   branch = "master"
@@ -90,6 +96,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = [
+    "context",
     "html",
     "html/atom",
     "html/charset"
@@ -146,6 +153,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9efa7437a6eb8d310a98c59c2d21f39bf49013639e64986700b26343f137734e"
+  inputs-digest = "8f607dcad1adab1e3a508dff1e65482a79bce1b393b08e50a65e7c49518d1c40"
   solver-name = "gps-cdcl"
   solver-version = 1

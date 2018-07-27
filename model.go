@@ -2,7 +2,6 @@ package world
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -68,6 +67,14 @@ func (b BuilderType) String() string {
 	return string(b)
 }
 
+type Apps []App
+
+//go:generate counterfeiter -o mocks/app.go --fake-name App . App
+type App interface {
+	Apply(ctx context.Context) error
+	Validate(ctx context.Context) error
+}
+
 //go:generate counterfeiter -o mocks/builder.go --fake-name Builder . Builder
 type Builder interface {
 	Build(ctx context.Context) error
@@ -87,48 +94,6 @@ type Deployer interface {
 	Deploy(ctx context.Context) error
 	Validate(ctx context.Context) error
 	Satisfied(ctx context.Context) (bool, error)
-}
-
-type Foo struct {
-	Name     Name
-	Deployer Deployer
-	Builder  Builder
-	Uploader Uploader
-}
-
-func (a *Foo) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validating app %s", a.Name)
-	if a.Name == "" {
-		return errors.New("name missing")
-	}
-	if a.Deployer == nil {
-		return fmt.Errorf("%s has no builder", a.Name)
-	}
-	if err := a.Deployer.Validate(ctx); err != nil {
-		return err
-	}
-	glog.V(4).Infof("app %s is valid", a.Name)
-	return nil
-}
-
-type Foos []Foo
-
-func (a Foos) Validate(ctx context.Context) error {
-	for _, app := range a {
-		if err := app.Validate(ctx); err != nil {
-			return errors.Wrap(err, "validate failed")
-		}
-	}
-	return nil
-}
-
-func (a Foos) WithName(name Name) (*Foo, error) {
-	for _, app := range a {
-		if app.Name == name {
-			return &app, nil
-		}
-	}
-	return nil, fmt.Errorf("no app with name %s found", name.String())
 }
 
 type Image struct {
@@ -230,24 +195,8 @@ type LivenessProbe bool
 
 type ReadinessProbe bool
 
-type ClusterContext string
+type Context string
 
-func (c ClusterContext) String() string {
+func (c Context) String() string {
 	return string(c)
 }
-
-type Clusters []Cluster
-
-type Cluster struct {
-	Context ClusterContext
-	Apps    Apps
-}
-
-type App interface {
-	Validate(ctx context.Context) error
-	Builder() Builder
-	Uploader() Uploader
-	Deployer() Deployer
-}
-
-type Apps []App

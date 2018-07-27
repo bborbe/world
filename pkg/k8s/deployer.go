@@ -14,7 +14,7 @@ import (
 )
 
 type Deployer struct {
-	Context world.ClusterContext
+	Context world.Context
 	Data    interface{}
 }
 

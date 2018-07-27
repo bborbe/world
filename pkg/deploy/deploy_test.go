@@ -12,7 +12,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
-var _ = Describe("Deployer", func() {
+var _ = Describe("DeploymentDeployer", func() {
 	format.TruncatedDiff = true
 	var deployer *Deployer
 	BeforeEach(func() {
@@ -50,14 +50,14 @@ var _ = Describe("Deployer", func() {
 		})
 		It("generateDeployment contains hostport", func() {
 			b := &bytes.Buffer{}
-			err := yaml.NewEncoder(b).Encode(deployer.deployment())
+			err := yaml.NewEncoder(b).Encode(deployer.BuildDeployment())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(gbytes.BufferWithBytes(b.Bytes())).To(gbytes.Say("hostPort: 123"))
 		})
 	})
 	It("namespace", func() {
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.namespace())
+		err := yaml.NewEncoder(b).Encode(deployer.BuildNamespace())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: v1
 kind: Namespace
@@ -69,7 +69,7 @@ metadata:
 	})
 	It("service", func() {
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.service())
+		err := yaml.NewEncoder(b).Encode(deployer.BuildService())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: v1
 kind: Service
@@ -91,7 +91,7 @@ spec:
 
 	It("ingress", func() {
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.ingress())
+		err := yaml.NewEncoder(b).Encode(deployer.BuildIngress())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
 kind: Ingress
@@ -117,7 +117,7 @@ spec:
 
 	It("deployment", func() {
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.deployment())
+		err := yaml.NewEncoder(b).Encode(deployer.BuildDeployment())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
 kind: Deployment
