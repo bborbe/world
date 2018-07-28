@@ -1,29 +1,25 @@
-package deploy
+package builder
 
 import (
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
 )
 
-type Deployer struct {
-	Context        world.Context
-	Namespace      world.Namespace
-	Domains        []world.Domain
-	Args           []world.Arg
-	Port           world.Port
-	HostPort       world.HostPort
-	Env            world.Env
-	CpuLimit       world.CpuLimit
-	MemoryLimit    world.MemoryLimit
-	CpuRequest     world.CpuRequest
-	MemoryRequest  world.MemoryRequest
-	LivenessProbe  world.LivenessProbe
-	ReadinessProbe world.ReadinessProbe
-	Mounts         []world.Mount
-	Image          world.Image
+type DeploymentBuilder struct {
+	Namespace     world.Namespace
+	Args          []world.Arg
+	Port          world.Port
+	HostPort      world.HostPort
+	Env           world.Env
+	CpuLimit      world.CpuLimit
+	MemoryLimit   world.MemoryLimit
+	CpuRequest    world.CpuRequest
+	MemoryRequest world.MemoryRequest
+	Mounts        []world.Mount
+	Image         world.Image
 }
 
-func (d *Deployer) BuildDeployment() k8s.Deployment {
+func (d *DeploymentBuilder) Build() k8s.Deployment {
 	var mounts []k8s.VolumeMount
 	var volumes []k8s.PodVolume
 	for _, mount := range d.Mounts {
@@ -110,82 +106,6 @@ func (d *Deployer) BuildDeployment() k8s.Deployment {
 					},
 					Volumes: volumes,
 				},
-			},
-		},
-	}
-}
-
-func (i *Deployer) BuildIngress() k8s.Ingress {
-	ingress := k8s.Ingress{
-		ApiVersion: "extensions/v1beta1",
-		Kind:       "Ingress",
-		Metadata: k8s.Metadata{
-			Namespace: k8s.NamespaceName(i.Namespace),
-			Name:      k8s.Name(i.Namespace),
-			Labels: k8s.Labels{
-				"app": i.Namespace.String(),
-			},
-			Annotations: k8s.Annotations{
-				"kubernetes.io/ingress.class": "traefik",
-				"traefik.frontend.priority":   "10000",
-			},
-		},
-		Spec: k8s.IngressSpec{},
-	}
-	for _, domain := range i.Domains {
-		ingress.Spec.Rules = append(ingress.Spec.Rules, k8s.IngressRule{
-			Host: k8s.IngressHost(domain),
-			Http: k8s.IngressHttp{
-				Paths: []k8s.IngressPath{
-					{
-						Path: "/",
-						Backends: k8s.IngressBackend{
-							ServiceName: k8s.IngressBackendServiceName(i.Namespace),
-							ServicePort: "web",
-						},
-					},
-				},
-			},
-		})
-	}
-	return ingress
-}
-
-func (n *Deployer) BuildNamespace() k8s.Namespace {
-	return k8s.Namespace{
-		ApiVersion: "v1",
-		Kind:       "Namespace",
-		Metadata: k8s.Metadata{
-			Name: k8s.Name(n.Namespace),
-			Labels: k8s.Labels{
-				"app": n.Namespace.String(),
-			},
-		},
-	}
-}
-
-func (s *Deployer) BuildService() k8s.Service {
-	return k8s.Service{
-		ApiVersion: "v1",
-		Kind:       "Service",
-		Metadata: k8s.Metadata{
-			Namespace: k8s.NamespaceName(s.Namespace),
-			Name:      k8s.Name(s.Namespace),
-			Labels: k8s.Labels{
-				"app": s.Namespace.String(),
-			},
-		},
-		Spec: k8s.ServiceSpec{
-			Ports: []k8s.Port{
-				{
-					Name:       "web",
-					Port:       k8s.PortNumber(s.Port),
-					Protocol:   "TCP",
-					TargetPort: "http",
-				},
-			},
-			Selector: k8s.ServiceSelector{
-				"app": s.Namespace.String(),
 			},
 		},
 	}

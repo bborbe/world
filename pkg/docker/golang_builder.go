@@ -20,7 +20,11 @@ type GolangBuilder struct {
 	Package         world.Package
 }
 
-func (g *GolangBuilder) Build(ctx context.Context) error {
+func (g *GolangBuilder) Required() world.Applier {
+	return nil
+}
+
+func (g *GolangBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("building golang docker image %s ...", g.Name)
 	tmpl, err := template.New("template").Parse(`
 FROM golang:1.10 AS build
@@ -48,7 +52,7 @@ ENTRYPOINT ["/{{.Name}}"]
 		Name:            g.Name,
 		SourceDirectory: g.SourceDirectory,
 		GitRepo:         g.GitRepo,
-		Tag:             g.GetImage().Tag,
+		Tag:             g.Image.Tag,
 	})
 	if err != nil {
 		return errors.Wrap(err, "fill dockerfile template failed")
@@ -83,10 +87,6 @@ func (g *GolangBuilder) Validate(ctx context.Context) error {
 		return errors.New("package missing")
 	}
 	return nil
-}
-
-func (g *GolangBuilder) GetImage() world.Image {
-	return g.Image
 }
 
 func (g *GolangBuilder) Satisfied(ctx context.Context) (bool, error) {

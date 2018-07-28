@@ -16,7 +16,11 @@ type Uploader struct {
 	Image world.Image
 }
 
-func (u *Uploader) Upload(ctx context.Context) error {
+func (u *Uploader) Required() world.Applier {
+	return nil
+}
+
+func (u *Uploader) Apply(ctx context.Context) error {
 	glog.V(2).Infof("upload docker image %s ...", u.Image.String())
 	cmd := exec.CommandContext(ctx, "docker", "push", u.Image.String())
 	if glog.V(4) {

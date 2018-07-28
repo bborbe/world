@@ -14,11 +14,16 @@ import (
 )
 
 type Deployer struct {
-	Context world.Context
-	Data    interface{}
+	Context      world.Context
+	Data         interface{}
+	Requirements world.Applier
 }
 
-func (d *Deployer) Deploy(ctx context.Context) error {
+func (d *Deployer) Required() world.Applier {
+	return d.Requirements
+}
+
+func (d *Deployer) Apply(ctx context.Context) error {
 	buf := &bytes.Buffer{}
 	if err := yaml.NewEncoder(buf).Encode(d.Data); err != nil {
 		return err

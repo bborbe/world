@@ -3,9 +3,70 @@ package world
 import (
 	"context"
 
+	"github.com/bborbe/run"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
+
+//go:generate counterfeiter -o mocks/applier.go --fake-name Applier . Applier
+type Applier interface {
+	Validate(ctx context.Context) error
+	Satisfied(ctx context.Context) (bool, error)
+	Apply(ctx context.Context) error
+	Required() Applier
+}
+
+type Appliers []Applier
+
+func (a Appliers) Validate(ctx context.Context) error {
+	for _, applier := range a {
+		if err := applier.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a Appliers) Satisfied(ctx context.Context) (bool, error) {
+	for _, applier := range a {
+		ok, err := applier.Satisfied(ctx)
+		if err != nil {
+			return ok, err
+		}
+		if !ok {
+			return ok, err
+		}
+	}
+	return true, nil
+}
+
+func (a Appliers) Required() Applier {
+	return nil
+}
+
+func (a Appliers) Apply(ctx context.Context) error {
+	glog.V(4).Infof("apply app ...")
+	defer glog.V(4).Infof("apply app finished")
+	var list []run.RunFunc
+	for _, applier := range a {
+		list = append(list, func(ctx context.Context) error {
+			ok, err := applier.Satisfied(ctx)
+			if err != nil {
+				return err
+			}
+			if ok {
+				return nil
+			}
+			if applier.Required() != nil {
+				if err := applier.Required().Apply(ctx); err != nil {
+					return errors.Wrap(err, "apply requirements failed")
+				}
+			}
+			return applier.Apply(ctx)
+		})
+	}
+	return run.Sequential(ctx, list...)
+}
 
 type Registry string
 
@@ -65,35 +126,6 @@ type BuilderType string
 
 func (b BuilderType) String() string {
 	return string(b)
-}
-
-type Apps []App
-
-//go:generate counterfeiter -o mocks/app.go --fake-name App . App
-type App interface {
-	Apply(ctx context.Context) error
-	Validate(ctx context.Context) error
-}
-
-//go:generate counterfeiter -o mocks/builder.go --fake-name Builder . Builder
-type Builder interface {
-	Build(ctx context.Context) error
-	Validate(ctx context.Context) error
-	Satisfied(ctx context.Context) (bool, error)
-}
-
-//go:generate counterfeiter -o mocks/uploader.go --fake-name Uploader . Uploader
-type Uploader interface {
-	Upload(ctx context.Context) error
-	Validate(ctx context.Context) error
-	Satisfied(ctx context.Context) (bool, error)
-}
-
-//go:generate counterfeiter -o mocks/deployer.go --fake-name Deployer . Deployer
-type Deployer interface {
-	Deploy(ctx context.Context) error
-	Validate(ctx context.Context) error
-	Satisfied(ctx context.Context) (bool, error)
 }
 
 type Image struct {

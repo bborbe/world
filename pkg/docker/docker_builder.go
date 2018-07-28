@@ -16,7 +16,11 @@ type Builder struct {
 	GitRepo world.GitRepo
 }
 
-func (b *Builder) Build(ctx context.Context) error {
+func (b *Builder) Required() world.Applier {
+	return nil
+}
+
+func (b *Builder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("build docker image %s ...", b.Image.String())
 
 	glog.V(4).Infof("find build dir ...")
@@ -68,10 +72,6 @@ func (b *Builder) Validate(ctx context.Context) error {
 		return errors.New("git repo missing")
 	}
 	return nil
-}
-
-func (b *Builder) GetImage() world.Image {
-	return b.Image
 }
 
 func (b *Builder) Satisfied(ctx context.Context) (bool, error) {

@@ -9,8 +9,8 @@ import (
 	"github.com/bborbe/world/configuration/app/password"
 )
 
-func Apps() world.Apps {
-	return world.Apps{
+func Appliers() world.Applier {
+	return world.Appliers{
 		&download.App{
 			Context: "netcup",
 			Domains: []world.Domain{

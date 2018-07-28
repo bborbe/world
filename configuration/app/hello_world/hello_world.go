@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/apply"
-	"github.com/bborbe/world/pkg/deploy"
-	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/configuration/builder"
+	"github.com/bborbe/world/configuration/docker/hello_world"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
 )
@@ -16,6 +15,10 @@ type App struct {
 	Context world.Context
 	Domains []world.Domain
 	Tag     world.Tag
+}
+
+func (a *App) Required() world.Applier {
+	return nil
 }
 
 func (a *App) Validate(ctx context.Context) error {
@@ -31,54 +34,74 @@ func (a *App) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) Apply(ctx context.Context) error {
-	glog.V(1).Infof("apply hello-world to %s ...", a.Context)
-	image := world.Image{
+
+func (a *App) namespaceApplier() world.Applier {
+	namespaceBuilder := &builder.NamespaceBuilder{
+		Namespace: "hello-world",
+	}
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    namespaceBuilder.Build(),
+	}
+}
+
+func (a *App) deploymentApplier() world.Applier {
+	image:=world.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/hello-world",
 		Tag:        a.Tag,
 	}
-	deployer := &deploy.Deployer{
+	deploymentBuilder := &builder.DeploymentBuilder{
 		Image:         image,
 		Namespace:     "hello-world",
-		Context:       "netcup",
-		Domains:       a.Domains,
 		CpuLimit:      "100",
 		MemoryLimit:   "50Mi",
 		CpuRequest:    "10m",
 		MemoryRequest: "10Mi",
 		Port:          80,
 	}
-	applier := &apply.Applier{
-		Builder: []world.Builder{
-			&docker.Builder{
-				GitRepo: "https://github.com/bborbe/hello-world.git",
-				Image:   image,
-			},
-		},
-		Uploader: []world.Uploader{
-			&docker.Uploader{
-				Image: image,
-			},
-		},
-		Deployer: []world.Deployer{
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildNamespace(),
-			},
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildDeployment(),
-			},
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildService(),
-			},
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildIngress(),
-			},
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    deploymentBuilder.Build(),
+		Requirements: &hello_world.Builder{
+			Image: image,
 		},
 	}
+}
+
+func (a *App) serviceApplier() world.Applier {
+	serviceBuilder := &builder.ServiceBuilder{
+		Namespace: "hello-world",
+		Port:      80,
+	}
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    serviceBuilder.Build(),
+	}
+}
+
+func (a *App) ingressApplier() world.Applier {
+	ingressBuilder := &builder.IngressBuilder{
+		Namespace: "hello-world",
+		Domains:   a.Domains,
+	}
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    ingressBuilder.Build(),
+	}
+}
+
+func (a *App) Apply(ctx context.Context) error {
+	glog.V(1).Infof("apply hello-world to %s ...", a.Context)
+	applier := world.Appliers{
+		a.namespaceApplier(),
+		a.deploymentApplier(),
+		a.serviceApplier(),
+		a.ingressApplier(),
+	}
 	return applier.Apply(ctx)
+}
+
+func (a *App) Satisfied(ctx context.Context) (bool, error) {
+	return false, nil
 }

@@ -1,8 +1,7 @@
-package deploy
+package builder
 
 import (
 	"bytes"
-	"testing"
 
 	"github.com/bborbe/world"
 	"github.com/go-yaml/yaml"
@@ -14,9 +13,9 @@ import (
 
 var _ = Describe("DeploymentDeployer", func() {
 	format.TruncatedDiff = true
-	var deployer *Deployer
+	var deployer *DeploymentBuilder
 	BeforeEach(func() {
-		deployer = &Deployer{
+		deployer = &DeploymentBuilder{
 			Image: world.Image{
 				Registry:   "docker.io",
 				Repository: "bborbe/test",
@@ -24,7 +23,6 @@ var _ = Describe("DeploymentDeployer", func() {
 			},
 			Port:      1337,
 			Namespace: "banana",
-			Domains:   []world.Domain{"example.com"},
 			Args:      []world.Arg{"-v=4"},
 			Env: world.Env{
 				"a": "b",
@@ -50,74 +48,14 @@ var _ = Describe("DeploymentDeployer", func() {
 		})
 		It("generateDeployment contains hostport", func() {
 			b := &bytes.Buffer{}
-			err := yaml.NewEncoder(b).Encode(deployer.BuildDeployment())
+			err := yaml.NewEncoder(b).Encode(deployer.Build())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(gbytes.BufferWithBytes(b.Bytes())).To(gbytes.Say("hostPort: 123"))
 		})
 	})
-	It("namespace", func() {
-		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.BuildNamespace())
-		Expect(err).NotTo(HaveOccurred())
-		Expect(b.String()).To(Equal(`apiVersion: v1
-kind: Namespace
-metadata:
-  name: banana
-  labels:
-    app: banana
-`))
-	})
-	It("service", func() {
-		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.BuildService())
-		Expect(err).NotTo(HaveOccurred())
-		Expect(b.String()).To(Equal(`apiVersion: v1
-kind: Service
-metadata:
-  namespace: banana
-  name: banana
-  labels:
-    app: banana
-spec:
-  ports:
-  - name: web
-    port: 1337
-    protocol: TCP
-    targetPort: http
-  selector:
-    app: banana
-`))
-	})
-
-	It("ingress", func() {
-		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.BuildIngress())
-		Expect(err).NotTo(HaveOccurred())
-		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  namespace: banana
-  name: banana
-  labels:
-    app: banana
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.frontend.priority: "10000"
-spec:
-  rules:
-  - host: example.com
-    http:
-      paths:
-      - backend:
-          serviceName: banana
-          servicePort: web
-        path: /
-`))
-	})
-
 	It("deployment", func() {
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.BuildDeployment())
+		err := yaml.NewEncoder(b).Encode(deployer.Build())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
 kind: Deployment
@@ -173,8 +111,3 @@ spec:
 `))
 	})
 })
-
-func TestSuite(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "K8s Deploy Suite")
-}

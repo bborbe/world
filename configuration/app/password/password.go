@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/apply"
-	"github.com/bborbe/world/pkg/deploy"
-	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/configuration/builder"
+	"github.com/bborbe/world/configuration/docker/password"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
 )
@@ -16,6 +15,10 @@ type App struct {
 	Context world.Context
 	Domains []world.Domain
 	Tag     world.Tag
+}
+
+func (a *App) Required() world.Applier {
+	return nil
 }
 
 func (a *App) Validate(ctx context.Context) error {
@@ -31,18 +34,25 @@ func (a *App) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) Apply(ctx context.Context) error {
-	glog.V(1).Infof("apply password to %s ...", a.Context)
+func (a *App) namespaceApplier() world.Applier {
+	namespaceBuilder := &builder.NamespaceBuilder{
+		Namespace: "password",
+	}
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    namespaceBuilder.Build(),
+	}
+}
+
+func (a *App) deploymentApplier() world.Applier {
 	image := world.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/password",
 		Tag:        a.Tag,
 	}
-	deployer := &deploy.Deployer{
+	deploymentBuilder := &builder.DeploymentBuilder{
 		Image:         image,
 		Namespace:     "password",
-		Context:       "netcup",
-		Domains:       a.Domains,
 		CpuLimit:      "100",
 		MemoryLimit:   "50Mi",
 		CpuRequest:    "10m",
@@ -50,39 +60,48 @@ func (a *App) Apply(ctx context.Context) error {
 		Args:          []world.Arg{"-logtostderr", "-v=2"},
 		Port:          8080,
 	}
-	applier := &apply.Applier{
-		Builder: []world.Builder{
-			&docker.GolangBuilder{
-				Name:            "password",
-				GitRepo:         "https://github.com/bborbe/password.git",
-				SourceDirectory: "github.com/bborbe/password",
-				Package:         "github.com/bborbe/password/cmd/password-server",
-				Image:           image,
-			},
-		},
-		Uploader: []world.Uploader{
-			&docker.Uploader{
-				Image: image,
-			},
-		},
-		Deployer: []world.Deployer{
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildNamespace(),
-			},
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildDeployment(),
-			},
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildService(),
-			},
-			&k8s.Deployer{
-				Context: a.Context,
-				Data:    deployer.BuildIngress(),
-			},
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    deploymentBuilder.Build(),
+		Requirements: &password.Builder{
+			Image: image,
 		},
 	}
+}
+
+func (a *App) serviceApplier() world.Applier {
+	serviceBuilder := &builder.ServiceBuilder{
+		Namespace: "password",
+		Port:      8080,
+	}
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    serviceBuilder.Build(),
+	}
+}
+
+func (a *App) ingressApplier() world.Applier {
+	ingressBuilder := &builder.IngressBuilder{
+		Namespace: "password",
+		Domains:   a.Domains,
+	}
+	return &k8s.Deployer{
+		Context: a.Context,
+		Data:    ingressBuilder.Build(),
+	}
+}
+
+func (a *App) Apply(ctx context.Context) error {
+	glog.V(1).Infof("apply password to %s ...", a.Context)
+	applier := world.Appliers{
+		a.namespaceApplier(),
+		a.deploymentApplier(),
+		a.serviceApplier(),
+		a.ingressApplier(),
+	}
 	return applier.Apply(ctx)
+}
+
+func (a *App) Satisfied(ctx context.Context) (bool, error) {
+	return false, nil
 }

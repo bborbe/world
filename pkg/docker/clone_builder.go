@@ -17,7 +17,11 @@ type CloneBuilder struct {
 	TargetImage world.Image
 }
 
-func (c *CloneBuilder) Build(ctx context.Context) error {
+func (c *CloneBuilder) Required() world.Applier {
+	return nil
+}
+
+func (c *CloneBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("docker clone %s ...", c.TargetImage.String())
 
 	glog.V(4).Infof("docker pull %s ...", c.SourceImage.String())
@@ -61,10 +65,6 @@ func (c *CloneBuilder) Validate(ctx context.Context) error {
 		return err
 	}
 	return nil
-}
-
-func (c *CloneBuilder) GetImage() world.Image {
-	return c.TargetImage
 }
 
 func (c *CloneBuilder) Satisfied(ctx context.Context) (bool, error) {
