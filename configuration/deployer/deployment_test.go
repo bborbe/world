@@ -1,4 +1,4 @@
-package builder
+package deployer
 
 import (
 	"bytes"
@@ -13,9 +13,9 @@ import (
 
 var _ = Describe("DeploymentDeployer", func() {
 	format.TruncatedDiff = true
-	var deployer *DeploymentBuilder
+	var deploymentDeployer *DeploymentDeployer
 	BeforeEach(func() {
-		deployer = &DeploymentBuilder{
+		deploymentDeployer = &DeploymentDeployer{
 			Image: world.Image{
 				Registry:   "docker.io",
 				Repository: "bborbe/test",
@@ -44,18 +44,18 @@ var _ = Describe("DeploymentDeployer", func() {
 	})
 	Context("with hostPort", func() {
 		BeforeEach(func() {
-			deployer.HostPort = 123
+			deploymentDeployer.HostPort = 123
 		})
 		It("generateDeployment contains hostport", func() {
 			b := &bytes.Buffer{}
-			err := yaml.NewEncoder(b).Encode(deployer.Build())
+			err := yaml.NewEncoder(b).Encode(deploymentDeployer.deployment())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(gbytes.BufferWithBytes(b.Bytes())).To(gbytes.Say("hostPort: 123"))
 		})
 	})
 	It("deployment", func() {
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(deployer.Build())
+		err := yaml.NewEncoder(b).Encode(deploymentDeployer.deployment())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
 kind: Deployment

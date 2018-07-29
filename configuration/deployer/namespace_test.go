@@ -1,4 +1,4 @@
-package builder
+package deployer
 
 import (
 	"bytes"
@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("NamespaceBuilder", func() {
+var _ = Describe("NamespaceDeployer", func() {
 	It("namespace", func() {
-		namespaceBuilder := &NamespaceBuilder{
+		namespaceDeployer := &NamespaceDeployer{
 			Namespace: "banana",
 		}
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(namespaceBuilder.Build())
+		err := yaml.NewEncoder(b).Encode(namespaceDeployer.namespace())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: v1
 kind: Namespace

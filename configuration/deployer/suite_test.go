@@ -1,4 +1,4 @@
-package builder
+package deployer
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "DeploymentBuilder Deploy Suite")
+	RunSpecs(t, "DeploymentDeployer Deploy Suite")
 }

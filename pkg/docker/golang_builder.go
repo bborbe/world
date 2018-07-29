@@ -20,8 +20,12 @@ type GolangBuilder struct {
 	Package         world.Package
 }
 
-func (g *GolangBuilder) Required() world.Applier {
+func (g *GolangBuilder) Childs() []world.Configuration {
 	return nil
+}
+
+func (g *GolangBuilder) Applier() world.Applier {
+	return g
 }
 
 func (g *GolangBuilder) Apply(ctx context.Context) error {
@@ -70,6 +74,10 @@ ENTRYPOINT ["/{{.Name}}"]
 	return nil
 }
 
+func (g *GolangBuilder) Satisfied(ctx context.Context) (bool, error) {
+	return ImageExists(ctx, g.Image)
+}
+
 func (g *GolangBuilder) Validate(ctx context.Context) error {
 	if err := g.Image.Validate(ctx); err != nil {
 		return err
@@ -87,8 +95,4 @@ func (g *GolangBuilder) Validate(ctx context.Context) error {
 		return errors.New("package missing")
 	}
 	return nil
-}
-
-func (g *GolangBuilder) Satisfied(ctx context.Context) (bool, error) {
-	return ImageExists(ctx, g.Image)
 }

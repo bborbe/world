@@ -17,8 +17,12 @@ type CloneBuilder struct {
 	TargetImage world.Image
 }
 
-func (c *CloneBuilder) Required() world.Applier {
+func (c *CloneBuilder) Childs() []world.Configuration {
 	return nil
+}
+
+func (c *CloneBuilder) Applier() world.Applier {
+	return c
 }
 
 func (c *CloneBuilder) Apply(ctx context.Context) error {

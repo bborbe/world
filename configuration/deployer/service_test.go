@@ -1,4 +1,4 @@
-package builder
+package deployer
 
 import (
 	"bytes"
@@ -10,12 +10,12 @@ import (
 
 var _ = Describe("ServiceDeployer", func() {
 	It("service", func() {
-		serviceBuilder := &ServiceBuilder{
+		serviceDeployer := &ServiceDeployer{
 			Port:      1337,
 			Namespace: "banana",
 		}
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(serviceBuilder.Build())
+		err := yaml.NewEncoder(b).Encode(serviceDeployer.service())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: v1
 kind: Service

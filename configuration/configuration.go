@@ -2,41 +2,44 @@ package configuration
 
 import (
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/configuration/app/download"
-	"github.com/bborbe/world/configuration/app/hello_world"
-	"github.com/bborbe/world/configuration/app/ip"
-	"github.com/bborbe/world/configuration/app/mumble"
-	"github.com/bborbe/world/configuration/app/password"
+	"github.com/bborbe/world/configuration/app"
 )
 
-func Appliers() world.Applier {
-	return world.Appliers{
-		&download.App{
+type Configuration struct {
+}
+
+func (c *Configuration) Applier() world.Applier {
+	return nil
+}
+
+func (c *Configuration) Childs() []world.Configuration {
+	return []world.Configuration{
+		&app.Download{
 			Context: "netcup",
 			Domains: []world.Domain{
 				"dl.benjamin-borbe.de",
 			},
 			NfsServer: "185.170.112.48",
 		},
-		&mumble.App{
+		&app.Mumble{
 			Context: "netcup",
 			Tag:     "1.0.2",
 		},
-		&ip.App{
+		&app.Ip{
 			Context: "netcup",
 			Tag:     "1.1.0",
 			Domains: []world.Domain{
 				"ip.benjamin-borbe.de",
 			},
 		},
-		&password.App{
+		&app.Password{
 			Context: "netcup",
 			Tag:     "1.1.0",
 			Domains: []world.Domain{
 				"password.benjamin-borbe.de",
 			},
 		},
-		&hello_world.App{
+		&app.HelloWorld{
 			Context: "netcup",
 			Tag:     "1.0.1",
 			Domains: []world.Domain{

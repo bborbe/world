@@ -1,10 +1,16 @@
 package k8s
 
+import "fmt"
+
 type Ingress struct {
 	ApiVersion ApiVersion  `yaml:"apiVersion"`
 	Kind       Kind        `yaml:"kind"`
 	Metadata   Metadata    `yaml:"metadata"`
 	Spec       IngressSpec `yaml:"spec"`
+}
+
+func (s Ingress) String() string {
+	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
 }
 
 type IngressSpec struct {

@@ -1,4 +1,4 @@
-package builder
+package deployer
 
 import (
 	"bytes"
@@ -9,14 +9,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("IngressBuilder", func() {
+var _ = Describe("IngressDeployer", func() {
 	It("ingress", func() {
-		ingressBuilder := &IngressBuilder{
+		ingressDeployer := &IngressDeployer{
 			Namespace: "banana",
 			Domains:   []world.Domain{"example.com"},
 		}
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(ingressBuilder.Build())
+		err := yaml.NewEncoder(b).Encode(ingressDeployer.ingress())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
 kind: Ingress

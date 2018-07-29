@@ -16,8 +16,12 @@ type Builder struct {
 	GitRepo world.GitRepo
 }
 
-func (b *Builder) Required() world.Applier {
+func (b *Builder) Childs() []world.Configuration {
 	return nil
+}
+
+func (b *Builder) Applier() world.Applier {
+	return b
 }
 
 func (b *Builder) Apply(ctx context.Context) error {

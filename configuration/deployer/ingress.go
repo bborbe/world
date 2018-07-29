@@ -1,16 +1,46 @@
-package builder
+package deployer
 
 import (
+	"context"
+
+	"fmt"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
 )
 
-type IngressBuilder struct {
-	Namespace world.Namespace
-	Domains   []world.Domain
+type IngressDeployer struct {
+	Context      world.Context
+	Requirements []world.Configuration
+	Namespace    world.Namespace
+	Domains      []world.Domain
 }
 
-func (i *IngressBuilder) Build() k8s.Ingress {
+func (i *IngressDeployer) Applier() world.Applier {
+	return &k8s.Deployer{
+		Context: i.Context,
+		Data:    i.ingress(),
+	}
+}
+
+func (i *IngressDeployer) Childs() []world.Configuration {
+	return i.Requirements
+}
+
+func (i *IngressDeployer) Validate(ctx context.Context) error {
+	if i.Context == "" {
+		return fmt.Errorf("Context missing")
+	}
+	if i.Namespace == "" {
+		return fmt.Errorf("Namespace missing")
+	}
+	if len(i.Domains) == 0 {
+		return fmt.Errorf("Domains missing")
+	}
+	return nil
+}
+
+func (i *IngressDeployer) ingress() k8s.Ingress {
 	ingress := k8s.Ingress{
 		ApiVersion: "extensions/v1beta1",
 		Kind:       "Ingress",

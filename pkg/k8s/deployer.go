@@ -19,11 +19,8 @@ type Deployer struct {
 	Requirements world.Applier
 }
 
-func (d *Deployer) Required() world.Applier {
-	return d.Requirements
-}
-
 func (d *Deployer) Apply(ctx context.Context) error {
+	glog.V(2).Infof("deploy %s to %s ...", d.Data, d.Context)
 	buf := &bytes.Buffer{}
 	if err := yaml.NewEncoder(buf).Encode(d.Data); err != nil {
 		return err
@@ -37,7 +34,12 @@ func (d *Deployer) Apply(ctx context.Context) error {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	return errors.Wrap(cmd.Run(), "deploy k8s image failed")
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "deploy %T to %s failed", d.Data, d.Context)
+
+	}
+	glog.V(1).Infof("deploy %s to %s finished", d.Data, d.Context)
+	return nil
 }
 
 func (d *Deployer) Validate(ctx context.Context) error {

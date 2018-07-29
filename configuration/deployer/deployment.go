@@ -1,11 +1,17 @@
-package builder
+package deployer
 
 import (
+	"context"
+
+	"fmt"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
 )
 
-type DeploymentBuilder struct {
+type DeploymentDeployer struct {
+	Context       world.Context
+	Requirements  []world.Configuration
 	Namespace     world.Namespace
 	Args          []world.Arg
 	Port          world.Port
@@ -19,7 +25,43 @@ type DeploymentBuilder struct {
 	Image         world.Image
 }
 
-func (d *DeploymentBuilder) Build() k8s.Deployment {
+func (d *DeploymentDeployer) Applier() world.Applier {
+	return &k8s.Deployer{
+		Context: d.Context,
+		Data:    d.deployment(),
+	}
+}
+
+func (d *DeploymentDeployer) Childs() []world.Configuration {
+	return d.Requirements
+}
+
+func (d *DeploymentDeployer) Validate(ctx context.Context) error {
+	if d.Context == "" {
+		return fmt.Errorf("context missing")
+	}
+	if d.Namespace == "" {
+		return fmt.Errorf("Namespace missing")
+	}
+	if d.CpuLimit == "" {
+		return fmt.Errorf("CpuLimit missing")
+	}
+	if d.MemoryLimit == "" {
+		return fmt.Errorf("MemoryLimit missing")
+	}
+	if d.CpuRequest == "" {
+		return fmt.Errorf("CpuRequest missing")
+	}
+	if d.MemoryRequest == "" {
+		return fmt.Errorf("MemoryRequest missing")
+	}
+	if err := d.Image.Validate(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DeploymentDeployer) deployment() k8s.Deployment {
 	var mounts []k8s.VolumeMount
 	var volumes []k8s.PodVolume
 	for _, mount := range d.Mounts {
