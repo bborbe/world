@@ -14,9 +14,13 @@ type Download struct {
 
 func (d *Download) Childs() []world.Configuration {
 	return []world.Configuration{
-		&docker.Builder{
-			GitRepo: "https://github.com/bborbe/hello-world.git",
-			Image:   d.Image,
+		&docker.CloneBuilder{
+			SourceImage: world.Image{
+				Registry:   "docker.io",
+				Repository: "jrelva/nginx-autoindex",
+				Tag:        "latest",
+			},
+			TargetImage: d.Image,
 		},
 	}
 }
