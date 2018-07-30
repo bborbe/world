@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,30 +13,48 @@ import (
 )
 
 var _ = Describe("DeploymentDeployer", func() {
-	format.TruncatedDiff = true
+	format.TruncatedDiff = false
 	var deploymentDeployer *DeploymentDeployer
 	BeforeEach(func() {
 		deploymentDeployer = &DeploymentDeployer{
-			Image: world.Image{
-				Registry:   "docker.io",
-				Repository: "bborbe/test",
-				Tag:        "latest",
-			},
-			Port:      1337,
 			Namespace: "banana",
-			Args:      []world.Arg{"-v=4"},
-			Env: world.Env{
-				"a": "b",
+			Containers: []DeploymentDeployerContainer{
+				{
+					Name: "banana",
+					Image: world.Image{
+						Registry:   "docker.io",
+						Repository: "bborbe/test",
+						Tag:        "latest",
+					},
+					Ports: []world.Port{
+						{
+							Name: "root",
+							Port: 1337,
+						},
+					},
+					Args: []world.Arg{"-v=4"},
+					Env: []k8s.Env{
+						{
+							Name:  "a",
+							Value: "b",
+						},
+					},
+					CpuLimit:      "250m",
+					MemoryLimit:   "25Mi",
+					CpuRequest:    "10m",
+					MemoryRequest: "10Mi",
+					Mounts: []world.Mount{
+						{
+							Name:     "data",
+							Target:   "/usr/share/nginx/html",
+							ReadOnly: true,
+						},
+					},
+				},
 			},
-			CpuLimit:      "250m",
-			MemoryLimit:   "25Mi",
-			CpuRequest:    "10m",
-			MemoryRequest: "10Mi",
-			Mounts: []world.Mount{
+			Volumes: []world.Volume{
 				{
 					Name:      "data",
-					Target:    "/usr/share/nginx/html",
-					ReadOnly:  true,
 					NfsPath:   "/data/download",
 					NfsServer: "127.0.0.1",
 				},
@@ -44,7 +63,7 @@ var _ = Describe("DeploymentDeployer", func() {
 	})
 	Context("with hostPort", func() {
 		BeforeEach(func() {
-			deploymentDeployer.HostPort = 123
+			deploymentDeployer.Containers[0].Ports[0].HostPort = 123
 		})
 		It("generateDeployment contains hostport", func() {
 			b := &bytes.Buffer{}
@@ -90,7 +109,7 @@ spec:
         name: banana
         ports:
         - containerPort: 1337
-          name: http
+          name: root
           protocol: TCP
         resources:
           limits:

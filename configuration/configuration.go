@@ -1,6 +1,8 @@
 package configuration
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
 )
@@ -9,6 +11,10 @@ type Configuration struct {
 }
 
 func (c *Configuration) Applier() world.Applier {
+	return nil
+}
+
+func (c *Configuration) Validate(ctx context.Context) error {
 	return nil
 }
 
@@ -49,5 +55,23 @@ func (c *Configuration) Childs() []world.Configuration {
 				"www.rocketnews.de",
 			},
 		},
+		&app.Slideshow{
+			Context: "netcup",
+			Domains: []world.Domain{
+				"slideshow.benjamin-borbe.de",
+			},
+		},
+		&app.Kickstart{
+			Context: "netcup",
+			Domains: []world.Domain{
+				"kickstart.benjamin-borbe.de",
+				"ks.benjamin-borbe.de",
+			},
+		},
+		//&app.Ldap{
+		//	Context:   "netcup",
+		//	Tag:       "1.1.0",
+		//	NfsServer: "185.170.112.48",
+		//},
 	}
 }

@@ -16,16 +16,29 @@ type PodNfs struct {
 	Server PodNfsServer `yaml:"server"`
 }
 
+type EmptyDir map[string]string
+
 type PodVolume struct {
-	Name PodVolumeName `yaml:"name"`
-	Nfs  PodNfs        `nfs:"nfs"`
+	Name     PodVolumeName `yaml:"name"`
+	Nfs      PodNfs        `yaml:"nfs,omitempty"`
+	EmptyDir EmptyDir      `yaml:"emptyDir,omitempty"`
 }
 
-type PodArg string
+type Arg string
 
-type PodEnv struct {
-	Name  string `yaml:"name"`
-	Value string `yaml:"value"`
+type Env struct {
+	Name      string    `yaml:"name"`
+	Value     string    `yaml:"value,omitempty"`
+	ValueFrom ValueFrom `yaml:"valueFrom,omitempty"`
+}
+
+type ValueFrom struct {
+	SecretKeyRef SecretKeyRef `yaml:"secretKeyRef"`
+}
+
+type SecretKeyRef struct {
+	Key  string `yaml:"key"`
+	Name string `yaml:"name"`
 }
 
 type PodImage string
@@ -67,8 +80,8 @@ type VolumeMount struct {
 }
 
 type PodContainer struct {
-	Args         []PodArg      `yaml:"args,omitempty"`
-	Env          []PodEnv      `yaml:"env,omitempty"`
+	Args         []Arg         `yaml:"args,omitempty"`
+	Env          []Env         `yaml:"env,omitempty"`
 	Image        PodImage      `yaml:"image"`
 	Name         PodName       `yaml:"name"`
 	Ports        []PodPort     `yaml:"ports,omitempty"`

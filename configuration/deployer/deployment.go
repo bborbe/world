@@ -2,7 +2,6 @@ package deployer
 
 import (
 	"context"
-
 	"fmt"
 
 	"github.com/bborbe/world"
@@ -10,13 +9,18 @@ import (
 )
 
 type DeploymentDeployer struct {
-	Context       world.Context
-	Requirements  []world.Configuration
-	Namespace     world.Namespace
+	Context      world.Context
+	Requirements []world.Configuration
+	Namespace    world.Namespace
+	Containers   []DeploymentDeployerContainer
+	Volumes      []world.Volume
+}
+
+type DeploymentDeployerContainer struct {
+	Name          world.ContainerName
 	Args          []world.Arg
-	Port          world.Port
-	HostPort      world.HostPort
-	Env           world.Env
+	Ports         []world.Port
+	Env           []k8s.Env
 	CpuLimit      world.CpuLimit
 	MemoryLimit   world.MemoryLimit
 	CpuRequest    world.CpuRequest
@@ -43,74 +47,45 @@ func (d *DeploymentDeployer) Validate(ctx context.Context) error {
 	if d.Namespace == "" {
 		return fmt.Errorf("Namespace missing")
 	}
-	if d.CpuLimit == "" {
-		return fmt.Errorf("CpuLimit missing")
-	}
-	if d.MemoryLimit == "" {
-		return fmt.Errorf("MemoryLimit missing")
-	}
-	if d.CpuRequest == "" {
-		return fmt.Errorf("CpuRequest missing")
-	}
-	if d.MemoryRequest == "" {
-		return fmt.Errorf("MemoryRequest missing")
-	}
-	if err := d.Image.Validate(ctx); err != nil {
-		return err
+	for _, container := range d.Containers {
+		if container.Name == "" {
+			return fmt.Errorf("Name missing")
+		}
+		if container.CpuLimit == "" {
+			return fmt.Errorf("CpuLimit missing")
+		}
+		if container.MemoryLimit == "" {
+			return fmt.Errorf("MemoryLimit missing")
+		}
+		if container.CpuRequest == "" {
+			return fmt.Errorf("CpuRequest missing")
+		}
+		if container.MemoryRequest == "" {
+			return fmt.Errorf("MemoryRequest missing")
+		}
+		if err := container.Image.Validate(ctx); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (d *DeploymentDeployer) deployment() k8s.Deployment {
-	var mounts []k8s.VolumeMount
 	var volumes []k8s.PodVolume
-	for _, mount := range d.Mounts {
-		volumes = append(volumes, k8s.PodVolume{
-			Name: k8s.PodVolumeName(mount.Name),
-			Nfs: k8s.PodNfs{
-				Path:   k8s.PodNfsPath(mount.NfsPath),
-				Server: k8s.PodNfsServer(mount.NfsServer),
-			},
-		})
-		mounts = append(mounts, k8s.VolumeMount{
-			MountPath: k8s.VolumeMountPath(mount.Target),
-			Name:      k8s.VolumeName(mount.Name),
-			ReadOnly:  k8s.VolumeReadOnly(mount.ReadOnly),
-		})
+	for _, volume := range d.Volumes {
+		podVolume := k8s.PodVolume{
+			Name: k8s.PodVolumeName(volume.Name),
+		}
+		if volume.EmptyDir {
+			podVolume.EmptyDir = k8s.EmptyDir{}
+		} else {
+			podVolume.Nfs = k8s.PodNfs{
+				Path:   k8s.PodNfsPath(volume.NfsPath),
+				Server: k8s.PodNfsServer(volume.NfsServer),
+			}
+		}
+		volumes = append(volumes, podVolume)
 	}
-	container := k8s.PodContainer{
-		Image: k8s.PodImage(d.Image.String()),
-		Name:  k8s.PodName(d.Namespace.String()),
-		Ports: []k8s.PodPort{
-			{
-				ContainerPort: k8s.PodPortContainerPort(d.Port),
-				HostPort:      k8s.PodPortHostPort(d.HostPort),
-				Name:          "http",
-				Protocol:      "TCP",
-			},
-		},
-		Resources: k8s.PodResources{
-			Requests: k8s.ResourceList{
-				"cpu":    d.CpuRequest.String(),
-				"memory": d.MemoryRequest.String(),
-			},
-			Limits: k8s.ResourceList{
-				"cpu":    d.CpuLimit.String(),
-				"memory": d.MemoryLimit.String(),
-			},
-		},
-		VolumeMounts: mounts,
-	}
-	for _, arg := range d.Args {
-		container.Args = append(container.Args, k8s.PodArg(arg))
-	}
-	for k, v := range d.Env {
-		container.Env = append(container.Env, k8s.PodEnv{
-			Name:  k,
-			Value: v,
-		})
-	}
-
 	return k8s.Deployment{
 		ApiVersion: "extensions/v1beta1",
 		Kind:       "Deployment",
@@ -143,12 +118,57 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 					},
 				},
 				Spec: k8s.PodSpec{
-					Containers: []k8s.PodContainer{
-						container,
-					},
-					Volumes: volumes,
+					Containers: d.containers(),
+					Volumes:    volumes,
 				},
 			},
 		},
 	}
+}
+
+func (d *DeploymentDeployer) containers() []k8s.PodContainer {
+	var result []k8s.PodContainer
+	for _, container := range d.Containers {
+		result = append(result, d.container(container))
+	}
+	return result
+}
+
+func (d *DeploymentDeployer) container(container DeploymentDeployerContainer) k8s.PodContainer {
+	var mounts []k8s.VolumeMount
+	for _, mount := range container.Mounts {
+		mounts = append(mounts, k8s.VolumeMount{
+			MountPath: k8s.VolumeMountPath(mount.Target),
+			Name:      k8s.VolumeName(mount.Name),
+			ReadOnly:  k8s.VolumeReadOnly(mount.ReadOnly),
+		})
+	}
+	podContainer := k8s.PodContainer{
+		Image: k8s.PodImage(container.Image.String()),
+		Name:  k8s.PodName(container.Name.String()),
+		Resources: k8s.PodResources{
+			Requests: k8s.ResourceList{
+				"cpu":    container.CpuRequest.String(),
+				"memory": container.MemoryRequest.String(),
+			},
+			Limits: k8s.ResourceList{
+				"cpu":    container.CpuLimit.String(),
+				"memory": container.MemoryLimit.String(),
+			},
+		},
+		VolumeMounts: mounts,
+	}
+	for _, port := range container.Ports {
+		podContainer.Ports = append(podContainer.Ports, k8s.PodPort{
+			ContainerPort: k8s.PodPortContainerPort(port.Port),
+			HostPort:      k8s.PodPortHostPort(port.HostPort),
+			Name:          k8s.PodPortName(port.Name),
+			Protocol:      "TCP",
+		})
+	}
+	for _, arg := range container.Args {
+		podContainer.Args = append(podContainer.Args, k8s.Arg(arg))
+	}
+	podContainer.Env = container.Env
+	return podContainer
 }

@@ -8,11 +8,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Download struct {
+type NginxAutoindex struct {
 	Image world.Image
 }
 
-func (d *Download) Childs() []world.Configuration {
+func (n *NginxAutoindex) Childs() []world.Configuration {
 	return []world.Configuration{
 		&docker.CloneBuilder{
 			SourceImage: world.Image{
@@ -20,19 +20,19 @@ func (d *Download) Childs() []world.Configuration {
 				Repository: "jrelva/nginx-autoindex",
 				Tag:        "latest",
 			},
-			TargetImage: d.Image,
+			TargetImage: n.Image,
 		},
 	}
 }
 
-func (d *Download) Applier() world.Applier {
+func (n *NginxAutoindex) Applier() world.Applier {
 	return &docker.Uploader{
-		Image: d.Image,
+		Image: n.Image,
 	}
 }
 
-func (d *Download) Validate(ctx context.Context) error {
-	if err := d.Image.Validate(ctx); err != nil {
+func (n *NginxAutoindex) Validate(ctx context.Context) error {
+	if err := n.Image.Validate(ctx); err != nil {
 		return errors.Wrap(err, "image missing")
 	}
 	return nil

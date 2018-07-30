@@ -25,6 +25,12 @@ func (h *HelloWorld) Childs() []world.Configuration {
 		Repository: "bborbe/hello-world",
 		Tag:        h.Tag,
 	}
+	ports := []world.Port{
+		{
+			Port: 80,
+			Name: "web",
+		},
+	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   h.Context,
@@ -37,18 +43,23 @@ func (h *HelloWorld) Childs() []world.Configuration {
 					Image: image,
 				},
 			},
-			Image:         image,
-			Namespace:     "hello-world",
-			CpuLimit:      "100",
-			MemoryLimit:   "50Mi",
-			CpuRequest:    "10m",
-			MemoryRequest: "10Mi",
-			Port:          80,
+			Namespace: "hello-world",
+			Containers: []deployer.DeploymentDeployerContainer{
+				{
+					Name:          "hello-world",
+					Image:         image,
+					CpuLimit:      "100",
+					MemoryLimit:   "50Mi",
+					CpuRequest:    "10m",
+					MemoryRequest: "10Mi",
+					Ports:         ports,
+				},
+			},
 		},
 		&deployer.ServiceDeployer{
 			Context:   h.Context,
 			Namespace: "hello-world",
-			Port:      80,
+			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
 			Context:   h.Context,

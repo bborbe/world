@@ -14,9 +14,8 @@ import (
 )
 
 type Deployer struct {
-	Context      world.Context
-	Data         interface{}
-	Requirements world.Applier
+	Context world.Context
+	Data    interface{}
 }
 
 func (d *Deployer) Apply(ctx context.Context) error {

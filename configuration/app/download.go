@@ -9,8 +9,6 @@ import (
 	"github.com/bborbe/world/configuration/docker"
 )
 
-var Namespace = world.Namespace("download")
-
 type Download struct {
 	Context   world.Context
 	Domains   []world.Domain
@@ -27,30 +25,46 @@ func (d *Download) Childs() []world.Configuration {
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}
+	ports := []world.Port{
+		{
+			Port: 80,
+			Name: "web",
+		},
+	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   d.Context,
-			Namespace: Namespace,
+			Namespace: "download",
 		},
 		&deployer.DeploymentDeployer{
 			Context: d.Context,
 			Requirements: []world.Configuration{
-				&docker.Download{
+				&docker.NginxAutoindex{
 					Image: image,
 				},
 			},
-			Image:         image,
-			Namespace:     "download",
-			Port:          80,
-			CpuLimit:      "250m",
-			MemoryLimit:   "25Mi",
-			CpuRequest:    "10m",
-			MemoryRequest: "10Mi",
-			Mounts: []world.Mount{
+			Namespace: "download",
+			Containers: []deployer.DeploymentDeployerContainer{
+				{
+					Name:          "nginx",
+					Image:         image,
+					Ports:         ports,
+					CpuLimit:      "250m",
+					MemoryLimit:   "25Mi",
+					CpuRequest:    "10m",
+					MemoryRequest: "10Mi",
+					Mounts: []world.Mount{
+						{
+							Name:     "download",
+							Target:   "/usr/share/nginx/html",
+							ReadOnly: true,
+						},
+					},
+				},
+			},
+			Volumes: []world.Volume{
 				{
 					Name:      "download",
-					Target:    "/usr/share/nginx/html",
-					ReadOnly:  true,
 					NfsPath:   "/data/download",
 					NfsServer: d.NfsServer,
 				},
@@ -59,7 +73,7 @@ func (d *Download) Childs() []world.Configuration {
 		&deployer.ServiceDeployer{
 			Context:   d.Context,
 			Namespace: "download",
-			Port:      80,
+			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
 			Context:   d.Context,

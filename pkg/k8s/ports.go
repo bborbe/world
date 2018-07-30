@@ -11,6 +11,6 @@ type PortTarget string
 type Port struct {
 	Name       PortName     `yaml:"name"`
 	Port       PortNumber   `yaml:"port"`
-	Protocol   PortProtocol `yaml:"protocol"`
-	TargetPort PortTarget   `yaml:"targetPort"`
+	Protocol   PortProtocol `yaml:"protocol,omitempty"`
+	TargetPort PortTarget   `yaml:"targetPort,omitempty"`
 }

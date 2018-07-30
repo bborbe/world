@@ -10,12 +10,14 @@ import (
 type Configuration interface {
 	Childs() []Configuration
 	Applier() Applier
+	Validate(ctx context.Context) error
 }
 
 //go:generate counterfeiter -o mocks/applier.go --fake-name Applier . Applier
 type Applier interface {
 	Satisfied(ctx context.Context) (bool, error)
 	Apply(ctx context.Context) error
+	Validate(ctx context.Context) error
 }
 
 type Registry string
@@ -101,17 +103,15 @@ func (b *Image) Validate(ctx context.Context) error {
 	return nil
 }
 
-type Port int
-
-func (p Port) Int() int {
-	return int(p)
+type Port struct {
+	Name     string
+	Port     int
+	HostPort int
 }
-
-type HostPort int
 
 type Arg string
 
-type Env map[string]string
+type Secrets map[string]string
 
 type CpuLimit string
 
@@ -148,11 +148,9 @@ type MountNfsPath string
 type MountNfsServer string
 
 type Mount struct {
-	Name      MountName
-	Target    MountTarget
-	ReadOnly  MountReadOnly
-	NfsPath   MountNfsPath
-	NfsServer MountNfsServer
+	Name     MountName
+	Target   MountTarget
+	ReadOnly MountReadOnly
 }
 
 func (m *Mount) Validate(ctx context.Context) error {
@@ -162,6 +160,26 @@ func (m *Mount) Validate(ctx context.Context) error {
 	}
 	if m.Target == "" {
 		return errors.New("target missing")
+	}
+	glog.V(4).Infof("mount %s is valid", m.Name)
+	return nil
+}
+
+type Volume struct {
+	Name      MountName
+	NfsPath   MountNfsPath
+	NfsServer MountNfsServer
+	EmptyDir  bool
+}
+
+func (m *Volume) GetName() MountName {
+	return m.Name
+}
+
+func (m *Volume) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validating mount %s", m.Name)
+	if m.Name == "" {
+		return errors.New("name missing")
 	}
 	if m.NfsPath == "" {
 		return errors.New("nfs path missing")
@@ -180,5 +198,11 @@ type ReadinessProbe bool
 type Context string
 
 func (c Context) String() string {
+	return string(c)
+}
+
+type ContainerName string
+
+func (c ContainerName) String() string {
 	return string(c)
 }

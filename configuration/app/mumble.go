@@ -20,6 +20,12 @@ func (m *Mumble) Childs() []world.Configuration {
 		Repository: "bborbe/mumble",
 		Tag:        m.Tag,
 	}
+	ports := []world.Port{
+		{
+			Port:     64738,
+			HostPort: 64738,
+		},
+	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   m.Context,
@@ -32,19 +38,23 @@ func (m *Mumble) Childs() []world.Configuration {
 					Image: image,
 				},
 			},
-			Image:         image,
-			Namespace:     "mumble",
-			Port:          64738,
-			HostPort:      64738,
-			CpuLimit:      "200m",
-			MemoryLimit:   "100Mi",
-			CpuRequest:    "100m",
-			MemoryRequest: "25Mi",
+			Namespace: "mumble",
+			Containers: []deployer.DeploymentDeployerContainer{
+				{
+					Name:          "mumble",
+					Image:         image,
+					Ports:         ports,
+					CpuLimit:      "200m",
+					MemoryLimit:   "100Mi",
+					CpuRequest:    "100m",
+					MemoryRequest: "25Mi",
+				},
+			},
 		},
 		&deployer.ServiceDeployer{
 			Context:   m.Context,
 			Namespace: "mumble",
-			Port:      64738,
+			Ports:     ports,
 		},
 	}
 }

@@ -41,7 +41,7 @@ func (u *Uploader) Satisfied(ctx context.Context) (bool, error) {
 		glog.V(1).Infof("image %s is missing on registry", u.Image.String())
 		return false, nil
 	}
-	glog.V(1).Infof("image %s exists on registry", u.Image.String())
+	glog.V(2).Infof("image %s exists on registry", u.Image.String())
 	return true, nil
 }
 

@@ -21,6 +21,12 @@ func (p *Password) Childs() []world.Configuration {
 		Repository: "bborbe/password",
 		Tag:        p.Tag,
 	}
+	ports := []world.Port{
+		{
+			Port: 8080,
+			Name: "web",
+		},
+	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   p.Context,
@@ -33,19 +39,24 @@ func (p *Password) Childs() []world.Configuration {
 					Image: image,
 				},
 			},
-			Image:         image,
-			Namespace:     "password",
-			CpuLimit:      "100",
-			MemoryLimit:   "50Mi",
-			CpuRequest:    "10m",
-			MemoryRequest: "10Mi",
-			Args:          []world.Arg{"-logtostderr", "-v=2"},
-			Port:          8080,
+			Namespace: "password",
+			Containers: []deployer.DeploymentDeployerContainer{
+				{
+					Name:          "password",
+					Image:         image,
+					CpuLimit:      "100",
+					MemoryLimit:   "50Mi",
+					CpuRequest:    "10m",
+					MemoryRequest: "10Mi",
+					Args:          []world.Arg{"-logtostderr", "-v=2"},
+					Ports:         ports,
+				},
+			},
 		},
 		&deployer.ServiceDeployer{
 			Context:   p.Context,
 			Namespace: "password",
-			Port:      8080,
+			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
 			Context:   p.Context,

@@ -9,33 +9,27 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ServiceDeployer", func() {
-	It("service", func() {
-		serviceDeployer := &ServiceDeployer{
-			Ports: []world.Port{
-				{
-					Name: "root",
-					Port: 1337,
-				},
-			},
+var _ = Describe("SecretDeployer", func() {
+	It("secret", func() {
+		secretDeployer := &SecretDeployer{
 			Namespace: "banana",
+			Secrets: world.Secrets{
+				"secret": "hello world",
+			},
 		}
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(serviceDeployer.service())
+		err := yaml.NewEncoder(b).Encode(secretDeployer.secret())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: v1
-kind: Service
+kind: Secret
 metadata:
   namespace: banana
   name: banana
   labels:
     app: banana
-spec:
-  ports:
-  - name: root
-    port: 1337
-  selector:
-    app: banana
+type: Opaque
+data:
+  secret: aGVsbG8gd29ybGQ=
 `))
 	})
 })
