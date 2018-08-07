@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+//go:generate counterfeiter -o mocks/configuration.go --fake-name Configuration . Configuration
 type Configuration interface {
 	Childs() []Configuration
 	Applier() Applier
@@ -47,6 +48,12 @@ func (s SourceDirectory) String() string {
 type GitRepo string
 
 func (g GitRepo) String() string {
+	return string(g)
+}
+
+type GitBranch string
+
+func (g GitBranch) String() string {
 	return string(g)
 }
 
@@ -206,3 +213,5 @@ type ContainerName string
 func (c ContainerName) String() string {
 	return string(c)
 }
+
+type BuildArgs map[string]string

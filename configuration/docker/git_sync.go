@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/configuration"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/pkg/errors"
 )
 
@@ -11,16 +13,24 @@ type GitSync struct {
 	Image world.Image
 }
 
-func (n *GitSync) Childs() []world.Configuration {
-	return nil
+func (m *GitSync) Childs() []world.Configuration {
+	return []world.Configuration{
+		configuration.New().WithApplier(&docker.Builder{
+			GitRepo:   "https://github.com/bborbe/git-sync.git",
+			Image:     m.Image,
+			GitBranch: world.GitBranch(m.Image.Tag),
+		}),
+	}
 }
 
-func (n *GitSync) Applier() world.Applier {
-	return nil
+func (m *GitSync) Applier() world.Applier {
+	return &docker.Uploader{
+		Image: m.Image,
+	}
 }
 
-func (n *GitSync) Validate(ctx context.Context) error {
-	if err := n.Image.Validate(ctx); err != nil {
+func (m *GitSync) Validate(ctx context.Context) error {
+	if err := m.Image.Validate(ctx); err != nil {
 		return errors.Wrap(err, "image missing")
 	}
 	return nil

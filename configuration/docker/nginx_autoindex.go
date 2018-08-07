@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/pkg/errors"
 )
@@ -14,14 +15,14 @@ type NginxAutoindex struct {
 
 func (n *NginxAutoindex) Childs() []world.Configuration {
 	return []world.Configuration{
-		&docker.CloneBuilder{
+		configuration.New().WithApplier(&docker.CloneBuilder{
 			SourceImage: world.Image{
 				Registry:   "docker.io",
 				Repository: "jrelva/nginx-autoindex",
 				Tag:        "latest",
 			},
 			TargetImage: n.Image,
-		},
+		}),
 	}
 }
 

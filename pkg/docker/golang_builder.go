@@ -20,14 +20,6 @@ type GolangBuilder struct {
 	Package         world.Package
 }
 
-func (g *GolangBuilder) Childs() []world.Configuration {
-	return nil
-}
-
-func (g *GolangBuilder) Applier() world.Applier {
-	return g
-}
-
 func (g *GolangBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("building golang docker image %s ...", g.Name)
 	tmpl, err := template.New("template").Parse(`

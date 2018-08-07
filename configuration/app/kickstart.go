@@ -28,7 +28,7 @@ func (d *Kickstart) Childs() []world.Configuration {
 	gitSyncImage := world.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/git-sync",
-		Tag:        "1.2.1",
+		Tag:        "1.3.0",
 	}
 	ports := []world.Port{
 		{

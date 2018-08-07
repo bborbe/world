@@ -45,6 +45,13 @@ func (c *Configuration) Childs() []world.Configuration {
 				"password.benjamin-borbe.de",
 			},
 		},
+		&app.Now{
+			Context: "netcup",
+			Tag:     "1.0.1",
+			Domains: []world.Domain{
+				"now.benjamin-borbe.de",
+			},
+		},
 		&app.HelloWorld{
 			Context: "netcup",
 			Tag:     "1.0.1",
@@ -72,6 +79,13 @@ func (c *Configuration) Childs() []world.Configuration {
 		//	Context:   "netcup",
 		//	Tag:       "1.1.0",
 		//	NfsServer: "185.170.112.48",
+		//},
+		//&app.Confluence{
+		//	Context: "netcup",
+		//	Domains: []world.Domain{
+		//		"confluence.benjamin-borbe.de",
+		//	},
+		//	Tag: "6.9.3",
 		//},
 	}
 }

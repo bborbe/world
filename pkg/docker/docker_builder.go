@@ -6,22 +6,18 @@ import (
 	"os"
 	"os/exec"
 
+	"fmt"
+
 	"github.com/bborbe/world"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Builder struct {
-	Image   world.Image
-	GitRepo world.GitRepo
-}
-
-func (b *Builder) Childs() []world.Configuration {
-	return nil
-}
-
-func (b *Builder) Applier() world.Applier {
-	return b
+	Image     world.Image
+	GitRepo   world.GitRepo
+	GitBranch world.GitBranch
+	BuildArgs world.BuildArgs
 }
 
 func (b *Builder) Apply(ctx context.Context) error {
@@ -36,7 +32,7 @@ func (b *Builder) Apply(ctx context.Context) error {
 
 	{
 		glog.V(4).Infof("git clone %s ...", b.GitRepo.String())
-		cmd := exec.CommandContext(ctx, "git", "clone", "--branch", b.Image.Tag.String(), "--single-branch", "--depth", "1", b.GitRepo.String(), dir)
+		cmd := exec.CommandContext(ctx, "git", "clone", "--branch", b.GitBranch.String(), "--single-branch", "--depth", "1", b.GitRepo.String(), dir)
 		cmd.Dir = dir
 		if glog.V(4) {
 			cmd.Stdout = os.Stdout
@@ -48,8 +44,15 @@ func (b *Builder) Apply(ctx context.Context) error {
 	}
 
 	{
+		var args []string
+		args = append(args, "build")
+		args = append(args, "--no-cache", "--rm=true")
+		for k, v := range b.BuildArgs {
+			args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, v))
+		}
+		args = append(args, "-t", b.Image.String(), ".")
 		glog.V(4).Infof("docker build %s ...", b.Image.String())
-		cmd := exec.CommandContext(ctx, "docker", "build", "--no-cache", "--rm=true", "-t", b.Image.String(), ".")
+		cmd := exec.CommandContext(ctx, "docker", args...)
 		cmd.Dir = dir
 		if glog.V(4) {
 			cmd.Stdout = os.Stdout
@@ -74,6 +77,9 @@ func (b *Builder) Validate(ctx context.Context) error {
 	}
 	if b.GitRepo == "" {
 		return errors.New("git repo missing")
+	}
+	if b.GitBranch == "" {
+		return errors.New("git branch missing")
 	}
 	return nil
 }

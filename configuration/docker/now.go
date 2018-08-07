@@ -9,29 +9,29 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Password struct {
+type Now struct {
 	Image world.Image
 }
 
-func (p *Password) Childs() []world.Configuration {
+func (p *Now) Childs() []world.Configuration {
 	return []world.Configuration{
 		configuration.New().WithApplier(&docker.GolangBuilder{
-			Name:            "password",
-			GitRepo:         "https://github.com/bborbe/password.git",
-			SourceDirectory: "github.com/bborbe/password",
-			Package:         "github.com/bborbe/password/cmd/password-server",
+			Name:            "now",
+			GitRepo:         "https://github.com/bborbe/now.git",
+			SourceDirectory: "github.com/bborbe/now",
+			Package:         "github.com/bborbe/now/cmd/now-server",
 			Image:           p.Image,
 		}),
 	}
 }
 
-func (p *Password) Applier() world.Applier {
+func (p *Now) Applier() world.Applier {
 	return &docker.Uploader{
 		Image: p.Image,
 	}
 }
 
-func (p *Password) Validate(ctx context.Context) error {
+func (p *Now) Validate(ctx context.Context) error {
 	if err := p.Image.Validate(ctx); err != nil {
 		return errors.Wrap(err, "image missing")
 	}
