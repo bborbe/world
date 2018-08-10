@@ -18,7 +18,7 @@ type NamespaceDeployer struct {
 func (n *NamespaceDeployer) Applier() world.Applier {
 	return &k8s.Deployer{
 		Context: n.Context,
-		Data:    n.namespace(),
+		Data:    n,
 	}
 }
 
@@ -34,6 +34,10 @@ func (n *NamespaceDeployer) Validate(ctx context.Context) error {
 		return fmt.Errorf("Namespace missing")
 	}
 	return nil
+}
+
+func (n *NamespaceDeployer) Data() (interface{}, error) {
+	return n.namespace(), nil
 }
 
 func (n *NamespaceDeployer) namespace() k8s.Namespace {

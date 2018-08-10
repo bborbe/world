@@ -19,7 +19,7 @@ type IngressDeployer struct {
 func (i *IngressDeployer) Applier() world.Applier {
 	return &k8s.Deployer{
 		Context: i.Context,
-		Data:    i.ingress(),
+		Data:    i,
 	}
 }
 
@@ -38,6 +38,10 @@ func (i *IngressDeployer) Validate(ctx context.Context) error {
 		return fmt.Errorf("Domains missing")
 	}
 	return nil
+}
+
+func (i *IngressDeployer) Data() (interface{}, error) {
+	return i.ingress(), nil
 }
 
 func (i *IngressDeployer) ingress() k8s.Ingress {

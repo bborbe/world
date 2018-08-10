@@ -3,6 +3,8 @@ package world
 import (
 	"context"
 
+	"github.com/bborbe/teamvault-utils/connector"
+	"github.com/bborbe/teamvault-utils/model"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -121,7 +123,32 @@ type Port struct {
 
 type Arg string
 
-type Secrets map[string]string
+type SecretValue interface {
+	Value() ([]byte, error)
+}
+
+type SecretFromTeamvault struct {
+	TeamvaultConnector connector.Connector
+	TeamvaultKey       model.TeamvaultKey
+}
+
+func (s *SecretFromTeamvault) Value() ([]byte, error) {
+	teamvaultPassword, err := s.TeamvaultConnector.Password(s.TeamvaultKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get teamvault password failed")
+	}
+	return []byte(teamvaultPassword), nil
+}
+
+type SecretValueStatic struct {
+	Content []byte
+}
+
+func (s *SecretValueStatic) Value() ([]byte, error) {
+	return s.Content, nil
+}
+
+type Secrets map[string]SecretValue
 
 type CpuLimit string
 

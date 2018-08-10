@@ -9,12 +9,37 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/bborbe/http"
+  packages = [
+    "client_builder",
+    "header",
+    "rest"
+  ]
+  revision = "d0d8e291febd74ef570713bd2492380e953afdc1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/bborbe/io"
+  packages = ["util"]
+  revision = "c3edaab04ccf42ba167bebab1f91c1168b80447c"
+
+[[projects]]
+  branch = "master"
   name = "github.com/bborbe/run"
   packages = [
     ".",
     "errors"
   ]
   revision = "5531e6c5367b287ac0c3d2dda55cb1af7f8172f5"
+
+[[projects]]
+  name = "github.com/bborbe/teamvault-utils"
+  packages = [
+    "connector",
+    "model"
+  ]
+  revision = "e251734c5970a6fdf182dca865afc89944f26943"
+  version = "2.1.0"
 
 [[projects]]
   name = "github.com/go-yaml/yaml"
@@ -152,6 +177,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2407764c43c8864709eb18c14068aabbe0c2d135de3ed442a88e9053c21d05f2"
+  inputs-digest = "4156253a25a532cbeb5a0940396975c328599a2e5725578b189c9fec01ead3ec"
   solver-name = "gps-cdcl"
   solver-version = 1

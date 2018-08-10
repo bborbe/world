@@ -19,7 +19,7 @@ type ServiceDeployer struct {
 func (s *ServiceDeployer) Applier() world.Applier {
 	return &k8s.Deployer{
 		Context: s.Context,
-		Data:    s.service(),
+		Data:    s,
 	}
 }
 
@@ -40,6 +40,10 @@ func (s *ServiceDeployer) Validate(ctx context.Context) error {
 	return nil
 }
 
+func (s *ServiceDeployer) Data() (interface{}, error) {
+	return s.service(), nil
+}
+
 func (s *ServiceDeployer) service() k8s.Service {
 	service := k8s.Service{
 		ApiVersion: "v1",
@@ -52,7 +56,6 @@ func (s *ServiceDeployer) service() k8s.Service {
 			},
 		},
 		Spec: k8s.ServiceSpec{
-
 			Selector: k8s.ServiceSelector{
 				"app": s.Namespace.String(),
 			},

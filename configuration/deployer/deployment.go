@@ -33,7 +33,7 @@ type DeploymentDeployerContainer struct {
 func (d *DeploymentDeployer) Applier() world.Applier {
 	return &k8s.Deployer{
 		Context: d.Context,
-		Data:    d.deployment(),
+		Data:    d,
 	}
 }
 
@@ -69,6 +69,10 @@ func (d *DeploymentDeployer) Validate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (d *DeploymentDeployer) Data() (interface{}, error) {
+	return d.deployment(), nil
 }
 
 func (d *DeploymentDeployer) deployment() k8s.Deployment {

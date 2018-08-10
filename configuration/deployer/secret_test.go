@@ -14,11 +14,15 @@ var _ = Describe("SecretDeployer", func() {
 		secretDeployer := &SecretDeployer{
 			Namespace: "banana",
 			Secrets: world.Secrets{
-				"secret": "hello world",
+				"secret": &world.SecretValueStatic{
+					Content: []byte("hello world"),
+				},
 			},
 		}
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(secretDeployer.secret())
+		secret, err := secretDeployer.secret()
+		Expect(err).NotTo(HaveOccurred())
+		err = yaml.NewEncoder(b).Encode(secret)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: v1
 kind: Secret

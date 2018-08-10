@@ -3,10 +3,10 @@ package deployer
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/pkg/errors"
 )
 
 type SecretDeployer struct {
@@ -19,7 +19,7 @@ type SecretDeployer struct {
 func (i *SecretDeployer) Applier() world.Applier {
 	return &k8s.Deployer{
 		Context: i.Context,
-		Data:    i.secret(),
+		Data:    i,
 	}
 }
 
@@ -29,16 +29,20 @@ func (i *SecretDeployer) Childs() []world.Configuration {
 
 func (i *SecretDeployer) Validate(ctx context.Context) error {
 	if i.Context == "" {
-		return fmt.Errorf("Context missing")
+		return errors.New("Context missing")
 	}
 	if i.Namespace == "" {
-		return fmt.Errorf("Namespace missing")
+		return errors.New("Namespace missing")
 	}
 	return nil
 }
 
-func (i *SecretDeployer) secret() k8s.Secret {
-	secret := k8s.Secret{
+func (i *SecretDeployer) Data() (interface{}, error) {
+	return i.secret()
+}
+
+func (i *SecretDeployer) secret() (*k8s.Secret, error) {
+	secret := &k8s.Secret{
 		ApiVersion: "v1",
 		Kind:       "Secret",
 		Metadata: k8s.Metadata{
@@ -52,7 +56,11 @@ func (i *SecretDeployer) secret() k8s.Secret {
 		Data: k8s.SecretData{},
 	}
 	for k, v := range i.Secrets {
-		secret.Data[k] = base64.StdEncoding.EncodeToString([]byte(v))
+		value, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		secret.Data[k] = base64.StdEncoding.EncodeToString(value)
 	}
-	return secret
+	return secret, nil
 }

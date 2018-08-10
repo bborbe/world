@@ -28,8 +28,9 @@ var _ = Describe("DeploymentDeployer", func() {
 					},
 					Ports: []world.Port{
 						{
-							Name: "root",
-							Port: 1337,
+							Name:     "root",
+							Port:     1337,
+							Protocol: "TCP",
 						},
 					},
 					Args: []world.Arg{"-v=4"},
@@ -127,6 +128,7 @@ spec:
         nfs:
           path: /data/download
           server: 127.0.0.1
+      hostNetwork: false
 `))
 	})
 })

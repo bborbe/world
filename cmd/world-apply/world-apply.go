@@ -6,8 +6,13 @@ import (
 	"os"
 	"runtime"
 
+	"time"
+
 	flag "github.com/bborbe/flagenv"
+	"github.com/bborbe/http/client_builder"
 	"github.com/bborbe/run"
+	"github.com/bborbe/teamvault-utils/connector"
+	"github.com/bborbe/teamvault-utils/model"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration"
 	"github.com/golang/glog"
@@ -24,12 +29,29 @@ func main() {
 
 	glog.V(1).Infof("apply all ...")
 
-	if err := validate(ctx, &configuration.Configuration{}); err != nil {
+	teamvaultConfigPath := model.TeamvaultConfigPath("~/.teamvault.json")
+	teamvaultConfigPath, err := teamvaultConfigPath.NormalizePath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "normalize teamvault config path failed: %v", err)
+		os.Exit(1)
+	}
+	teamvaultConfig, err := teamvaultConfigPath.Parse()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parse teamvault config failed: %v", err)
+		os.Exit(1)
+	}
+
+	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
+	conf := &configuration.Configuration{
+		TeamvaultConnector: connector.New(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+	}
+
+	if err := validate(ctx, conf); err != nil {
 		fmt.Fprintf(os.Stderr, "validate failed: %v", err)
 		os.Exit(1)
 	}
 
-	if err := apply(ctx, &configuration.Configuration{}); err != nil {
+	if err := apply(ctx, conf); err != nil {
 		fmt.Fprintf(os.Stderr, "apply failed: %v", err)
 		os.Exit(1)
 	}

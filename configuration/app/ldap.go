@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
@@ -11,9 +12,10 @@ import (
 )
 
 type Ldap struct {
-	Context   world.Context
-	NfsServer world.MountNfsServer
-	Tag       world.Tag
+	Context            world.Context
+	NfsServer          world.MountNfsServer
+	Tag                world.Tag
+	TeamvaultConnector connector.Connector
 }
 
 func (d *Ldap) Applier() world.Applier {
@@ -47,7 +49,10 @@ func (d *Ldap) Childs() []world.Configuration {
 			Context:   d.Context,
 			Namespace: "ldap",
 			Secrets: world.Secrets{
-				"secret": "XXX",
+				"secret": &world.SecretFromTeamvault{
+					TeamvaultConnector: d.TeamvaultConnector,
+					TeamvaultKey:       "MOPMLG",
+				},
 			},
 		},
 		&deployer.DeploymentDeployer{
@@ -116,6 +121,9 @@ func (d *Ldap) Validate(ctx context.Context) error {
 	}
 	if d.NfsServer == "" {
 		return fmt.Errorf("nfs-server missing")
+	}
+	if d.TeamvaultConnector == nil {
+		return fmt.Errorf("teamvault-connector missing")
 	}
 	return nil
 }

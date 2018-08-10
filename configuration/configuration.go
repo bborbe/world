@@ -3,11 +3,13 @@ package configuration
 import (
 	"context"
 
+	"github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
 )
 
 type Configuration struct {
+	TeamvaultConnector connector.Connector
 }
 
 func (c *Configuration) Applier() world.Applier {
@@ -20,6 +22,15 @@ func (c *Configuration) Validate(ctx context.Context) error {
 
 func (c *Configuration) Childs() []world.Configuration {
 	return []world.Configuration{
+		&app.Webdav{
+			Context: "netcup",
+			Domains: []world.Domain{
+				"webdav.benjamin-borbe.de",
+			},
+			NfsServer:          "185.170.112.48",
+			Tag:                "1.0.1",
+			TeamvaultConnector: c.TeamvaultConnector,
+		},
 		&app.Bind{
 			Context:   "netcup",
 			Tag:       "1.0.1",
@@ -81,9 +92,10 @@ func (c *Configuration) Childs() []world.Configuration {
 			},
 		},
 		//&app.Ldap{
-		//	Context:   "netcup",
-		//	Tag:       "1.1.0",
-		//	NfsServer: "185.170.112.48",
+		//	Context:            "netcup",
+		//	Tag:                "1.1.0",
+		//	NfsServer:          "185.170.112.48",
+		//	TeamvaultConnector: c.TeamvaultConnector,
 		//},
 		//&app.Confluence{
 		//	Context: "netcup",
