@@ -14,6 +14,7 @@ type DeploymentDeployer struct {
 	Namespace    world.Namespace
 	Containers   []DeploymentDeployerContainer
 	Volumes      []world.Volume
+	HostNetwork  world.HostNetwork
 }
 
 type DeploymentDeployerContainer struct {
@@ -118,8 +119,9 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 					},
 				},
 				Spec: k8s.PodSpec{
-					Containers: d.containers(),
-					Volumes:    volumes,
+					Containers:  d.containers(),
+					Volumes:     volumes,
+					HostNetwork: k8s.PodHostNetwork(d.HostNetwork),
 				},
 			},
 		},
@@ -160,10 +162,10 @@ func (d *DeploymentDeployer) container(container DeploymentDeployerContainer) k8
 	}
 	for _, port := range container.Ports {
 		podContainer.Ports = append(podContainer.Ports, k8s.PodPort{
+			Name:          k8s.PodPortName(port.Name),
 			ContainerPort: k8s.PodPortContainerPort(port.Port),
 			HostPort:      k8s.PodPortHostPort(port.HostPort),
-			Name:          k8s.PodPortName(port.Name),
-			Protocol:      "TCP",
+			Protocol:      k8s.PodPortProtocol(port.Protocol),
 		})
 	}
 	for _, arg := range container.Args {

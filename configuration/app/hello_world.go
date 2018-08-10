@@ -27,8 +27,9 @@ func (h *HelloWorld) Childs() []world.Configuration {
 	}
 	ports := []world.Port{
 		{
-			Port: 80,
-			Name: "web",
+			Port:     80,
+			Name:     "web",
+			Protocol: "TCP",
 		},
 	}
 	return []world.Configuration{

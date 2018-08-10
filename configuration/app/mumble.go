@@ -24,6 +24,7 @@ func (m *Mumble) Childs() []world.Configuration {
 		{
 			Port:     64738,
 			HostPort: 64738,
+			Protocol: "TCP",
 		},
 	}
 	return []world.Configuration{

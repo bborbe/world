@@ -75,6 +75,8 @@ func (n Namespace) String() string {
 	return string(n)
 }
 
+type HostNetwork bool
+
 type Domain string
 
 func (d Domain) String() string {
@@ -114,6 +116,7 @@ type Port struct {
 	Name     string
 	Port     int
 	HostPort int
+	Protocol string
 }
 
 type Arg string

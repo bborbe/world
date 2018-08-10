@@ -27,8 +27,9 @@ func (i *Ip) Childs() []world.Configuration {
 	}
 	ports := []world.Port{
 		{
-			Port: 8080,
-			Name: "web",
+			Port:     8080,
+			Name:     "web",
+			Protocol: "TCP",
 		},
 	}
 	return []world.Configuration{

@@ -25,7 +25,8 @@ func (m *Confluence) Childs() []world.Configuration {
 	}
 	ports := []world.Port{
 		{
-			Port: 8080,
+			Port:     8080,
+			Protocol: "TCP",
 		},
 	}
 	return []world.Configuration{

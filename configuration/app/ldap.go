@@ -28,12 +28,14 @@ func (d *Ldap) Childs() []world.Configuration {
 	}
 	ports := []world.Port{
 		{
-			Port: 389,
-			Name: "ldap",
+			Port:     389,
+			Name:     "ldap",
+			Protocol: "TCP",
 		},
 		{
-			Port: 636,
-			Name: "ldaps",
+			Port:     636,
+			Name:     "ldaps",
+			Protocol: "TCP",
 		},
 	}
 	return []world.Configuration{

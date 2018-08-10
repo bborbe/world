@@ -20,6 +20,11 @@ func (c *Configuration) Validate(ctx context.Context) error {
 
 func (c *Configuration) Childs() []world.Configuration {
 	return []world.Configuration{
+		&app.Bind{
+			Context:   "netcup",
+			Tag:       "1.0.1",
+			NfsServer: "185.170.112.48",
+		},
 		&app.Download{
 			Context: "netcup",
 			Domains: []world.Domain{
