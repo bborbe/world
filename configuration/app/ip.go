@@ -5,12 +5,14 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
+	"github.com/golang/glog"
 )
 
 type Ip struct {
-	Context world.Context
+	Cluster cluster.Cluster
 	Domains []world.Domain
 	Tag     world.Tag
 }
@@ -34,11 +36,11 @@ func (i *Ip) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   i.Context,
+			Context:   i.Cluster.Context,
 			Namespace: "ip",
 		},
 		&deployer.DeploymentDeployer{
-			Context: i.Context,
+			Context: i.Cluster.Context,
 			Requirements: []world.Configuration{
 				&docker.Ip{
 					Image: image,
@@ -49,7 +51,7 @@ func (i *Ip) Childs() []world.Configuration {
 				{
 					Name:          "ip",
 					Image:         image,
-					CpuLimit:      "100",
+					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
@@ -59,12 +61,13 @@ func (i *Ip) Childs() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   i.Context,
+			Context:   i.Cluster.Context,
 			Namespace: "ip",
+			Name:      "ip",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
-			Context:   i.Context,
+			Context:   i.Cluster.Context,
 			Namespace: "ip",
 			Domains:   i.Domains,
 		},
@@ -72,8 +75,9 @@ func (i *Ip) Childs() []world.Configuration {
 }
 
 func (i *Ip) Validate(ctx context.Context) error {
-	if i.Context == "" {
-		return fmt.Errorf("context missing")
+	glog.V(4).Infof("validate ip app ...")
+	if err := i.Cluster.Validate(ctx); err != nil {
+		return err
 	}
 	if i.Tag == "" {
 		return fmt.Errorf("tag missing")

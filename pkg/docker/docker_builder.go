@@ -72,6 +72,7 @@ func (b *Builder) Apply(ctx context.Context) error {
 }
 
 func (b *Builder) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate docker builder ...")
 	if err := b.Image.Validate(ctx); err != nil {
 		return err
 	}

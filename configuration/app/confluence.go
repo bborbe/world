@@ -5,23 +5,25 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
+	"github.com/golang/glog"
 )
 
 type Confluence struct {
-	Context world.Context
+	Cluster cluster.Cluster
 	Domains []world.Domain
 	Tag     world.Tag
 }
 
-func (m *Confluence) Childs() []world.Configuration {
+func (c *Confluence) Childs() []world.Configuration {
 	var buildVersion world.GitBranch = "1.3.0"
 
 	image := world.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/atlassian-confluence",
-		Tag:        world.Tag(fmt.Sprintf("%s-%s", m.Tag, buildVersion)),
+		Tag:        world.Tag(fmt.Sprintf("%s-%s", c.Tag, buildVersion)),
 	}
 	ports := []world.Port{
 		{
@@ -31,14 +33,14 @@ func (m *Confluence) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   m.Context,
+			Context:   c.Cluster.Context,
 			Namespace: "confluence",
 		},
 		&deployer.DeploymentDeployer{
-			Context: m.Context,
+			Context: c.Cluster.Context,
 			Requirements: []world.Configuration{
 				&docker.Confluence{
-					VendorVersion: m.Tag,
+					VendorVersion: c.Tag,
 					GitBranch:     buildVersion,
 					Image:         image,
 				},
@@ -57,20 +59,22 @@ func (m *Confluence) Childs() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   m.Context,
+			Context:   c.Cluster.Context,
 			Namespace: "confluence",
+			Name:      "confluence",
 			Ports:     ports,
 		},
 	}
 }
 
-func (m *Confluence) Applier() world.Applier {
+func (c *Confluence) Applier() world.Applier {
 	return nil
 }
 
-func (m *Confluence) Validate(ctx context.Context) error {
-	if m.Context == "" {
-		return fmt.Errorf("context missing")
+func (c *Confluence) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate confluence app ...")
+	if err := c.Cluster.Validate(ctx); err != nil {
+		return err
 	}
 	return nil
 }

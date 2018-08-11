@@ -19,6 +19,7 @@ var _ = Describe("ServiceDeployer", func() {
 				},
 			},
 			Namespace: "banana",
+			Name:      "banana",
 		}
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(serviceDeployer.service())

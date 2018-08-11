@@ -2,10 +2,12 @@ package configuration
 
 import (
 	"context"
-
 	"github.com/bborbe/teamvault-utils/connector"
+	"github.com/bborbe/teamvault-utils/model"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
+	"github.com/bborbe/world/configuration/cluster"
+	"github.com/pkg/errors"
 )
 
 type Configuration struct {
@@ -17,59 +19,113 @@ func (c *Configuration) Applier() world.Applier {
 }
 
 func (c *Configuration) Validate(ctx context.Context) error {
+	if c.TeamvaultConnector == nil {
+		return errors.New("teamvault-connector missing")
+	}
 	return nil
 }
 
 func (c *Configuration) Childs() []world.Configuration {
+	netcup := cluster.Cluster{
+		Context:   "netcup",
+		NfsServer: "185.170.112.48",
+	}
+	var gitSyncVersion world.Tag = "1.3.0"
 	return []world.Configuration{
+		&app.Backup{
+			Cluster: netcup,
+		},
+		&app.Dns{
+			Cluster: netcup,
+		},
+		&app.Jenkins{
+			Cluster: netcup,
+		},
+		&app.Jira{
+			Cluster: netcup,
+		},
+		&app.Maven{
+			Cluster: netcup,
+			Domains: []world.Domain{
+				"maven.benjamin-borbe.de",
+			},
+			MavenRepoVersion: "1.0.0",
+		},
+		&app.Monitoring{
+			Cluster: netcup,
+		},
+		&app.Portfolio{
+			Cluster: netcup,
+			Domains: []world.Domain{
+				"benjamin-borbe.de",
+				"www.benjamin-borbe.de",
+				"benjaminborbe.de",
+				"www.benjaminborbe.de",
+			},
+			OverlayServerVersion: "1.0.0",
+			GitSyncVersion:       gitSyncVersion,
+			GitSyncPassword:      c.teamvaultPassword("YLb4wV"),
+		},
+		&app.Poste{
+			Cluster: netcup,
+		},
+		&app.Prometheus{
+			Cluster: netcup,
+		},
+		&app.Proxy{
+			Cluster: netcup,
+		},
+		&app.Teamvault{
+			Cluster: netcup,
+		},
+		&app.Traefik{
+			Cluster: netcup,
+		},
 		&app.Webdav{
-			Context: "netcup",
+			Cluster: netcup,
 			Domains: []world.Domain{
 				"webdav.benjamin-borbe.de",
 			},
-			NfsServer:          "185.170.112.48",
-			Tag:                "1.0.1",
-			TeamvaultConnector: c.TeamvaultConnector,
+			Tag:      "1.0.1",
+			Password: c.teamvaultPassword("VOzvAO"),
 		},
 		&app.Bind{
-			Context:   "netcup",
-			Tag:       "1.0.1",
-			NfsServer: "185.170.112.48",
+			Cluster: netcup,
+			Tag:     "1.0.1",
 		},
 		&app.Download{
-			Context: "netcup",
+			Cluster: netcup,
 			Domains: []world.Domain{
 				"dl.benjamin-borbe.de",
 			},
-			NfsServer: "185.170.112.48",
 		},
 		&app.Mumble{
-			Context: "netcup",
+			Cluster: netcup,
 			Tag:     "1.0.2",
 		},
 		&app.Ip{
-			Context: "netcup",
+			Cluster: netcup,
 			Tag:     "1.1.0",
 			Domains: []world.Domain{
 				"ip.benjamin-borbe.de",
 			},
 		},
 		&app.Password{
-			Context: "netcup",
+			Cluster: netcup,
 			Tag:     "1.1.0",
 			Domains: []world.Domain{
 				"password.benjamin-borbe.de",
 			},
 		},
 		&app.Now{
-			Context: "netcup",
+			Cluster: netcup,
 			Tag:     "1.0.1",
 			Domains: []world.Domain{
 				"now.benjamin-borbe.de",
 			},
 		},
 		&app.HelloWorld{
-			Context: "netcup",
+			Cluster: netcup,
 			Tag:     "1.0.1",
 			Domains: []world.Domain{
 				"rocketsource.de",
@@ -79,30 +135,38 @@ func (c *Configuration) Childs() []world.Configuration {
 			},
 		},
 		&app.Slideshow{
-			Context: "netcup",
+			Cluster: netcup,
 			Domains: []world.Domain{
 				"slideshow.benjamin-borbe.de",
 			},
+			GitSyncVersion: gitSyncVersion,
 		},
 		&app.Kickstart{
-			Context: "netcup",
+			Cluster: netcup,
 			Domains: []world.Domain{
 				"kickstart.benjamin-borbe.de",
 				"ks.benjamin-borbe.de",
 			},
+			GitSyncVersion: gitSyncVersion,
 		},
 		//&app.Ldap{
-		//	Context:            "netcup",
+		//Cluster: netcup,
 		//	Tag:                "1.1.0",
-		//	NfsServer:          "185.170.112.48",
 		//	TeamvaultConnector: c.TeamvaultConnector,
 		//},
 		//&app.Confluence{
-		//	Context: "netcup",
+		//Cluster: netcup,
 		//	Domains: []world.Domain{
 		//		"confluence.benjamin-borbe.de",
 		//	},
 		//	Tag: "6.9.3",
 		//},
+	}
+}
+
+func (c *Configuration) teamvaultPassword(key model.TeamvaultKey) world.SecretValue {
+	return &world.SecretFromTeamvault{
+		TeamvaultConnector: c.TeamvaultConnector,
+		TeamvaultKey:       key,
 	}
 }

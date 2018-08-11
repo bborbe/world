@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/pkg/errors"
 )
@@ -15,7 +14,7 @@ type Password struct {
 
 func (p *Password) Childs() []world.Configuration {
 	return []world.Configuration{
-		configuration.New().WithApplier(&docker.GolangBuilder{
+		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
 			Name:            "password",
 			GitRepo:         "https://github.com/bborbe/password.git",
 			SourceDirectory: "github.com/bborbe/password",

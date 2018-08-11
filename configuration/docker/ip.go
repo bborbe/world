@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/pkg/errors"
 )
@@ -15,7 +14,7 @@ type Ip struct {
 
 func (i *Ip) Childs() []world.Configuration {
 	return []world.Configuration{
-		configuration.New().WithApplier(&docker.GolangBuilder{
+		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
 			Name:            "ip",
 			GitRepo:         "https://github.com/bborbe/ip.git",
 			SourceDirectory: "github.com/bborbe/ip",

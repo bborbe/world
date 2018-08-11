@@ -102,14 +102,15 @@ func (i Image) String() string {
 }
 
 func (b *Image) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate image ...")
 	if b.Tag == "" {
-		return errors.New("tag missing")
+		return errors.New("Tag missing")
 	}
 	if b.Registry == "" {
-		return errors.New("tag missing")
+		return errors.New("Registry missing")
 	}
 	if b.Repository == "" {
-		return errors.New("tag missing")
+		return errors.New("Repository missing")
 	}
 	return nil
 }
@@ -125,6 +126,7 @@ type Arg string
 
 type SecretValue interface {
 	Value() ([]byte, error)
+	Validate(ctx context.Context) error
 }
 
 type SecretFromTeamvault struct {
@@ -140,12 +142,21 @@ func (s *SecretFromTeamvault) Value() ([]byte, error) {
 	return []byte(teamvaultPassword), nil
 }
 
+func (s *SecretFromTeamvault) Validate(ctx context.Context) error {
+	_, err := s.Value()
+	return errors.Wrapf(err, "get teamvault secret %s failed", s.TeamvaultKey.String())
+}
+
 type SecretValueStatic struct {
 	Content []byte
 }
 
 func (s *SecretValueStatic) Value() ([]byte, error) {
 	return s.Content, nil
+}
+
+func (s *SecretValueStatic) Validate(ctx context.Context) error {
+	return nil
 }
 
 type Secrets map[string]SecretValue

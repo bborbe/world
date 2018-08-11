@@ -46,6 +46,7 @@ func (u *Uploader) Satisfied(ctx context.Context) (bool, error) {
 }
 
 func (u *Uploader) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate docker uploader ...")
 	if err := u.Image.Validate(ctx); err != nil {
 		return err
 	}

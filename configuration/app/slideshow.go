@@ -5,21 +5,24 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/golang/glog"
 )
 
 type Slideshow struct {
-	Context world.Context
-	Domains []world.Domain
+	Cluster        cluster.Cluster
+	Domains        []world.Domain
+	GitSyncVersion world.Tag
 }
 
-func (d *Slideshow) Applier() world.Applier {
+func (s *Slideshow) Applier() world.Applier {
 	return nil
 }
 
-func (d *Slideshow) Childs() []world.Configuration {
+func (s *Slideshow) Childs() []world.Configuration {
 	nginxImage := world.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
@@ -28,7 +31,7 @@ func (d *Slideshow) Childs() []world.Configuration {
 	gitSyncImage := world.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/git-sync",
-		Tag:        "1.3.0",
+		Tag:        s.GitSyncVersion,
 	}
 	ports := []world.Port{
 		{
@@ -39,11 +42,11 @@ func (d *Slideshow) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   d.Context,
+			Context:   s.Cluster.Context,
 			Namespace: "slideshow",
 		},
 		&deployer.DeploymentDeployer{
-			Context: d.Context,
+			Context: s.Cluster.Context,
 			Requirements: []world.Configuration{
 				&docker.NginxAutoindex{
 					Image: nginxImage,
@@ -107,24 +110,29 @@ func (d *Slideshow) Childs() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   d.Context,
+			Context:   s.Cluster.Context,
 			Namespace: "slideshow",
+			Name:      "slideshow",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
-			Context:   d.Context,
+			Context:   s.Cluster.Context,
 			Namespace: "slideshow",
-			Domains:   d.Domains,
+			Domains:   s.Domains,
 		},
 	}
 }
 
-func (d *Slideshow) Validate(ctx context.Context) error {
-	if d.Context == "" {
-		return fmt.Errorf("context missing")
+func (s *Slideshow) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate slideshow app ...")
+	if err := s.Cluster.Validate(ctx); err != nil {
+		return err
 	}
-	if len(d.Domains) == 0 {
+	if len(s.Domains) == 0 {
 		return fmt.Errorf("domains empty")
+	}
+	if s.GitSyncVersion == "" {
+		return fmt.Errorf("git-sync-version missing")
 	}
 	return nil
 }

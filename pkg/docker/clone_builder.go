@@ -54,6 +54,7 @@ func (c *CloneBuilder) Apply(ctx context.Context) error {
 }
 
 func (c *CloneBuilder) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate docker cloner ...")
 	if err := c.SourceImage.Validate(ctx); err != nil {
 		return err
 	}

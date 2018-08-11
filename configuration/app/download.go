@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
+	"github.com/golang/glog"
 )
 
 type Download struct {
-	Context   world.Context
-	Domains   []world.Domain
-	NfsServer world.MountNfsServer
+	Cluster cluster.Cluster
+	Domains []world.Domain
 }
 
 func (d *Download) Applier() world.Applier {
@@ -34,11 +35,11 @@ func (d *Download) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   d.Context,
+			Context:   d.Cluster.Context,
 			Namespace: "download",
 		},
 		&deployer.DeploymentDeployer{
-			Context: d.Context,
+			Context: d.Cluster.Context,
 			Requirements: []world.Configuration{
 				&docker.NginxAutoindex{
 					Image: image,
@@ -67,17 +68,18 @@ func (d *Download) Childs() []world.Configuration {
 				{
 					Name:      "download",
 					NfsPath:   "/data/download",
-					NfsServer: d.NfsServer,
+					NfsServer: d.Cluster.NfsServer,
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   d.Context,
+			Context:   d.Cluster.Context,
 			Namespace: "download",
+			Name:      "download",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
-			Context:   d.Context,
+			Context:   d.Cluster.Context,
 			Namespace: "download",
 			Domains:   d.Domains,
 		},
@@ -85,11 +87,9 @@ func (d *Download) Childs() []world.Configuration {
 }
 
 func (d *Download) Validate(ctx context.Context) error {
-	if d.Context == "" {
-		return fmt.Errorf("context missing")
-	}
-	if d.NfsServer == "" {
-		return fmt.Errorf("nfs-server missing")
+	glog.V(4).Infof("validate download app ...")
+	if err := d.Cluster.Validate(ctx); err != nil {
+		return err
 	}
 	if len(d.Domains) == 0 {
 		return fmt.Errorf("domains empty")

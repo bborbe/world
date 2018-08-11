@@ -4,6 +4,10 @@ import "fmt"
 
 type Name string
 
+func (n Name) String() string {
+	return string(n)
+}
+
 type Metadata struct {
 	Namespace   NamespaceName `yaml:"namespace,omitempty"`
 	Name        Name          `yaml:"name,omitempty"`

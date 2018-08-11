@@ -24,7 +24,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	glog.V(1).Infof("apply all ...")
+	glog.V(1).Infof("validate all ...")
 
 	teamvaultConfigPath := model.TeamvaultConfigPath("~/.teamvault.json")
 	teamvaultConfigPath, err := teamvaultConfigPath.NormalizePath()
@@ -48,9 +48,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := world.Apply(ctx, conf); err != nil {
-		fmt.Fprintf(os.Stderr, "apply failed: %+v\n", err)
-		os.Exit(1)
-	}
-	glog.V(1).Infof("apply all finished")
+	glog.V(1).Infof("validate all finished")
 }

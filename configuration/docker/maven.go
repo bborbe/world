@@ -8,29 +8,29 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Now struct {
+type Maven struct {
 	Image world.Image
 }
 
-func (p *Now) Childs() []world.Configuration {
+func (p *Maven) Childs() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
-			Name:            "now",
-			GitRepo:         "https://github.com/bborbe/now.git",
-			SourceDirectory: "github.com/bborbe/now",
-			Package:         "github.com/bborbe/now/cmd/now-server",
+			Name:            "maven",
+			GitRepo:         "https://github.com/bborbe/maven.git",
+			SourceDirectory: "github.com/bborbe/maven",
+			Package:         "github.com/bborbe/maven",
 			Image:           p.Image,
 		}),
 	}
 }
 
-func (p *Now) Applier() world.Applier {
+func (p *Maven) Applier() world.Applier {
 	return &docker.Uploader{
 		Image: p.Image,
 	}
 }
 
-func (p *Now) Validate(ctx context.Context) error {
+func (p *Maven) Validate(ctx context.Context) error {
 	if err := p.Image.Validate(ctx); err != nil {
 		return errors.Wrap(err, "image missing")
 	}

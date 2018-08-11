@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world"
-	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/pkg/errors"
 )
@@ -15,7 +14,7 @@ type GitSync struct {
 
 func (m *GitSync) Childs() []world.Configuration {
 	return []world.Configuration{
-		configuration.New().WithApplier(&docker.Builder{
+		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/git-sync.git",
 			Image:     m.Image,
 			GitBranch: world.GitBranch(m.Image.Tag),

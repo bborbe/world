@@ -5,12 +5,14 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
+	"github.com/golang/glog"
 )
 
 type Mumble struct {
-	Context world.Context
+	Cluster cluster.Cluster
 	Tag     world.Tag
 }
 
@@ -29,11 +31,11 @@ func (m *Mumble) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   m.Context,
+			Context:   m.Cluster.Context,
 			Namespace: "mumble",
 		},
 		&deployer.DeploymentDeployer{
-			Context: m.Context,
+			Context: m.Cluster.Context,
 			Requirements: []world.Configuration{
 				&docker.Mumble{
 					Image: image,
@@ -53,8 +55,9 @@ func (m *Mumble) Childs() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   m.Context,
+			Context:   m.Cluster.Context,
 			Namespace: "mumble",
+			Name:      "mumble",
 			Ports:     ports,
 		},
 	}
@@ -65,8 +68,9 @@ func (m *Mumble) Applier() world.Applier {
 }
 
 func (m *Mumble) Validate(ctx context.Context) error {
-	if m.Context == "" {
-		return fmt.Errorf("context missing")
+	glog.V(4).Infof("validate mumble app ...")
+	if err := m.Cluster.Validate(ctx); err != nil {
+		return err
 	}
 	if m.Tag == "" {
 		return fmt.Errorf("tag missing")

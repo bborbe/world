@@ -5,22 +5,24 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/golang/glog"
 )
 
 type Now struct {
-	Context world.Context
+	Cluster cluster.Cluster
 	Domains []world.Domain
 	Tag     world.Tag
 }
 
-func (p *Now) Childs() []world.Configuration {
+func (n *Now) Childs() []world.Configuration {
 	image := world.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/now",
-		Tag:        p.Tag,
+		Tag:        n.Tag,
 	}
 	ports := []world.Port{
 		{
@@ -31,11 +33,11 @@ func (p *Now) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   p.Context,
+			Context:   n.Cluster.Context,
 			Namespace: "now",
 		},
 		&deployer.DeploymentDeployer{
-			Context: p.Context,
+			Context: n.Cluster.Context,
 			Requirements: []world.Configuration{
 				&docker.Now{
 					Image: image,
@@ -46,7 +48,7 @@ func (p *Now) Childs() []world.Configuration {
 				{
 					Name:          "now",
 					Image:         image,
-					CpuLimit:      "100",
+					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
@@ -62,30 +64,32 @@ func (p *Now) Childs() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   p.Context,
+			Context:   n.Cluster.Context,
 			Namespace: "now",
+			Name:      "now",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
-			Context:   p.Context,
+			Context:   n.Cluster.Context,
 			Namespace: "now",
-			Domains:   p.Domains,
+			Domains:   n.Domains,
 		},
 	}
 }
 
-func (p *Now) Applier() world.Applier {
+func (n *Now) Applier() world.Applier {
 	return nil
 }
 
-func (p *Now) Validate(ctx context.Context) error {
-	if p.Context == "" {
-		return fmt.Errorf("context missing")
+func (n *Now) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate now app ...")
+	if err := n.Cluster.Validate(ctx); err != nil {
+		return err
 	}
-	if p.Tag == "" {
+	if n.Tag == "" {
 		return fmt.Errorf("tag missing")
 	}
-	if len(p.Domains) == 0 {
+	if len(n.Domains) == 0 {
 		return fmt.Errorf("domains empty")
 	}
 	return nil

@@ -71,6 +71,7 @@ func (g *GolangBuilder) Satisfied(ctx context.Context) (bool, error) {
 }
 
 func (g *GolangBuilder) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate golang builder ...")
 	if err := g.Image.Validate(ctx); err != nil {
 		return err
 	}

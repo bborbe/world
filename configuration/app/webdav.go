@@ -4,19 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/golang/glog"
 )
 
 type Webdav struct {
-	Context            world.Context
-	Domains            []world.Domain
-	Tag                world.Tag
-	NfsServer          world.MountNfsServer
-	TeamvaultConnector connector.Connector
+	Cluster  cluster.Cluster
+	Domains  []world.Domain
+	Tag      world.Tag
+	Password world.SecretValue
 }
 
 func (w *Webdav) Childs() []world.Configuration {
@@ -34,21 +34,18 @@ func (w *Webdav) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   w.Context,
+			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 		},
 		&deployer.SecretDeployer{
-			Context:   w.Context,
+			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 			Secrets: world.Secrets{
-				"password": &world.SecretFromTeamvault{
-					TeamvaultConnector: w.TeamvaultConnector,
-					TeamvaultKey:       "VOzvAO",
-				},
+				"password": w.Password,
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context: w.Context,
+			Context: w.Cluster.Context,
 			Requirements: []world.Configuration{
 				&docker.Webdav{
 					Image: image,
@@ -91,17 +88,18 @@ func (w *Webdav) Childs() []world.Configuration {
 				{
 					Name:      "webdav",
 					NfsPath:   "/data/webdav",
-					NfsServer: w.NfsServer,
+					NfsServer: w.Cluster.NfsServer,
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   w.Context,
+			Context:   w.Cluster.Context,
 			Namespace: "webdav",
+			Name:      "webdav",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
-			Context:   w.Context,
+			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 			Domains:   w.Domains,
 		},
@@ -113,8 +111,9 @@ func (w *Webdav) Applier() world.Applier {
 }
 
 func (w *Webdav) Validate(ctx context.Context) error {
-	if w.Context == "" {
-		return fmt.Errorf("context missing")
+	glog.V(4).Infof("validate webdav app ...")
+	if err := w.Cluster.Validate(ctx); err != nil {
+		return err
 	}
 	if w.Tag == "" {
 		return fmt.Errorf("tag missing")
@@ -122,11 +121,11 @@ func (w *Webdav) Validate(ctx context.Context) error {
 	if len(w.Domains) == 0 {
 		return fmt.Errorf("domains empty")
 	}
-	if w.NfsServer == "" {
-		return fmt.Errorf("nfs-server missing")
+	if w.Password == nil {
+		return fmt.Errorf("password missing")
 	}
-	if w.TeamvaultConnector == nil {
-		return fmt.Errorf("teamvault-connector missing")
+	if err := w.Password.Validate(ctx); err != nil {
+		return err
 	}
 	return nil
 }

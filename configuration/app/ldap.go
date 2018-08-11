@@ -9,6 +9,7 @@ import (
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/golang/glog"
 )
 
 type Ldap struct {
@@ -110,12 +111,14 @@ func (d *Ldap) Childs() []world.Configuration {
 		&deployer.ServiceDeployer{
 			Context:   d.Context,
 			Namespace: "ldap",
+			Name:      "ldap",
 			Ports:     ports,
 		},
 	}
 }
 
 func (d *Ldap) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validate ldap app ...")
 	if d.Context == "" {
 		return fmt.Errorf("context missing")
 	}
