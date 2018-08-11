@@ -59,26 +59,6 @@ func (g GitBranch) String() string {
 	return string(g)
 }
 
-type Package string
-
-func (p Package) String() string {
-	return string(p)
-}
-
-type Name string
-
-func (n Name) String() string {
-	return string(n)
-}
-
-type Namespace string
-
-func (n Namespace) String() string {
-	return string(n)
-}
-
-type HostNetwork bool
-
 type Domain string
 
 func (d Domain) String() string {

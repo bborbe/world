@@ -12,12 +12,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Name string
+
+func (n Name) String() string {
+	return string(n)
+}
+
+type Package string
+
+func (p Package) String() string {
+	return string(p)
+}
+
 type GolangBuilder struct {
 	Image           world.Image
-	Name            world.Name
+	Name            Name
 	SourceDirectory world.SourceDirectory
 	GitRepo         world.GitRepo
-	Package         world.Package
+	Package         Package
 }
 
 func (g *GolangBuilder) Apply(ctx context.Context) error {
@@ -38,8 +50,8 @@ ENTRYPOINT ["/{{.Name}}"]
 	}
 	buf := &bytes.Buffer{}
 	err = tmpl.Execute(buf, struct {
-		Package         world.Package
-		Name            world.Name
+		Package         Package
+		Name            Name
 		SourceDirectory world.SourceDirectory
 		GitRepo         world.GitRepo
 		Tag             world.Tag

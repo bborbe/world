@@ -12,7 +12,7 @@ import (
 type NamespaceDeployer struct {
 	Context      world.Context
 	Requirements []world.Configuration
-	Namespace    world.Namespace
+	Namespace    k8s.NamespaceName
 }
 
 func (n *NamespaceDeployer) Applier() world.Applier {

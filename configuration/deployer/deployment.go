@@ -11,10 +11,10 @@ import (
 type DeploymentDeployer struct {
 	Context      world.Context
 	Requirements []world.Configuration
-	Namespace    world.Namespace
+	Namespace    k8s.NamespaceName
 	Containers   []DeploymentDeployerContainer
 	Volumes      []world.Volume
-	HostNetwork  world.HostNetwork
+	HostNetwork  k8s.PodHostNetwork
 }
 
 type DeploymentDeployerContainer struct {
@@ -95,7 +95,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 		ApiVersion: "extensions/v1beta1",
 		Kind:       "Deployment",
 		Metadata: k8s.Metadata{
-			Namespace: k8s.NamespaceName(d.Namespace),
+			Namespace: d.Namespace,
 			Name:      k8s.Name(d.Namespace),
 			Labels: k8s.Labels{
 				"app": d.Namespace.String(),
@@ -125,7 +125,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 				Spec: k8s.PodSpec{
 					Containers:  d.containers(),
 					Volumes:     volumes,
-					HostNetwork: k8s.PodHostNetwork(d.HostNetwork),
+					HostNetwork: d.HostNetwork,
 				},
 			},
 		},

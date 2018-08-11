@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bborbe/world/configuration"
-	"github.com/bborbe/world"
 	"github.com/bborbe/teamvault-utils/connector"
+	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration"
 )
 
 func TestValidate(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 type IngressDeployer struct {
 	Context      world.Context
 	Requirements []world.Configuration
-	Namespace    world.Namespace
+	Namespace    k8s.NamespaceName
 	Domains      []world.Domain
 }
 
@@ -49,7 +49,7 @@ func (i *IngressDeployer) ingress() k8s.Ingress {
 		ApiVersion: "extensions/v1beta1",
 		Kind:       "Ingress",
 		Metadata: k8s.Metadata{
-			Namespace: k8s.NamespaceName(i.Namespace),
+			Namespace: i.Namespace,
 			Name:      k8s.Name(i.Namespace),
 			Labels: k8s.Labels{
 				"app": i.Namespace.String(),

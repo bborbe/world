@@ -6,13 +6,14 @@ import (
 	"os"
 	"runtime"
 	"time"
+
 	flag "github.com/bborbe/flagenv"
 	"github.com/bborbe/http/client_builder"
 	"github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/teamvault-utils/model"
+	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration"
 	"github.com/golang/glog"
-	"github.com/bborbe/world"
 )
 
 func main() {

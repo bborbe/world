@@ -12,7 +12,7 @@ import (
 type SecretDeployer struct {
 	Context      world.Context
 	Requirements []world.Configuration
-	Namespace    world.Namespace
+	Namespace    k8s.NamespaceName
 	Secrets      world.Secrets
 }
 
@@ -46,7 +46,7 @@ func (i *SecretDeployer) secret() (*k8s.Secret, error) {
 		ApiVersion: "v1",
 		Kind:       "Secret",
 		Metadata: k8s.Metadata{
-			Namespace: k8s.NamespaceName(i.Namespace),
+			Namespace: i.Namespace,
 			Name:      k8s.Name(i.Namespace),
 			Labels: k8s.Labels{
 				"app": i.Namespace.String(),
