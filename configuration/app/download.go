@@ -2,13 +2,14 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Download struct {
@@ -21,7 +22,7 @@ func (d *Download) Applier() world.Applier {
 }
 
 func (d *Download) Childs() []world.Configuration {
-	image := world.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
@@ -39,13 +40,14 @@ func (d *Download) Childs() []world.Configuration {
 			Namespace: "download",
 		},
 		&deployer.DeploymentDeployer{
-			Context: d.Cluster.Context,
+			Context:   d.Cluster.Context,
+			Namespace: "download",
+			Name:      "download",
 			Requirements: []world.Configuration{
-				&docker.NginxAutoindex{
+				&build.NginxAutoindex{
 					Image: image,
 				},
 			},
-			Namespace: "download",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "nginx",
@@ -81,6 +83,7 @@ func (d *Download) Childs() []world.Configuration {
 		&deployer.IngressDeployer{
 			Context:   d.Cluster.Context,
 			Namespace: "download",
+			Name:      "download",
 			Domains:   d.Domains,
 		},
 	}
@@ -89,10 +92,10 @@ func (d *Download) Childs() []world.Configuration {
 func (d *Download) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate download app ...")
 	if err := d.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate download app failed")
 	}
 	if len(d.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in download app")
 	}
 	return nil
 }

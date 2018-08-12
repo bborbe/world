@@ -7,14 +7,13 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/bborbe/world"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type CloneBuilder struct {
-	SourceImage world.Image
-	TargetImage world.Image
+	SourceImage Image
+	TargetImage Image
 }
 
 func (c *CloneBuilder) Apply(ctx context.Context) error {
@@ -56,10 +55,10 @@ func (c *CloneBuilder) Apply(ctx context.Context) error {
 func (c *CloneBuilder) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate docker cloner ...")
 	if err := c.SourceImage.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate docker cloner failed")
 	}
 	if err := c.TargetImage.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate docker cloner failed")
 	}
 	return nil
 }

@@ -2,25 +2,26 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Webdav struct {
 	Cluster  cluster.Cluster
 	Domains  []world.Domain
-	Tag      world.Tag
+	Tag      docker.Tag
 	Password world.SecretValue
 }
 
 func (w *Webdav) Childs() []world.Configuration {
-	image := world.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/webdav",
 		Tag:        w.Tag,
@@ -40,18 +41,20 @@ func (w *Webdav) Childs() []world.Configuration {
 		&deployer.SecretDeployer{
 			Context:   w.Cluster.Context,
 			Namespace: "webdav",
+			Name:      "webdav",
 			Secrets: world.Secrets{
 				"password": w.Password,
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context: w.Cluster.Context,
+			Context:   w.Cluster.Context,
+			Namespace: "webdav",
+			Name:      "webdav",
 			Requirements: []world.Configuration{
-				&docker.Webdav{
+				&build.Webdav{
 					Image: image,
 				},
 			},
-			Namespace: "webdav",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "webdav",
@@ -101,6 +104,7 @@ func (w *Webdav) Childs() []world.Configuration {
 		&deployer.IngressDeployer{
 			Context:   w.Cluster.Context,
 			Namespace: "webdav",
+			Name:      "webdav",
 			Domains:   w.Domains,
 		},
 	}
@@ -113,19 +117,19 @@ func (w *Webdav) Applier() world.Applier {
 func (w *Webdav) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate webdav app ...")
 	if err := w.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate webdav app failed")
 	}
 	if w.Tag == "" {
-		return fmt.Errorf("tag missing")
+		return errors.New("tag missing in webdav app")
 	}
 	if len(w.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in webdav app")
 	}
 	if w.Password == nil {
-		return fmt.Errorf("password missing")
+		return errors.New("password missing in webdav app")
 	}
 	if err := w.Password.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate webdav app failed")
 	}
 	return nil
 }

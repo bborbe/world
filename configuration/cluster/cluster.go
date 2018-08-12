@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/pkg/errors"
 )
 
 type Cluster struct {
-	Context   world.Context
+	Context   k8s.Context
 	NfsServer world.MountNfsServer
 }
 

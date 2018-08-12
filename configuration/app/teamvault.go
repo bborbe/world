@@ -7,6 +7,7 @@ import (
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Teamvault struct {
@@ -29,7 +30,7 @@ func (t *Teamvault) Applier() world.Applier {
 func (t *Teamvault) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate teamvault app ...")
 	if err := t.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate teamvault app failed")
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-package docker
+package build
 
 import (
 	"context"
@@ -9,13 +9,13 @@ import (
 )
 
 type NginxAutoindex struct {
-	Image world.Image
+	Image docker.Image
 }
 
 func (n *NginxAutoindex) Childs() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
-			SourceImage: world.Image{
+			SourceImage: docker.Image{
 				Registry:   "docker.io",
 				Repository: "jrelva/nginx-autoindex",
 				Tag:        "latest",

@@ -1,4 +1,4 @@
-package docker
+package build
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 type Ip struct {
-	Image world.Image
+	Image docker.Image
 }
 
 func (i *Ip) Childs() []world.Configuration {

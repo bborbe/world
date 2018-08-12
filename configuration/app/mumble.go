@@ -2,22 +2,23 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Mumble struct {
 	Cluster cluster.Cluster
-	Tag     world.Tag
+	Tag     docker.Tag
 }
 
 func (m *Mumble) Childs() []world.Configuration {
-	image := world.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/mumble",
 		Tag:        m.Tag,
@@ -35,13 +36,14 @@ func (m *Mumble) Childs() []world.Configuration {
 			Namespace: "mumble",
 		},
 		&deployer.DeploymentDeployer{
-			Context: m.Cluster.Context,
+			Context:   m.Cluster.Context,
+			Namespace: "mumble",
+			Name:      "mumble",
 			Requirements: []world.Configuration{
-				&docker.Mumble{
+				&build.Mumble{
 					Image: image,
 				},
 			},
-			Namespace: "mumble",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "mumble",
@@ -70,10 +72,10 @@ func (m *Mumble) Applier() world.Applier {
 func (m *Mumble) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate mumble app ...")
 	if err := m.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate mumble app failed")
 	}
 	if m.Tag == "" {
-		return fmt.Errorf("tag missing")
+		return errors.New("tag missing in mumble app")
 	}
 	return nil
 }

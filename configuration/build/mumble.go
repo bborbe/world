@@ -1,4 +1,4 @@
-package docker
+package build
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 type Mumble struct {
-	Image world.Image
+	Image docker.Image
 }
 
 func (m *Mumble) Childs() []world.Configuration {
@@ -17,7 +17,7 @@ func (m *Mumble) Childs() []world.Configuration {
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/mumble.git",
 			Image:     m.Image,
-			GitBranch: world.GitBranch(m.Image.Tag),
+			GitBranch: docker.GitBranch(m.Image.Tag),
 		}),
 	}
 }

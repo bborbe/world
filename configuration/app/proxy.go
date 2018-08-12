@@ -7,6 +7,7 @@ import (
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Proxy struct {
@@ -29,7 +30,7 @@ func (p *Proxy) Applier() world.Applier {
 func (p *Proxy) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate proxy app ...")
 	if err := p.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate proxy app failed")
 	}
 	return nil
 }

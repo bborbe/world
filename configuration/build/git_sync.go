@@ -1,4 +1,4 @@
-package docker
+package build
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 type GitSync struct {
-	Image world.Image
+	Image docker.Image
 }
 
 func (m *GitSync) Childs() []world.Configuration {
@@ -17,7 +17,7 @@ func (m *GitSync) Childs() []world.Configuration {
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/git-sync.git",
 			Image:     m.Image,
-			GitBranch: world.GitBranch(m.Image.Tag),
+			GitBranch: docker.GitBranch(m.Image.Tag),
 		}),
 	}
 }

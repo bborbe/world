@@ -10,9 +10,10 @@ import (
 )
 
 type SecretDeployer struct {
-	Context      world.Context
-	Requirements []world.Configuration
+	Context      k8s.Context
 	Namespace    k8s.NamespaceName
+	Name         k8s.Name
+	Requirements []world.Configuration
 	Secrets      world.Secrets
 }
 
@@ -29,10 +30,13 @@ func (i *SecretDeployer) Childs() []world.Configuration {
 
 func (i *SecretDeployer) Validate(ctx context.Context) error {
 	if i.Context == "" {
-		return errors.New("Context missing")
+		return errors.New("Context missing in secret deployer")
 	}
 	if i.Namespace == "" {
-		return errors.New("Namespace missing")
+		return errors.New("Namespace missing in secret deployer")
+	}
+	if i.Namespace == "" {
+		return errors.New("Name missing in secret deployer")
 	}
 	return nil
 }
@@ -47,7 +51,7 @@ func (i *SecretDeployer) secret() (*k8s.Secret, error) {
 		Kind:       "Secret",
 		Metadata: k8s.Metadata{
 			Namespace: i.Namespace,
-			Name:      k8s.Name(i.Namespace),
+			Name:      i.Name,
 			Labels: k8s.Labels{
 				"app": i.Namespace.String(),
 			},

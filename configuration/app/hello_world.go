@@ -2,19 +2,20 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type HelloWorld struct {
 	Cluster cluster.Cluster
 	Domains []world.Domain
-	Tag     world.Tag
+	Tag     docker.Tag
 }
 
 func (h *HelloWorld) Applier() world.Applier {
@@ -22,7 +23,7 @@ func (h *HelloWorld) Applier() world.Applier {
 }
 
 func (h *HelloWorld) Childs() []world.Configuration {
-	image := world.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/hello-world",
 		Tag:        h.Tag,
@@ -40,13 +41,14 @@ func (h *HelloWorld) Childs() []world.Configuration {
 			Namespace: "hello-world",
 		},
 		&deployer.DeploymentDeployer{
-			Context: h.Cluster.Context,
+			Context:   h.Cluster.Context,
+			Namespace: "hello-world",
+			Name:      "hello-world",
 			Requirements: []world.Configuration{
-				&docker.HelloWorld{
+				&build.HelloWorld{
 					Image: image,
 				},
 			},
-			Namespace: "hello-world",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "hello-world",
@@ -68,6 +70,7 @@ func (h *HelloWorld) Childs() []world.Configuration {
 		&deployer.IngressDeployer{
 			Context:   h.Cluster.Context,
 			Namespace: "hello-world",
+			Name:      "hello-world",
 			Domains:   h.Domains,
 		},
 	}
@@ -76,10 +79,10 @@ func (h *HelloWorld) Childs() []world.Configuration {
 func (h *HelloWorld) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate hello-world app ...")
 	if err := h.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate hello world app failed")
 	}
 	if len(h.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in hello world app")
 	}
 	return nil
 }

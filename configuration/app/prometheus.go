@@ -6,6 +6,7 @@ import (
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Prometheus struct {
@@ -23,7 +24,7 @@ func (p *Prometheus) Applier() world.Applier {
 func (p *Prometheus) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate prometheus app ...")
 	if err := p.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate prometheus app failed")
 	}
 	return nil
 }

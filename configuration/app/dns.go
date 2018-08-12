@@ -6,6 +6,7 @@ import (
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Dns struct {
@@ -23,7 +24,7 @@ func (d *Dns) Applier() world.Applier {
 func (d *Dns) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate dns app ...")
 	if err := d.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate dns app failed")
 	}
 	return nil
 }

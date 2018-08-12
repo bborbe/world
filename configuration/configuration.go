@@ -8,6 +8,7 @@ import (
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/pkg/errors"
 )
 
@@ -21,7 +22,7 @@ func (c *Configuration) Applier() world.Applier {
 
 func (c *Configuration) Validate(ctx context.Context) error {
 	if c.TeamvaultConnector == nil {
-		return errors.New("teamvault-connector missing")
+		return errors.New("configuration.teamvault-connector missing")
 	}
 	return nil
 }
@@ -31,7 +32,7 @@ func (c *Configuration) Childs() []world.Configuration {
 		Context:   "netcup",
 		NfsServer: "185.170.112.48",
 	}
-	var gitSyncVersion world.Tag = "1.3.0"
+	var gitSyncVersion docker.Tag = "1.3.0"
 	return []world.Configuration{
 		&app.Backup{
 			Cluster: netcup,

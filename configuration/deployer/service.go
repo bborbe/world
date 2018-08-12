@@ -9,7 +9,7 @@ import (
 )
 
 type ServiceDeployer struct {
-	Context      world.Context
+	Context      k8s.Context
 	Requirements []world.Configuration
 	Namespace    k8s.NamespaceName
 	Name         k8s.Name
@@ -29,16 +29,16 @@ func (s *ServiceDeployer) Childs() []world.Configuration {
 
 func (s *ServiceDeployer) Validate(ctx context.Context) error {
 	if s.Context == "" {
-		return errors.New("Context missing")
+		return errors.New("Context missing in service deployer")
 	}
 	if s.Namespace == "" {
-		return errors.New("Namespace missing")
+		return errors.New("Namespace missing in service deployer")
 	}
 	if s.Name == "" {
-		return errors.New("Name missing")
+		return errors.New("Name missing in service deployer")
 	}
 	if len(s.Ports) == 0 {
-		return errors.New("Ports missing")
+		return errors.New("Ports missing in service deployer")
 	}
 	return nil
 }

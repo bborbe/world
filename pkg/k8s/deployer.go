@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/bborbe/world"
 	"github.com/go-yaml/yaml"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -18,7 +17,7 @@ type DataProvider interface {
 }
 
 type Deployer struct {
-	Context world.Context
+	Context Context
 	Data    DataProvider
 }
 

@@ -2,34 +2,35 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"strconv"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Portfolio struct {
 	Cluster              cluster.Cluster
 	Domains              []world.Domain
-	OverlayServerVersion world.Tag
-	GitSyncVersion       world.Tag
+	OverlayServerVersion docker.Tag
+	GitSyncVersion       docker.Tag
 	GitSyncPassword      world.SecretValue
 }
 
 func (p *Portfolio) Childs() []world.Configuration {
 	port := 8080
-	overlayServerImage := world.Image{
+	overlayServerImage := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/portfolio",
 		Tag:        p.OverlayServerVersion,
 	}
-	gitSyncImage := world.Image{
+	gitSyncImage := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/git-sync",
 		Tag:        p.GitSyncVersion,
@@ -48,22 +49,24 @@ func (p *Portfolio) Childs() []world.Configuration {
 		},
 		&deployer.SecretDeployer{
 			Context:   p.Cluster.Context,
-			Namespace: "ldap",
+			Namespace: "portfolio",
+			Name:      "portfolio",
 			Secrets: world.Secrets{
 				"git-sync-password": p.GitSyncPassword,
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context: p.Cluster.Context,
+			Context:   p.Cluster.Context,
+			Namespace: "portfolio",
+			Name:      "portfolio",
 			Requirements: []world.Configuration{
-				&docker.OverlayWebserver{
+				&build.OverlayWebserver{
 					Image: overlayServerImage,
 				},
-				&docker.GitSync{
+				&build.GitSync{
 					Image: gitSyncImage,
 				},
 			},
-			Namespace: "portfolio",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "portfolio",
@@ -191,6 +194,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 		&deployer.IngressDeployer{
 			Context:   p.Cluster.Context,
 			Namespace: "portfolio",
+			Name:      "portfolio",
 			Domains:   p.Domains,
 		},
 	}
@@ -203,22 +207,22 @@ func (p *Portfolio) Applier() world.Applier {
 func (p *Portfolio) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate portfolio app ...")
 	if err := p.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate portfolio app failed")
 	}
 	if p.OverlayServerVersion == "" {
-		return fmt.Errorf("tag missing")
+		return errors.New("tag missing in portfolio app")
 	}
 	if len(p.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in portfolio app")
 	}
 	if p.GitSyncVersion == "" {
-		return fmt.Errorf("git-sync-version missing")
+		return errors.New("git-sync-version missing in portfolio app")
 	}
 	if p.GitSyncPassword == nil {
-		return fmt.Errorf("git-sync-password missing")
+		return errors.New("git-sync-password missing in portfolio app")
 	}
 	if err := p.GitSyncPassword.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate portfolio app failed")
 	}
 	return nil
 }

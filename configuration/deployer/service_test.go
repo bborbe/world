@@ -12,14 +12,14 @@ import (
 var _ = Describe("ServiceDeployer", func() {
 	It("service", func() {
 		serviceDeployer := &ServiceDeployer{
+			Namespace: "banana",
+			Name:      "banana",
 			Ports: []world.Port{
 				{
 					Name: "root",
 					Port: 1337,
 				},
 			},
-			Namespace: "banana",
-			Name:      "banana",
 		}
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(serviceDeployer.service())

@@ -3,16 +3,16 @@ package deployer
 import (
 	"context"
 
-	"fmt"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/pkg/errors"
 )
 
 type IngressDeployer struct {
-	Context      world.Context
-	Requirements []world.Configuration
+	Context      k8s.Context
 	Namespace    k8s.NamespaceName
+	Name         k8s.Name
+	Requirements []world.Configuration
 	Domains      []world.Domain
 }
 
@@ -29,13 +29,16 @@ func (i *IngressDeployer) Childs() []world.Configuration {
 
 func (i *IngressDeployer) Validate(ctx context.Context) error {
 	if i.Context == "" {
-		return fmt.Errorf("Context missing")
+		return errors.New("Context missing in ingress deployer")
 	}
 	if i.Namespace == "" {
-		return fmt.Errorf("Namespace missing")
+		return errors.New("Namespace missing in ingress deployer")
+	}
+	if i.Name == "" {
+		return errors.New("Name missing in ingress deployer")
 	}
 	if len(i.Domains) == 0 {
-		return fmt.Errorf("Domains missing")
+		return errors.New("Domains missing in ingress deployer")
 	}
 	return nil
 }
@@ -50,7 +53,7 @@ func (i *IngressDeployer) ingress() k8s.Ingress {
 		Kind:       "Ingress",
 		Metadata: k8s.Metadata{
 			Namespace: i.Namespace,
-			Name:      k8s.Name(i.Namespace),
+			Name:      i.Name,
 			Labels: k8s.Labels{
 				"app": i.Namespace.String(),
 			},
@@ -69,7 +72,7 @@ func (i *IngressDeployer) ingress() k8s.Ingress {
 					{
 						Path: "/",
 						Backends: k8s.IngressBackend{
-							ServiceName: k8s.IngressBackendServiceName(i.Namespace),
+							ServiceName: k8s.IngressBackendServiceName(i.Name),
 							ServicePort: "web",
 						},
 					},

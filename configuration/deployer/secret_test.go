@@ -13,6 +13,7 @@ var _ = Describe("SecretDeployer", func() {
 	It("secret", func() {
 		secretDeployer := &SecretDeployer{
 			Namespace: "banana",
+			Name:      "banana",
 			Secrets: world.Secrets{
 				"secret": &world.SecretValueStatic{
 					Content: []byte("hello world"),

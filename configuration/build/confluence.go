@@ -1,4 +1,4 @@
-package docker
+package build
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 )
 
 type Confluence struct {
-	Image         world.Image
-	VendorVersion world.Tag
-	GitBranch     world.GitBranch
+	Image         docker.Image
+	VendorVersion docker.Tag
+	GitBranch     docker.GitBranch
 }
 
 func (c *Confluence) Childs() []world.Configuration {
@@ -19,7 +19,7 @@ func (c *Confluence) Childs() []world.Configuration {
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo: "https://github.com/bborbe/atlassian-confluence.git",
 			Image:   c.Image,
-			BuildArgs: world.BuildArgs{
+			BuildArgs: docker.BuildArgs{
 				"VENDOR_VERSION": c.VendorVersion.String(),
 			},
 			GitBranch: c.GitBranch,

@@ -2,23 +2,24 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Password struct {
 	Cluster cluster.Cluster
 	Domains []world.Domain
-	Tag     world.Tag
+	Tag     docker.Tag
 }
 
 func (p *Password) Childs() []world.Configuration {
-	image := world.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/password",
 		Tag:        p.Tag,
@@ -36,13 +37,14 @@ func (p *Password) Childs() []world.Configuration {
 			Namespace: "password",
 		},
 		&deployer.DeploymentDeployer{
-			Context: p.Cluster.Context,
+			Context:   p.Cluster.Context,
+			Namespace: "password",
+			Name:      "password",
 			Requirements: []world.Configuration{
-				&docker.Password{
+				&build.Password{
 					Image: image,
 				},
 			},
-			Namespace: "password",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "password",
@@ -65,6 +67,7 @@ func (p *Password) Childs() []world.Configuration {
 		&deployer.IngressDeployer{
 			Context:   p.Cluster.Context,
 			Namespace: "password",
+			Name:      "password",
 			Domains:   p.Domains,
 		},
 	}
@@ -77,13 +80,13 @@ func (p *Password) Applier() world.Applier {
 func (p *Password) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate password app ...")
 	if err := p.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate password app failed")
 	}
 	if p.Tag == "" {
-		return fmt.Errorf("tag missing")
+		return errors.New("tag missing in password app")
 	}
 	if len(p.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in password app")
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
@@ -18,10 +19,11 @@ var _ = Describe("DeploymentDeployer", func() {
 	BeforeEach(func() {
 		deploymentDeployer = &DeploymentDeployer{
 			Namespace: "banana",
+			Name:      "banana",
 			Containers: []DeploymentDeployerContainer{
 				{
 					Name: "banana",
-					Image: world.Image{
+					Image: docker.Image{
 						Registry:   "docker.io",
 						Repository: "bborbe/test",
 						Tag:        "latest",

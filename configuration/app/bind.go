@@ -2,22 +2,23 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Bind struct {
 	Cluster cluster.Cluster
-	Tag     world.Tag
+	Tag     docker.Tag
 }
 
 func (b *Bind) Childs() []world.Configuration {
-	image := world.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/bind",
 		Tag:        b.Tag,
@@ -42,13 +43,14 @@ func (b *Bind) Childs() []world.Configuration {
 			Namespace: "bind",
 		},
 		&deployer.DeploymentDeployer{
-			Context: b.Cluster.Context,
+			Context:   b.Cluster.Context,
+			Namespace: "bind",
+			Name:      "bind",
 			Requirements: []world.Configuration{
-				&docker.Bind{
+				&build.Bind{
 					Image: image,
 				},
 			},
-			Namespace:   "bind",
 			HostNetwork: true,
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
@@ -89,10 +91,10 @@ func (b *Bind) Applier() world.Applier {
 func (b *Bind) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate bind app ...")
 	if err := b.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate bind app failed")
 	}
 	if b.Tag == "" {
-		return fmt.Errorf("tag missing")
+		return errors.New("tag missing in bind app")
 	}
 	return nil
 }

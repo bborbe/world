@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"text/template"
 
-	"github.com/bborbe/world"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -25,10 +24,10 @@ func (p Package) String() string {
 }
 
 type GolangBuilder struct {
-	Image           world.Image
+	Image           Image
 	Name            Name
-	SourceDirectory world.SourceDirectory
-	GitRepo         world.GitRepo
+	SourceDirectory SourceDirectory
+	GitRepo         GitRepo
 	Package         Package
 }
 
@@ -52,9 +51,9 @@ ENTRYPOINT ["/{{.Name}}"]
 	err = tmpl.Execute(buf, struct {
 		Package         Package
 		Name            Name
-		SourceDirectory world.SourceDirectory
-		GitRepo         world.GitRepo
-		Tag             world.Tag
+		SourceDirectory SourceDirectory
+		GitRepo         GitRepo
+		Tag             Tag
 	}{
 		Package:         g.Package,
 		Name:            g.Name,
@@ -85,19 +84,19 @@ func (g *GolangBuilder) Satisfied(ctx context.Context) (bool, error) {
 func (g *GolangBuilder) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate golang builder ...")
 	if err := g.Image.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate golang builder failed")
 	}
 	if g.Name == "" {
-		return errors.New("name missing")
+		return errors.New("name missing in golang builder")
 	}
 	if g.SourceDirectory == "" {
-		return errors.New("source directory missing")
+		return errors.New("source directory missing in golang builder")
 	}
 	if g.GitRepo == "" {
-		return errors.New("git repo missing")
+		return errors.New("git repo missing in golang builder")
 	}
 	if g.Package == "" {
-		return errors.New("package missing")
+		return errors.New("package missing in golang builder")
 	}
 	return nil
 }

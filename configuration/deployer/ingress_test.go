@@ -13,6 +13,7 @@ var _ = Describe("IngressDeployer", func() {
 	It("ingress", func() {
 		ingressDeployer := &IngressDeployer{
 			Namespace: "banana",
+			Name:      "banana",
 			Domains:   []world.Domain{"example.com"},
 		}
 		b := &bytes.Buffer{}

@@ -2,24 +2,25 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Now struct {
 	Cluster cluster.Cluster
 	Domains []world.Domain
-	Tag     world.Tag
+	Tag     docker.Tag
 }
 
 func (n *Now) Childs() []world.Configuration {
-	image := world.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/now",
 		Tag:        n.Tag,
@@ -37,13 +38,14 @@ func (n *Now) Childs() []world.Configuration {
 			Namespace: "now",
 		},
 		&deployer.DeploymentDeployer{
-			Context: n.Cluster.Context,
+			Context:   n.Cluster.Context,
+			Namespace: "now",
+			Name:      "now",
 			Requirements: []world.Configuration{
-				&docker.Now{
+				&build.Now{
 					Image: image,
 				},
 			},
-			Namespace: "now",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "now",
@@ -72,6 +74,7 @@ func (n *Now) Childs() []world.Configuration {
 		&deployer.IngressDeployer{
 			Context:   n.Cluster.Context,
 			Namespace: "now",
+			Name:      "now",
 			Domains:   n.Domains,
 		},
 	}
@@ -84,13 +87,13 @@ func (n *Now) Applier() world.Applier {
 func (n *Now) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate now app ...")
 	if err := n.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate now app failed")
 	}
 	if n.Tag == "" {
-		return fmt.Errorf("tag missing")
+		return errors.New("tag missing in now app")
 	}
 	if len(n.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in now app")
 	}
 	return nil
 }

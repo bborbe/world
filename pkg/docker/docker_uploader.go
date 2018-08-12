@@ -7,13 +7,12 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/bborbe/world"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Uploader struct {
-	Image world.Image
+	Image Image
 }
 
 func (u *Uploader) Apply(ctx context.Context) error {
@@ -32,7 +31,7 @@ func (u *Uploader) Apply(ctx context.Context) error {
 
 func (u *Uploader) Satisfied(ctx context.Context) (bool, error) {
 	glog.V(2).Infof("check image %s exists an registry ...", u.Image.String())
-	url := fmt.Sprintf("https://index.docker.io/v1/repositories/%s/tags/%s", u.Image.Repository, u.Image.Tag)
+	url := fmt.Sprintf("https://index.io/v1/repositories/%s/tags/%s", u.Image.Repository, u.Image.Tag)
 	resp, err := http.Get(url)
 	if err != nil {
 		return false, errors.Wrapf(err, "get %s failed", url)
@@ -48,7 +47,7 @@ func (u *Uploader) Satisfied(ctx context.Context) (bool, error) {
 func (u *Uploader) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate docker uploader ...")
 	if err := u.Image.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate golang uploader failed")
 	}
 	return nil
 }

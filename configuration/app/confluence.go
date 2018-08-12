@@ -5,25 +5,26 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Confluence struct {
 	Cluster cluster.Cluster
 	Domains []world.Domain
-	Tag     world.Tag
+	Tag     docker.Tag
 }
 
 func (c *Confluence) Childs() []world.Configuration {
-	var buildVersion world.GitBranch = "1.3.0"
-
-	image := world.Image{
+	var buildVersion docker.GitBranch = "1.3.0"
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/atlassian-confluence",
-		Tag:        world.Tag(fmt.Sprintf("%s-%s", c.Tag, buildVersion)),
+		Tag:        docker.Tag(fmt.Sprintf("%s-%s", c.Tag, buildVersion)),
 	}
 	ports := []world.Port{
 		{
@@ -39,7 +40,7 @@ func (c *Confluence) Childs() []world.Configuration {
 		&deployer.DeploymentDeployer{
 			Context: c.Cluster.Context,
 			Requirements: []world.Configuration{
-				&docker.Confluence{
+				&build.Confluence{
 					VendorVersion: c.Tag,
 					GitBranch:     buildVersion,
 					Image:         image,
@@ -74,7 +75,7 @@ func (c *Confluence) Applier() world.Applier {
 func (c *Confluence) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate confluence app ...")
 	if err := c.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate confluence app failed")
 	}
 	return nil
 }

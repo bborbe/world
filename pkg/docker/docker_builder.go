@@ -2,22 +2,20 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 
-	"fmt"
-
-	"github.com/bborbe/world"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Builder struct {
-	Image     world.Image
-	GitRepo   world.GitRepo
-	GitBranch world.GitBranch
-	BuildArgs world.BuildArgs
+	Image     Image
+	GitRepo   GitRepo
+	GitBranch GitBranch
+	BuildArgs BuildArgs
 }
 
 func (b *Builder) Apply(ctx context.Context) error {
@@ -74,13 +72,13 @@ func (b *Builder) Apply(ctx context.Context) error {
 func (b *Builder) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate docker builder ...")
 	if err := b.Image.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate docker builder failed")
 	}
 	if b.GitRepo == "" {
-		return errors.New("git repo missing")
+		return errors.New("git repo missing in docker builder")
 	}
 	if b.GitBranch == "" {
-		return errors.New("git branch missing")
+		return errors.New("git branch missing in docker builder")
 	}
 	return nil
 }

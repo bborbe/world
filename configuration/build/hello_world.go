@@ -1,4 +1,4 @@
-package docker
+package build
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 type HelloWorld struct {
-	Image world.Image
+	Image docker.Image
 }
 
 func (h *HelloWorld) Childs() []world.Configuration {
@@ -17,7 +17,7 @@ func (h *HelloWorld) Childs() []world.Configuration {
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/hello-world.git",
 			Image:     h.Image,
-			GitBranch: world.GitBranch(h.Image.Tag),
+			GitBranch: docker.GitBranch(h.Image.Tag),
 		}),
 	}
 }

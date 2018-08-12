@@ -2,20 +2,21 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Slideshow struct {
 	Cluster        cluster.Cluster
 	Domains        []world.Domain
-	GitSyncVersion world.Tag
+	GitSyncVersion docker.Tag
 }
 
 func (s *Slideshow) Applier() world.Applier {
@@ -23,12 +24,12 @@ func (s *Slideshow) Applier() world.Applier {
 }
 
 func (s *Slideshow) Childs() []world.Configuration {
-	nginxImage := world.Image{
+	nginxImage := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}
-	gitSyncImage := world.Image{
+	gitSyncImage := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/git-sync",
 		Tag:        s.GitSyncVersion,
@@ -46,16 +47,17 @@ func (s *Slideshow) Childs() []world.Configuration {
 			Namespace: "slideshow",
 		},
 		&deployer.DeploymentDeployer{
-			Context: s.Cluster.Context,
+			Context:   s.Cluster.Context,
+			Namespace: "slideshow",
+			Name:      "slideshow",
 			Requirements: []world.Configuration{
-				&docker.NginxAutoindex{
+				&build.NginxAutoindex{
 					Image: nginxImage,
 				},
-				&docker.GitSync{
+				&build.GitSync{
 					Image: gitSyncImage,
 				},
 			},
-			Namespace: "slideshow",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "nginx",
@@ -118,6 +120,7 @@ func (s *Slideshow) Childs() []world.Configuration {
 		&deployer.IngressDeployer{
 			Context:   s.Cluster.Context,
 			Namespace: "slideshow",
+			Name:      "slideshow",
 			Domains:   s.Domains,
 		},
 	}
@@ -126,13 +129,13 @@ func (s *Slideshow) Childs() []world.Configuration {
 func (s *Slideshow) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate slideshow app ...")
 	if err := s.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate slideshow app failed")
 	}
 	if len(s.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in slideshow app")
 	}
 	if s.GitSyncVersion == "" {
-		return fmt.Errorf("git-sync-version missing")
+		return errors.New("git-sync-version missing in slideshow app")
 	}
 	return nil
 }

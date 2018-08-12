@@ -2,53 +2,57 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/docker"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Maven struct {
 	Cluster          cluster.Cluster
 	Domains          []world.Domain
-	MavenRepoVersion world.Tag
+	MavenRepoVersion docker.Tag
 }
 
 func (m *Maven) Childs() []world.Configuration {
-	nginxImage := world.Image{
-		Registry:   "docker.io",
-		Repository: "bborbe/nginx-autoindex",
-		Tag:        "latest",
-	}
-	mavenRepoImage := world.Image{
-		Registry:   "docker.io",
-		Repository: "bborbe/maven-repo",
-		Tag:        m.MavenRepoVersion,
-	}
-	ports := []world.Port{
-		{
-			Port:     8080,
-			Name:     "web",
-			Protocol: "TCP",
-		},
-	}
-	return []world.Configuration{
+	result := []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
 		},
+	}
+	result = append(result, m.public()...)
+	result = append(result, m.api()...)
+	return result
+}
+func (m *Maven) public() []world.Configuration {
+	ports := []world.Port{
+		{
+			Port:     80,
+			Name:     "web",
+			Protocol: "TCP",
+		},
+	}
+	nginxImage := docker.Image{
+		Registry:   "docker.io",
+		Repository: "bborbe/nginx-autoindex",
+		Tag:        "latest",
+	}
+	return []world.Configuration{
 		&deployer.DeploymentDeployer{
 			Context: m.Cluster.Context,
 			Requirements: []world.Configuration{
-				&docker.NginxAutoindex{
+				&build.NginxAutoindex{
 					Image: nginxImage,
 				},
 			},
 			Namespace: "maven",
+			Name:      "api",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "nginx",
@@ -78,22 +82,41 @@ func (m *Maven) Childs() []world.Configuration {
 		&deployer.ServiceDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
-			Name:      "maven",
+			Name:      "api",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
+			Name:      "api",
 			Domains:   m.Domains,
 		},
+	}
+}
+
+func (m *Maven) api() []world.Configuration {
+	mavenRepoImage := docker.Image{
+		Registry:   "docker.io",
+		Repository: "bborbe/maven-repo",
+		Tag:        m.MavenRepoVersion,
+	}
+	ports := []world.Port{
+		{
+			Port:     8080,
+			Name:     "web",
+			Protocol: "TCP",
+		},
+	}
+	return []world.Configuration{
 		&deployer.DeploymentDeployer{
 			Context: m.Cluster.Context,
 			Requirements: []world.Configuration{
-				&docker.Maven{
+				&build.Maven{
 					Image: mavenRepoImage,
 				},
 			},
 			Namespace: "maven",
+			Name:      "api",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "maven",
@@ -129,7 +152,7 @@ func (m *Maven) Childs() []world.Configuration {
 		&deployer.ServiceDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
-			Name:      "maven-api",
+			Name:      "api",
 			Ports:     ports,
 		},
 	}
@@ -142,13 +165,13 @@ func (m *Maven) Applier() world.Applier {
 func (m *Maven) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate maven app ...")
 	if err := m.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate maven app failed")
 	}
 	if m.MavenRepoVersion == "" {
-		return fmt.Errorf("tag missing")
+		return errors.New("tag missing in maven app")
 	}
 	if len(m.Domains) == 0 {
-		return fmt.Errorf("domains empty")
+		return errors.New("domains empty in maven app")
 	}
 	return nil
 }

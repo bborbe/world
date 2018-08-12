@@ -6,6 +6,7 @@ import (
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Traefik struct {
@@ -23,7 +24,7 @@ func (t *Traefik) Applier() world.Applier {
 func (t *Traefik) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate traefik app ...")
 	if err := t.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate traefik app failed")
 	}
 	return nil
 }

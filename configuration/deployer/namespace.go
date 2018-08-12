@@ -3,14 +3,13 @@ package deployer
 import (
 	"context"
 
-	"fmt"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/pkg/errors"
 )
 
 type NamespaceDeployer struct {
-	Context      world.Context
+	Context      k8s.Context
 	Requirements []world.Configuration
 	Namespace    k8s.NamespaceName
 }
@@ -28,10 +27,10 @@ func (n *NamespaceDeployer) Childs() []world.Configuration {
 
 func (n *NamespaceDeployer) Validate(ctx context.Context) error {
 	if n.Context == "" {
-		return fmt.Errorf("Context missing")
+		return errors.New("Context missing in namespace deployer")
 	}
 	if n.Namespace == "" {
-		return fmt.Errorf("Namespace missing")
+		return errors.New("Namespace missing in namespace deployer")
 	}
 	return nil
 }

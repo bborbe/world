@@ -7,6 +7,7 @@ import (
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 type Backup struct {
@@ -29,7 +30,7 @@ func (b *Backup) Applier() world.Applier {
 func (b *Backup) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate backup app ...")
 	if err := b.Cluster.Validate(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "validate backup app failed")
 	}
 	return nil
 }

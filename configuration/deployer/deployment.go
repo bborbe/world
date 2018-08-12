@@ -2,16 +2,18 @@ package deployer
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/pkg/errors"
 )
 
 type DeploymentDeployer struct {
-	Context      world.Context
-	Requirements []world.Configuration
+	Context      k8s.Context
 	Namespace    k8s.NamespaceName
+	Name         k8s.Name
+	Requirements []world.Configuration
 	Containers   []DeploymentDeployerContainer
 	Volumes      []world.Volume
 	HostNetwork  k8s.PodHostNetwork
@@ -27,7 +29,7 @@ type DeploymentDeployerContainer struct {
 	CpuRequest    world.CpuRequest
 	MemoryRequest world.MemoryRequest
 	Mounts        []world.Mount
-	Image         world.Image
+	Image         docker.Image
 }
 
 func (d *DeploymentDeployer) Applier() world.Applier {
@@ -43,26 +45,29 @@ func (d *DeploymentDeployer) Childs() []world.Configuration {
 
 func (d *DeploymentDeployer) Validate(ctx context.Context) error {
 	if d.Context == "" {
-		return fmt.Errorf("context missing")
+		return errors.New("context missing in deployment deployer")
 	}
 	if d.Namespace == "" {
-		return fmt.Errorf("Namespace missing")
+		return errors.New("Namespace missing in deployment deployer")
+	}
+	if d.Name == "" {
+		return errors.New("Name missing in deployment deployer")
 	}
 	for _, container := range d.Containers {
 		if container.Name == "" {
-			return fmt.Errorf("Name missing")
+			return errors.New("Name missing in deployment deployer")
 		}
 		if container.CpuLimit == "" {
-			return fmt.Errorf("CpuLimit missing")
+			return errors.New("CpuLimit missing in deployment deployer")
 		}
 		if container.MemoryLimit == "" {
-			return fmt.Errorf("MemoryLimit missing")
+			return errors.New("MemoryLimit missing in deployment deployer")
 		}
 		if container.CpuRequest == "" {
-			return fmt.Errorf("CpuRequest missing")
+			return errors.New("CpuRequest missing in deployment deployer")
 		}
 		if container.MemoryRequest == "" {
-			return fmt.Errorf("MemoryRequest missing")
+			return errors.New("MemoryRequest missing in deployment deployer")
 		}
 		if err := container.Image.Validate(ctx); err != nil {
 			return err
@@ -96,9 +101,9 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 		Kind:       "Deployment",
 		Metadata: k8s.Metadata{
 			Namespace: d.Namespace,
-			Name:      k8s.Name(d.Namespace),
+			Name:      d.Name,
 			Labels: k8s.Labels{
-				"app": d.Namespace.String(),
+				"app": d.Name.String(),
 			},
 		},
 		Spec: k8s.DeploymentSpec{
@@ -106,7 +111,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 			RevisionHistoryLimit: 2,
 			Selector: k8s.DeploymentSelector{
 				MatchLabels: k8s.DeploymentMatchLabels{
-					"app": d.Namespace.String(),
+					"app": d.Name.String(),
 				},
 			},
 			Strategy: k8s.DeploymentStrategy{
@@ -119,7 +124,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 			Template: k8s.DeploymentTemplate{
 				Metadata: k8s.Metadata{
 					Labels: k8s.Labels{
-						"app": d.Namespace.String(),
+						"app": d.Name.String(),
 					},
 				},
 				Spec: k8s.PodSpec{
