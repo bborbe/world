@@ -13,7 +13,7 @@ type Dns struct {
 	Cluster cluster.Cluster
 }
 
-func (d *Dns) Childs() []world.Configuration {
+func (d *Dns) Children() []world.Configuration {
 	return []world.Configuration{}
 }
 

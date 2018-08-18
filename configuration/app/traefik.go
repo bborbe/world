@@ -13,7 +13,7 @@ type Traefik struct {
 	Cluster cluster.Cluster
 }
 
-func (t *Traefik) Childs() []world.Configuration {
+func (t *Traefik) Children() []world.Configuration {
 	return []world.Configuration{}
 }
 

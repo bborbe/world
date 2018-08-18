@@ -25,8 +25,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	glog.V(1).Infof("apply all ...")
-
 	teamvaultConfigPath := model.TeamvaultConfigPath("~/.teamvault.json")
 	teamvaultConfigPath, err := teamvaultConfigPath.NormalizePath()
 	if err != nil {
@@ -44,11 +42,14 @@ func main() {
 		TeamvaultConnector: connector.New(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
 	}
 
+	glog.V(1).Infof("validate all ...")
 	if err := world.Validate(ctx, conf); err != nil {
 		fmt.Fprintf(os.Stderr, "validate failed: %+v\n", err)
 		os.Exit(1)
 	}
+	glog.V(1).Infof("validate all finished")
 
+	glog.V(1).Infof("apply all ...")
 	if err := world.Apply(ctx, conf); err != nil {
 		fmt.Fprintf(os.Stderr, "apply failed: %+v\n", err)
 		os.Exit(1)

@@ -17,13 +17,13 @@ type Bind struct {
 	Tag     docker.Tag
 }
 
-func (b *Bind) Childs() []world.Configuration {
+func (b *Bind) Children() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/bind",
 		Tag:        b.Tag,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Name:     "dns-udp",
 			Port:     53,
@@ -61,7 +61,7 @@ func (b *Bind) Childs() []world.Configuration {
 					MemoryLimit:   "100Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "25Mi",
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:   "bind",
 							Target: "/etc/bind",
@@ -73,7 +73,7 @@ func (b *Bind) Childs() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:      "bind",
 					NfsPath:   "/data/bind",

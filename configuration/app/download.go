@@ -14,23 +14,23 @@ import (
 
 type Download struct {
 	Cluster cluster.Cluster
-	Domains []world.Domain
+	Domains []deployer.Domain
 }
 
 func (d *Download) Applier() world.Applier {
 	return nil
 }
 
-func (d *Download) Childs() []world.Configuration {
+func (d *Download) Children() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     80,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -57,7 +57,7 @@ func (d *Download) Childs() []world.Configuration {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:     "download",
 							Target:   "/usr/share/nginx/html",
@@ -66,7 +66,7 @@ func (d *Download) Childs() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:      "download",
 					NfsPath:   "/data/download",

@@ -12,7 +12,7 @@ type NginxAutoindex struct {
 	Image docker.Image
 }
 
-func (n *NginxAutoindex) Childs() []world.Configuration {
+func (n *NginxAutoindex) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
 			SourceImage: docker.Image{
@@ -33,7 +33,7 @@ func (n *NginxAutoindex) Applier() world.Applier {
 
 func (n *NginxAutoindex) Validate(ctx context.Context) error {
 	if err := n.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

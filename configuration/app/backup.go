@@ -14,7 +14,7 @@ type Backup struct {
 	Cluster cluster.Cluster
 }
 
-func (b *Backup) Childs() []world.Configuration {
+func (b *Backup) Children() []world.Configuration {
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   b.Cluster.Context,

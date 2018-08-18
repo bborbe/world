@@ -8,12 +8,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Domain string
+
+func (d Domain) String() string {
+	return string(d)
+}
+
 type IngressDeployer struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
 	Name         k8s.Name
 	Requirements []world.Configuration
-	Domains      []world.Domain
+	Domains      []Domain
 }
 
 func (i *IngressDeployer) Applier() world.Applier {
@@ -23,7 +29,7 @@ func (i *IngressDeployer) Applier() world.Applier {
 	}
 }
 
-func (i *IngressDeployer) Childs() []world.Configuration {
+func (i *IngressDeployer) Children() []world.Configuration {
 	return i.Requirements
 }
 
@@ -73,7 +79,7 @@ func (i *IngressDeployer) ingress() k8s.Ingress {
 						Path: "/",
 						Backends: k8s.IngressBackend{
 							ServiceName: k8s.IngressBackendServiceName(i.Name),
-							ServicePort: "web",
+							ServicePort: "http",
 						},
 					},
 				},

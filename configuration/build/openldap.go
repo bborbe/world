@@ -12,7 +12,7 @@ type Openldap struct {
 	Image docker.Image
 }
 
-func (o *Openldap) Childs() []world.Configuration {
+func (o *Openldap) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/openldap.git",
@@ -30,7 +30,7 @@ func (o *Openldap) Applier() world.Applier {
 
 func (o *Openldap) Validate(ctx context.Context) error {
 	if err := o.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

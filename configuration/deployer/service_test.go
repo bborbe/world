@@ -3,7 +3,6 @@ package deployer
 import (
 	"bytes"
 
-	"github.com/bborbe/world"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,7 +13,7 @@ var _ = Describe("ServiceDeployer", func() {
 		serviceDeployer := &ServiceDeployer{
 			Namespace: "banana",
 			Name:      "banana",
-			Ports: []world.Port{
+			Ports: []Port{
 				{
 					Name: "root",
 					Port: 1337,

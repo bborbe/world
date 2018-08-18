@@ -3,7 +3,6 @@ package deployer
 import (
 	"bytes"
 
-	"github.com/bborbe/world"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,7 +13,7 @@ var _ = Describe("IngressDeployer", func() {
 		ingressDeployer := &IngressDeployer{
 			Namespace: "banana",
 			Name:      "banana",
-			Domains:   []world.Domain{"example.com"},
+			Domains:   []Domain{"example.com"},
 		}
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(ingressDeployer.ingress())
@@ -36,7 +35,7 @@ spec:
       paths:
       - backend:
           serviceName: banana
-          servicePort: web
+          servicePort: http
         path: /
 `))
 	})

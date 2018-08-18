@@ -12,7 +12,7 @@ type Webdav struct {
 	Image docker.Image
 }
 
-func (o *Webdav) Childs() []world.Configuration {
+func (o *Webdav) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/webdav.git",
@@ -30,7 +30,7 @@ func (o *Webdav) Applier() world.Applier {
 
 func (o *Webdav) Validate(ctx context.Context) error {
 	if err := o.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

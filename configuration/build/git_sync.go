@@ -12,7 +12,7 @@ type GitSync struct {
 	Image docker.Image
 }
 
-func (m *GitSync) Childs() []world.Configuration {
+func (m *GitSync) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/git-sync.git",
@@ -30,7 +30,7 @@ func (m *GitSync) Applier() world.Applier {
 
 func (m *GitSync) Validate(ctx context.Context) error {
 	if err := m.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

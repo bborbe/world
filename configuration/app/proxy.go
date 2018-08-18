@@ -14,7 +14,7 @@ type Proxy struct {
 	Cluster cluster.Cluster
 }
 
-func (p *Proxy) Childs() []world.Configuration {
+func (p *Proxy) Children() []world.Configuration {
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   p.Cluster.Context,

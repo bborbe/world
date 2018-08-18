@@ -15,7 +15,7 @@ import (
 
 type Kickstart struct {
 	Cluster        cluster.Cluster
-	Domains        []world.Domain
+	Domains        []deployer.Domain
 	GitSyncVersion docker.Tag
 }
 
@@ -23,7 +23,7 @@ func (k *Kickstart) Applier() world.Applier {
 	return nil
 }
 
-func (k *Kickstart) Childs() []world.Configuration {
+func (k *Kickstart) Children() []world.Configuration {
 	nginxImage := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
@@ -34,10 +34,10 @@ func (k *Kickstart) Childs() []world.Configuration {
 		Repository: "bborbe/git-sync",
 		Tag:        k.GitSyncVersion,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     80,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -67,7 +67,7 @@ func (k *Kickstart) Childs() []world.Configuration {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:     "kickstart",
 							Target:   "/usr/share/nginx/html",
@@ -82,7 +82,7 @@ func (k *Kickstart) Childs() []world.Configuration {
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Args: []world.Arg{
+					Args: []k8s.Arg{
 						"-logtostderr",
 						"-v=4",
 					},
@@ -96,7 +96,7 @@ func (k *Kickstart) Childs() []world.Configuration {
 							Value: "/kickstart",
 						},
 					},
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:   "kickstart",
 							Target: "/kickstart",
@@ -104,7 +104,7 @@ func (k *Kickstart) Childs() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:     "kickstart",
 					EmptyDir: true,

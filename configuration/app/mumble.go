@@ -17,13 +17,13 @@ type Mumble struct {
 	Tag     docker.Tag
 }
 
-func (m *Mumble) Childs() []world.Configuration {
+func (m *Mumble) Children() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/mumble",
 		Tag:        m.Tag,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     64738,
 			HostPort: 64738,

@@ -12,7 +12,7 @@ type Now struct {
 	Image docker.Image
 }
 
-func (p *Now) Childs() []world.Configuration {
+func (p *Now) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
 			Name:            "now",
@@ -32,7 +32,7 @@ func (p *Now) Applier() world.Applier {
 
 func (p *Now) Validate(ctx context.Context) error {
 	if err := p.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

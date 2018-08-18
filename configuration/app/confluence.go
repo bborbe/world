@@ -15,18 +15,18 @@ import (
 
 type Confluence struct {
 	Cluster cluster.Cluster
-	Domains []world.Domain
+	Domains []deployer.Domain
 	Tag     docker.Tag
 }
 
-func (c *Confluence) Childs() []world.Configuration {
+func (c *Confluence) Children() []world.Configuration {
 	var buildVersion docker.GitBranch = "1.3.0"
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/atlassian-confluence",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", c.Tag, buildVersion)),
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     8080,
 			Protocol: "TCP",
@@ -65,6 +65,12 @@ func (c *Confluence) Childs() []world.Configuration {
 			Name:      "confluence",
 			Ports:     ports,
 		},
+		&deployer.IngressDeployer{
+			Context:   c.Cluster.Context,
+			Namespace: "confluence",
+			Name:      "confluence",
+			Domains:   c.Domains,
+		},
 	}
 }
 
@@ -76,6 +82,12 @@ func (c *Confluence) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate confluence app ...")
 	if err := c.Cluster.Validate(ctx); err != nil {
 		return errors.Wrap(err, "validate confluence app failed")
+	}
+	if len(c.Domains) == 0 {
+		return errors.New("Domains empty")
+	}
+	if c.Tag == "" {
+		return errors.New("Tag empty")
 	}
 	return nil
 }

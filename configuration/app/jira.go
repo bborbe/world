@@ -14,7 +14,7 @@ type Jira struct {
 	Cluster cluster.Cluster
 }
 
-func (j *Jira) Childs() []world.Configuration {
+func (j *Jira) Children() []world.Configuration {
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   j.Cluster.Context,

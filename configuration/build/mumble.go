@@ -12,7 +12,7 @@ type Mumble struct {
 	Image docker.Image
 }
 
-func (m *Mumble) Childs() []world.Configuration {
+func (m *Mumble) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/mumble.git",
@@ -30,7 +30,7 @@ func (m *Mumble) Applier() world.Applier {
 
 func (m *Mumble) Validate(ctx context.Context) error {
 	if err := m.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

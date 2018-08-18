@@ -14,7 +14,7 @@ type SecretDeployer struct {
 	Namespace    k8s.NamespaceName
 	Name         k8s.Name
 	Requirements []world.Configuration
-	Secrets      world.Secrets
+	Secrets      Secrets
 }
 
 func (i *SecretDeployer) Applier() world.Applier {
@@ -24,7 +24,7 @@ func (i *SecretDeployer) Applier() world.Applier {
 	}
 }
 
-func (i *SecretDeployer) Childs() []world.Configuration {
+func (i *SecretDeployer) Children() []world.Configuration {
 	return i.Requirements
 }
 

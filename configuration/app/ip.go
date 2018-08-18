@@ -8,13 +8,14 @@ import (
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Ip struct {
 	Cluster cluster.Cluster
-	Domains []world.Domain
+	Domains []deployer.Domain
 	Tag     docker.Tag
 }
 
@@ -22,16 +23,16 @@ func (i *Ip) Applier() world.Applier {
 	return nil
 }
 
-func (i *Ip) Childs() []world.Configuration {
+func (i *Ip) Children() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/ip",
 		Tag:        i.Tag,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     8080,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -57,7 +58,7 @@ func (i *Ip) Childs() []world.Configuration {
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Args:          []world.Arg{"-logtostderr", "-v=2"},
+					Args:          []k8s.Arg{"-logtostderr", "-v=2"},
 					Ports:         ports,
 				},
 			},

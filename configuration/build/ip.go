@@ -12,7 +12,7 @@ type Ip struct {
 	Image docker.Image
 }
 
-func (i *Ip) Childs() []world.Configuration {
+func (i *Ip) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
 			Name:            "ip",
@@ -32,7 +32,7 @@ func (i *Ip) Applier() world.Applier {
 
 func (i *Ip) Validate(ctx context.Context) error {
 	if err := i.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

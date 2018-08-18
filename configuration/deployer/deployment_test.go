@@ -3,7 +3,6 @@ package deployer
 import (
 	"bytes"
 
-	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/go-yaml/yaml"
@@ -28,14 +27,14 @@ var _ = Describe("DeploymentDeployer", func() {
 						Repository: "bborbe/test",
 						Tag:        "latest",
 					},
-					Ports: []world.Port{
+					Ports: []Port{
 						{
 							Name:     "root",
 							Port:     1337,
 							Protocol: "TCP",
 						},
 					},
-					Args: []world.Arg{"-v=4"},
+					Args: []k8s.Arg{"-v=4"},
 					Env: []k8s.Env{
 						{
 							Name:  "a",
@@ -46,7 +45,7 @@ var _ = Describe("DeploymentDeployer", func() {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []world.Mount{
+					Mounts: []Mount{
 						{
 							Name:     "data",
 							Target:   "/usr/share/nginx/html",
@@ -55,7 +54,7 @@ var _ = Describe("DeploymentDeployer", func() {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []Volume{
 				{
 					Name:      "data",
 					NfsPath:   "/data/download",

@@ -13,7 +13,7 @@ type Prometheus struct {
 	Cluster cluster.Cluster
 }
 
-func (p *Prometheus) Childs() []world.Configuration {
+func (p *Prometheus) Children() []world.Configuration {
 	return []world.Configuration{}
 }
 

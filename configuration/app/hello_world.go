@@ -14,7 +14,7 @@ import (
 
 type HelloWorld struct {
 	Cluster cluster.Cluster
-	Domains []world.Domain
+	Domains []deployer.Domain
 	Tag     docker.Tag
 }
 
@@ -22,16 +22,16 @@ func (h *HelloWorld) Applier() world.Applier {
 	return nil
 }
 
-func (h *HelloWorld) Childs() []world.Configuration {
+func (h *HelloWorld) Children() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/hello-world",
 		Tag:        h.Tag,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     80,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -82,7 +82,10 @@ func (h *HelloWorld) Validate(ctx context.Context) error {
 		return errors.Wrap(err, "validate hello world app failed")
 	}
 	if len(h.Domains) == 0 {
-		return errors.New("domains empty in hello world app")
+		return errors.New("Domains empty")
+	}
+	if h.Tag == "" {
+		return errors.New("Tag missing")
 	}
 	return nil
 }

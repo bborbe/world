@@ -8,39 +8,39 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Confluence struct {
+type Poste struct {
 	Image         docker.Image
 	VendorVersion docker.Tag
 	GitBranch     docker.GitBranch
 }
 
-func (c *Confluence) Children() []world.Configuration {
+func (p *Poste) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo: "https://github.com/bborbe/atlassian-confluence.git",
-			Image:   c.Image,
+			GitRepo: "https://github.com/bborbe/poste.io.git",
+			Image:   p.Image,
 			BuildArgs: docker.BuildArgs{
-				"VENDOR_VERSION": c.VendorVersion.String(),
+				"VENDOR_VERSION": p.VendorVersion.String(),
 			},
-			GitBranch: c.GitBranch,
+			GitBranch: p.GitBranch,
 		}),
 	}
 }
 
-func (c *Confluence) Applier() world.Applier {
+func (p *Poste) Applier() world.Applier {
 	return &docker.Uploader{
-		Image: c.Image,
+		Image: p.Image,
 	}
 }
 
-func (c *Confluence) Validate(ctx context.Context) error {
-	if err := c.Image.Validate(ctx); err != nil {
+func (p *Poste) Validate(ctx context.Context) error {
+	if err := p.Image.Validate(ctx); err != nil {
 		return errors.Wrap(err, "Image missing")
 	}
-	if c.GitBranch == "" {
+	if p.GitBranch == "" {
 		return errors.New("GitBranch missing")
 	}
-	if c.VendorVersion == "" {
+	if p.VendorVersion == "" {
 		return errors.New("VendorVersion missing")
 	}
 	return nil

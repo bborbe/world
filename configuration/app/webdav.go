@@ -15,21 +15,21 @@ import (
 
 type Webdav struct {
 	Cluster  cluster.Cluster
-	Domains  []world.Domain
+	Domains  []deployer.Domain
 	Tag      docker.Tag
-	Password world.SecretValue
+	Password deployer.SecretValue
 }
 
-func (w *Webdav) Childs() []world.Configuration {
+func (w *Webdav) Children() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/webdav",
 		Tag:        w.Tag,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     80,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -42,7 +42,7 @@ func (w *Webdav) Childs() []world.Configuration {
 			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
-			Secrets: world.Secrets{
+			Secrets: deployer.Secrets{
 				"password": w.Password,
 			},
 		},
@@ -79,7 +79,7 @@ func (w *Webdav) Childs() []world.Configuration {
 							},
 						},
 					},
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:   "webdav",
 							Target: "/data",
@@ -87,7 +87,7 @@ func (w *Webdav) Childs() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:      "webdav",
 					NfsPath:   "/data/webdav",

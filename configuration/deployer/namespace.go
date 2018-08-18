@@ -21,7 +21,7 @@ func (n *NamespaceDeployer) Applier() world.Applier {
 	}
 }
 
-func (n *NamespaceDeployer) Childs() []world.Configuration {
+func (n *NamespaceDeployer) Children() []world.Configuration {
 	return n.Requirements
 }
 

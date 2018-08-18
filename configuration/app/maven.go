@@ -15,11 +15,11 @@ import (
 
 type Maven struct {
 	Cluster          cluster.Cluster
-	Domains          []world.Domain
+	Domains          []deployer.Domain
 	MavenRepoVersion docker.Tag
 }
 
-func (m *Maven) Childs() []world.Configuration {
+func (m *Maven) Children() []world.Configuration {
 	result := []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   m.Cluster.Context,
@@ -31,10 +31,10 @@ func (m *Maven) Childs() []world.Configuration {
 	return result
 }
 func (m *Maven) public() []world.Configuration {
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     80,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -62,7 +62,7 @@ func (m *Maven) public() []world.Configuration {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:     "maven",
 							Target:   "/usr/share/nginx/html",
@@ -71,7 +71,7 @@ func (m *Maven) public() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:      "maven",
 					NfsPath:   "/data/maven",
@@ -100,10 +100,10 @@ func (m *Maven) api() []world.Configuration {
 		Repository: "bborbe/maven-repo",
 		Tag:        m.MavenRepoVersion,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     8080,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -125,7 +125,7 @@ func (m *Maven) api() []world.Configuration {
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Args:          []world.Arg{"-logtostderr", "-v=1"},
+					Args:          []k8s.Arg{"-logtostderr", "-v=1"},
 					Ports:         ports,
 					Env: []k8s.Env{
 						{
@@ -133,7 +133,7 @@ func (m *Maven) api() []world.Configuration {
 							Value: "/data",
 						},
 					},
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:   "maven",
 							Target: "/data",
@@ -141,7 +141,7 @@ func (m *Maven) api() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:      "maven",
 					NfsPath:   "/data/maven",

@@ -9,17 +9,6 @@ import (
 )
 
 type Applier struct {
-	ValidateStub        func(ctx context.Context) error
-	validateMutex       sync.RWMutex
-	validateArgsForCall []struct {
-		ctx context.Context
-	}
-	validateReturns struct {
-		result1 error
-	}
-	validateReturnsOnCall map[int]struct {
-		result1 error
-	}
 	SatisfiedStub        func(ctx context.Context) (bool, error)
 	satisfiedMutex       sync.RWMutex
 	satisfiedArgsForCall []struct {
@@ -44,65 +33,19 @@ type Applier struct {
 	applyReturnsOnCall map[int]struct {
 		result1 error
 	}
-	RequiredStub        func() world.Applier
-	requiredMutex       sync.RWMutex
-	requiredArgsForCall []struct{}
-	requiredReturns     struct {
-		result1 world.Applier
+	ValidateStub        func(ctx context.Context) error
+	validateMutex       sync.RWMutex
+	validateArgsForCall []struct {
+		ctx context.Context
 	}
-	requiredReturnsOnCall map[int]struct {
-		result1 world.Applier
+	validateReturns struct {
+		result1 error
+	}
+	validateReturnsOnCall map[int]struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *Applier) Validate(ctx context.Context) error {
-	fake.validateMutex.Lock()
-	ret, specificReturn := fake.validateReturnsOnCall[len(fake.validateArgsForCall)]
-	fake.validateArgsForCall = append(fake.validateArgsForCall, struct {
-		ctx context.Context
-	}{ctx})
-	fake.recordInvocation("Validate", []interface{}{ctx})
-	fake.validateMutex.Unlock()
-	if fake.ValidateStub != nil {
-		return fake.ValidateStub(ctx)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.validateReturns.result1
-}
-
-func (fake *Applier) ValidateCallCount() int {
-	fake.validateMutex.RLock()
-	defer fake.validateMutex.RUnlock()
-	return len(fake.validateArgsForCall)
-}
-
-func (fake *Applier) ValidateArgsForCall(i int) context.Context {
-	fake.validateMutex.RLock()
-	defer fake.validateMutex.RUnlock()
-	return fake.validateArgsForCall[i].ctx
-}
-
-func (fake *Applier) ValidateReturns(result1 error) {
-	fake.ValidateStub = nil
-	fake.validateReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *Applier) ValidateReturnsOnCall(i int, result1 error) {
-	fake.ValidateStub = nil
-	if fake.validateReturnsOnCall == nil {
-		fake.validateReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.validateReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *Applier) Satisfied(ctx context.Context) (bool, error) {
@@ -204,57 +147,63 @@ func (fake *Applier) ApplyReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *Applier) Required() world.Applier {
-	fake.requiredMutex.Lock()
-	ret, specificReturn := fake.requiredReturnsOnCall[len(fake.requiredArgsForCall)]
-	fake.requiredArgsForCall = append(fake.requiredArgsForCall, struct{}{})
-	fake.recordInvocation("Required", []interface{}{})
-	fake.requiredMutex.Unlock()
-	if fake.RequiredStub != nil {
-		return fake.RequiredStub()
+func (fake *Applier) Validate(ctx context.Context) error {
+	fake.validateMutex.Lock()
+	ret, specificReturn := fake.validateReturnsOnCall[len(fake.validateArgsForCall)]
+	fake.validateArgsForCall = append(fake.validateArgsForCall, struct {
+		ctx context.Context
+	}{ctx})
+	fake.recordInvocation("Validate", []interface{}{ctx})
+	fake.validateMutex.Unlock()
+	if fake.ValidateStub != nil {
+		return fake.ValidateStub(ctx)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.requiredReturns.result1
+	return fake.validateReturns.result1
 }
 
-func (fake *Applier) RequiredCallCount() int {
-	fake.requiredMutex.RLock()
-	defer fake.requiredMutex.RUnlock()
-	return len(fake.requiredArgsForCall)
+func (fake *Applier) ValidateCallCount() int {
+	fake.validateMutex.RLock()
+	defer fake.validateMutex.RUnlock()
+	return len(fake.validateArgsForCall)
 }
 
-func (fake *Applier) RequiredReturns(result1 world.Applier) {
-	fake.RequiredStub = nil
-	fake.requiredReturns = struct {
-		result1 world.Applier
+func (fake *Applier) ValidateArgsForCall(i int) context.Context {
+	fake.validateMutex.RLock()
+	defer fake.validateMutex.RUnlock()
+	return fake.validateArgsForCall[i].ctx
+}
+
+func (fake *Applier) ValidateReturns(result1 error) {
+	fake.ValidateStub = nil
+	fake.validateReturns = struct {
+		result1 error
 	}{result1}
 }
 
-func (fake *Applier) RequiredReturnsOnCall(i int, result1 world.Applier) {
-	fake.RequiredStub = nil
-	if fake.requiredReturnsOnCall == nil {
-		fake.requiredReturnsOnCall = make(map[int]struct {
-			result1 world.Applier
+func (fake *Applier) ValidateReturnsOnCall(i int, result1 error) {
+	fake.ValidateStub = nil
+	if fake.validateReturnsOnCall == nil {
+		fake.validateReturnsOnCall = make(map[int]struct {
+			result1 error
 		})
 	}
-	fake.requiredReturnsOnCall[i] = struct {
-		result1 world.Applier
+	fake.validateReturnsOnCall[i] = struct {
+		result1 error
 	}{result1}
 }
 
 func (fake *Applier) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.validateMutex.RLock()
-	defer fake.validateMutex.RUnlock()
 	fake.satisfiedMutex.RLock()
 	defer fake.satisfiedMutex.RUnlock()
 	fake.applyMutex.RLock()
 	defer fake.applyMutex.RUnlock()
-	fake.requiredMutex.RLock()
-	defer fake.requiredMutex.RUnlock()
+	fake.validateMutex.RLock()
+	defer fake.validateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -14,7 +14,7 @@ type Jenkins struct {
 	Cluster cluster.Cluster
 }
 
-func (j *Jenkins) Childs() []world.Configuration {
+func (j *Jenkins) Children() []world.Configuration {
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   j.Cluster.Context,

@@ -3,7 +3,6 @@ package deployer
 import (
 	"bytes"
 
-	"github.com/bborbe/world"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,8 +13,8 @@ var _ = Describe("SecretDeployer", func() {
 		secretDeployer := &SecretDeployer{
 			Namespace: "banana",
 			Name:      "banana",
-			Secrets: world.Secrets{
-				"secret": &world.SecretValueStatic{
+			Secrets: Secrets{
+				"secret": &SecretValueStatic{
 					Content: []byte("hello world"),
 				},
 			},

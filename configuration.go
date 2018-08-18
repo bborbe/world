@@ -4,40 +4,47 @@ import (
 	"context"
 )
 
-type ConfigurationStruct struct {
+//go:generate counterfeiter -o mocks/configuration.go --fake-name Configuration . Configuration
+type Configuration interface {
+	Children() []Configuration
+	Applier() Applier
+	Validate(ctx context.Context) error
+}
+
+type ConfigurationBuilder struct {
 	applier  Applier
-	childs   []Configuration
+	children []Configuration
 	validate func(ctx context.Context) error
 }
 
-func NewConfiguration() *ConfigurationStruct {
-	return new(ConfigurationStruct)
+func NewConfiguration() *ConfigurationBuilder {
+	return new(ConfigurationBuilder)
 }
 
-func (c *ConfigurationStruct) WithChilds(childs []Configuration) *ConfigurationStruct {
-	c.childs = childs
+func (c *ConfigurationBuilder) WithChildren(children []Configuration) *ConfigurationBuilder {
+	c.children = children
 	return c
 }
 
-func (c *ConfigurationStruct) WithApplier(applier Applier) *ConfigurationStruct {
+func (c *ConfigurationBuilder) WithApplier(applier Applier) *ConfigurationBuilder {
 	c.applier = applier
 	return c
 }
 
-func (c *ConfigurationStruct) WithValidate(validate func(ctx context.Context) error) *ConfigurationStruct {
+func (c *ConfigurationBuilder) WithValidate(validate func(ctx context.Context) error) *ConfigurationBuilder {
 	c.validate = validate
 	return c
 }
 
-func (c *ConfigurationStruct) Childs() []Configuration {
-	return c.childs
+func (c *ConfigurationBuilder) Children() []Configuration {
+	return c.children
 }
 
-func (c *ConfigurationStruct) Applier() Applier {
+func (c *ConfigurationBuilder) Applier() Applier {
 	return c.applier
 }
 
-func (c *ConfigurationStruct) Validate(ctx context.Context) error {
+func (c *ConfigurationBuilder) Validate(ctx context.Context) error {
 	if c.validate != nil {
 		return c.validate(ctx)
 	}

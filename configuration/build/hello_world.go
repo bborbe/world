@@ -12,7 +12,7 @@ type HelloWorld struct {
 	Image docker.Image
 }
 
-func (h *HelloWorld) Childs() []world.Configuration {
+func (h *HelloWorld) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/hello-world.git",
@@ -30,7 +30,7 @@ func (h *HelloWorld) Applier() world.Applier {
 
 func (h *HelloWorld) Validate(ctx context.Context) error {
 	if err := h.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

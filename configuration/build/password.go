@@ -12,7 +12,7 @@ type Password struct {
 	Image docker.Image
 }
 
-func (p *Password) Childs() []world.Configuration {
+func (p *Password) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
 			Name:            "password",
@@ -32,7 +32,7 @@ func (p *Password) Applier() world.Applier {
 
 func (p *Password) Validate(ctx context.Context) error {
 	if err := p.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

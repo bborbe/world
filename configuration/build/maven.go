@@ -12,7 +12,7 @@ type Maven struct {
 	Image docker.Image
 }
 
-func (p *Maven) Childs() []world.Configuration {
+func (p *Maven) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
 			Name:            "maven",
@@ -32,7 +32,7 @@ func (p *Maven) Applier() world.Applier {
 
 func (p *Maven) Validate(ctx context.Context) error {
 	if err := p.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

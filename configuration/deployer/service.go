@@ -10,10 +10,10 @@ import (
 
 type ServiceDeployer struct {
 	Context      k8s.Context
-	Requirements []world.Configuration
 	Namespace    k8s.NamespaceName
 	Name         k8s.Name
-	Ports        []world.Port
+	Requirements []world.Configuration
+	Ports        []Port
 }
 
 func (s *ServiceDeployer) Applier() world.Applier {
@@ -23,7 +23,7 @@ func (s *ServiceDeployer) Applier() world.Applier {
 	}
 }
 
-func (s *ServiceDeployer) Childs() []world.Configuration {
+func (s *ServiceDeployer) Children() []world.Configuration {
 	return s.Requirements
 }
 

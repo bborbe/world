@@ -14,7 +14,7 @@ type Monitoring struct {
 	Cluster cluster.Cluster
 }
 
-func (m *Monitoring) Childs() []world.Configuration {
+func (m *Monitoring) Children() []world.Configuration {
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   m.Cluster.Context,

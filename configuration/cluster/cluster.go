@@ -3,14 +3,14 @@ package cluster
 import (
 	"context"
 
-	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/pkg/errors"
 )
 
 type Cluster struct {
 	Context   k8s.Context
-	NfsServer world.MountNfsServer
+	NfsServer deployer.MountNfsServer
 }
 
 func (c *Cluster) Validate(ctx context.Context) error {

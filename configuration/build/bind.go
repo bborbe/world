@@ -12,7 +12,7 @@ type Bind struct {
 	Image docker.Image
 }
 
-func (o *Bind) Childs() []world.Configuration {
+func (o *Bind) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.Builder{
 			GitRepo:   "https://github.com/bborbe/bind.git",
@@ -30,7 +30,7 @@ func (o *Bind) Applier() world.Applier {
 
 func (o *Bind) Validate(ctx context.Context) error {
 	if err := o.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

@@ -14,7 +14,7 @@ type Teamvault struct {
 	Cluster cluster.Cluster
 }
 
-func (t *Teamvault) Childs() []world.Configuration {
+func (t *Teamvault) Children() []world.Configuration {
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   t.Cluster.Context,

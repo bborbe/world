@@ -7,9 +7,13 @@ import (
 	"os"
 	"os/exec"
 
+	"encoding/json"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
+
+var getUrl = http.Get
 
 type Uploader struct {
 	Image Image
@@ -31,13 +35,25 @@ func (u *Uploader) Apply(ctx context.Context) error {
 
 func (u *Uploader) Satisfied(ctx context.Context) (bool, error) {
 	glog.V(2).Infof("check image %s exists an registry ...", u.Image.String())
-	url := fmt.Sprintf("https://index.io/v1/repositories/%s/tags/%s", u.Image.Repository, u.Image.Tag)
-	resp, err := http.Get(url)
+	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/tags/%s/", u.Image.Repository, u.Image.Tag)
+	resp, err := getUrl(url)
 	if err != nil {
 		return false, errors.Wrapf(err, "get %s failed", url)
 	}
 	if resp.StatusCode/100 != 2 {
 		glog.V(1).Infof("image %s is missing on registry", u.Image.String())
+		return false, nil
+	}
+	defer resp.Body.Close()
+	var data struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		glog.V(1).Infof("decode json failed: %v", err)
+		return false, errors.Wrap(err, "decode json failed")
+	}
+	if data.Name != u.Image.Tag.String() {
+		glog.V(2).Infof("tag mismatch")
 		return false, nil
 	}
 	glog.V(2).Infof("image %s exists on registry", u.Image.String())

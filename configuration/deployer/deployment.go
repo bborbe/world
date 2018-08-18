@@ -3,11 +3,146 @@ package deployer
 import (
 	"context"
 
+	"github.com/bborbe/teamvault-utils/connector"
+	"github.com/bborbe/teamvault-utils/model"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
+
+type Port struct {
+	Name     string
+	Port     int
+	HostPort int
+	Protocol string
+}
+
+type SecretValue interface {
+	Value() ([]byte, error)
+	Validate(ctx context.Context) error
+}
+
+type SecretFromTeamvault struct {
+	TeamvaultConnector connector.Connector
+	TeamvaultKey       model.TeamvaultKey
+}
+
+func (s *SecretFromTeamvault) Value() ([]byte, error) {
+	teamvaultPassword, err := s.TeamvaultConnector.Password(s.TeamvaultKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get teamvault password failed")
+	}
+	return []byte(teamvaultPassword), nil
+}
+
+func (s *SecretFromTeamvault) Validate(ctx context.Context) error {
+	_, err := s.Value()
+	return errors.Wrapf(err, "get teamvault secret %s failed", s.TeamvaultKey.String())
+}
+
+type SecretValueStatic struct {
+	Content []byte
+}
+
+func (s *SecretValueStatic) Value() ([]byte, error) {
+	return s.Content, nil
+}
+
+func (s *SecretValueStatic) Validate(ctx context.Context) error {
+	return nil
+}
+
+type Secrets map[string]SecretValue
+
+type MountName string
+
+type MountTarget string
+
+type MountReadOnly bool
+
+type MountNfsPath string
+
+type MountNfsServer string
+
+type Mount struct {
+	Name     MountName
+	Target   MountTarget
+	ReadOnly MountReadOnly
+}
+
+func (m *Mount) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validating mount %s", m.Name)
+	if m.Name == "" {
+		return errors.New("name missing")
+	}
+	if m.Target == "" {
+		return errors.New("target missing")
+	}
+	glog.V(4).Infof("mount %s is valid", m.Name)
+	return nil
+}
+
+type Volume struct {
+	Name      MountName
+	NfsPath   MountNfsPath
+	NfsServer MountNfsServer
+	EmptyDir  bool
+}
+
+func (m *Volume) GetName() MountName {
+	return m.Name
+}
+
+func (m *Volume) Validate(ctx context.Context) error {
+	glog.V(4).Infof("validating mount %s", m.Name)
+	if m.Name == "" {
+		return errors.New("name missing")
+	}
+	if m.NfsPath == "" {
+		return errors.New("nfs path missing")
+	}
+	if m.NfsServer == "" {
+		return errors.New("nfs server missing")
+	}
+	glog.V(4).Infof("mount %s is valid", m.Name)
+	return nil
+}
+
+type LivenessProbe bool
+
+type ReadinessProbe bool
+
+type ContainerName string
+
+func (c ContainerName) String() string {
+	return string(c)
+}
+
+type CpuLimit string
+
+func (b CpuLimit) String() string {
+	return string(b)
+}
+
+type MemoryLimit string
+
+func (b MemoryLimit) String() string {
+	return string(b)
+}
+
+type CpuRequest string
+
+func (b CpuRequest) String() string {
+	return string(b)
+}
+
+type MemoryRequest string
+
+func (b MemoryRequest) String() string {
+	return string(b)
+}
 
 type DeploymentDeployer struct {
 	Context      k8s.Context
@@ -15,20 +150,20 @@ type DeploymentDeployer struct {
 	Name         k8s.Name
 	Requirements []world.Configuration
 	Containers   []DeploymentDeployerContainer
-	Volumes      []world.Volume
+	Volumes      []Volume
 	HostNetwork  k8s.PodHostNetwork
 }
 
 type DeploymentDeployerContainer struct {
-	Name          world.ContainerName
-	Args          []world.Arg
-	Ports         []world.Port
+	Name          ContainerName
+	Args          []k8s.Arg
+	Ports         []Port
 	Env           []k8s.Env
-	CpuLimit      world.CpuLimit
-	MemoryLimit   world.MemoryLimit
-	CpuRequest    world.CpuRequest
-	MemoryRequest world.MemoryRequest
-	Mounts        []world.Mount
+	CpuLimit      CpuLimit
+	MemoryLimit   MemoryLimit
+	CpuRequest    CpuRequest
+	MemoryRequest MemoryRequest
+	Mounts        []Mount
 	Image         docker.Image
 }
 
@@ -39,38 +174,41 @@ func (d *DeploymentDeployer) Applier() world.Applier {
 	}
 }
 
-func (d *DeploymentDeployer) Childs() []world.Configuration {
+func (d *DeploymentDeployer) Children() []world.Configuration {
 	return d.Requirements
 }
 
 func (d *DeploymentDeployer) Validate(ctx context.Context) error {
 	if d.Context == "" {
-		return errors.New("context missing in deployment deployer")
+		return errors.New("Context missing")
 	}
 	if d.Namespace == "" {
-		return errors.New("Namespace missing in deployment deployer")
+		return errors.New("Namespace missing")
 	}
 	if d.Name == "" {
-		return errors.New("Name missing in deployment deployer")
+		return errors.New("Name missing")
+	}
+	if len(d.Containers) == 0 {
+		return errors.New("Containers missing")
 	}
 	for _, container := range d.Containers {
 		if container.Name == "" {
-			return errors.New("Name missing in deployment deployer")
+			return errors.New("Name missing")
 		}
 		if container.CpuLimit == "" {
-			return errors.New("CpuLimit missing in deployment deployer")
+			return errors.New("CpuLimit missing")
 		}
 		if container.MemoryLimit == "" {
-			return errors.New("MemoryLimit missing in deployment deployer")
+			return errors.New("MemoryLimit missing")
 		}
 		if container.CpuRequest == "" {
-			return errors.New("CpuRequest missing in deployment deployer")
+			return errors.New("CpuRequest missing")
 		}
 		if container.MemoryRequest == "" {
-			return errors.New("MemoryRequest missing in deployment deployer")
+			return errors.New("MemoryRequest missing")
 		}
 		if err := container.Image.Validate(ctx); err != nil {
-			return err
+			return errors.Wrap(err, "image invalid")
 		}
 	}
 	return nil

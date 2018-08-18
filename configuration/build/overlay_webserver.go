@@ -12,7 +12,7 @@ type OverlayWebserver struct {
 	Image docker.Image
 }
 
-func (o *OverlayWebserver) Childs() []world.Configuration {
+func (o *OverlayWebserver) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
 			Name:            "overlay-server",
@@ -32,7 +32,7 @@ func (o *OverlayWebserver) Applier() world.Applier {
 
 func (o *OverlayWebserver) Validate(ctx context.Context) error {
 	if err := o.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "image missing")
+		return errors.Wrap(err, "Image missing")
 	}
 	return nil
 }

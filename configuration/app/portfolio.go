@@ -17,13 +17,13 @@ import (
 
 type Portfolio struct {
 	Cluster              cluster.Cluster
-	Domains              []world.Domain
+	Domains              []deployer.Domain
 	OverlayServerVersion docker.Tag
 	GitSyncVersion       docker.Tag
-	GitSyncPassword      world.SecretValue
+	GitSyncPassword      deployer.SecretValue
 }
 
-func (p *Portfolio) Childs() []world.Configuration {
+func (p *Portfolio) Children() []world.Configuration {
 	port := 8080
 	overlayServerImage := docker.Image{
 		Registry:   "docker.io",
@@ -35,10 +35,10 @@ func (p *Portfolio) Childs() []world.Configuration {
 		Repository: "bborbe/git-sync",
 		Tag:        p.GitSyncVersion,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     port,
-			Name:     "web",
+			Name:     "http",
 			Protocol: "TCP",
 		},
 	}
@@ -51,7 +51,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
-			Secrets: world.Secrets{
+			Secrets: deployer.Secrets{
 				"git-sync-password": p.GitSyncPassword,
 			},
 		},
@@ -75,7 +75,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Args:          []world.Arg{"-logtostderr", "-v=1"},
+					Args:          []k8s.Arg{"-logtostderr", "-v=1"},
 					Ports:         ports,
 					Env: []k8s.Env{
 						{
@@ -91,7 +91,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 							Value: "/overlay",
 						},
 					},
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:     "portfolio",
 							Target:   "/portfolio",
@@ -111,7 +111,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Args: []world.Arg{
+					Args: []k8s.Arg{
 						"-logtostderr",
 						"-v=1",
 					},
@@ -125,7 +125,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 							Value: "/portfolio",
 						},
 					},
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:   "portfolio",
 							Target: "/portfolio",
@@ -139,7 +139,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Args: []world.Arg{
+					Args: []k8s.Arg{
 						"-logtostderr",
 						"-v=1",
 					},
@@ -166,7 +166,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 							},
 						},
 					},
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:   "overlay",
 							Target: "/overlay",
@@ -174,7 +174,7 @@ func (p *Portfolio) Childs() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:     "portfolio",
 					EmptyDir: true,

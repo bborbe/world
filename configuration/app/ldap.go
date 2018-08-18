@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
@@ -14,23 +13,23 @@ import (
 )
 
 type Ldap struct {
-	Context            k8s.Context
-	NfsServer          world.MountNfsServer
-	Tag                docker.Tag
-	TeamvaultConnector connector.Connector
+	Context    k8s.Context
+	NfsServer  deployer.MountNfsServer
+	Tag        docker.Tag
+	LdapSecret deployer.SecretValue
 }
 
-func (d *Ldap) Applier() world.Applier {
+func (l *Ldap) Applier() world.Applier {
 	return nil
 }
 
-func (d *Ldap) Childs() []world.Configuration {
+func (l *Ldap) Children() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/openldap",
-		Tag:        d.Tag,
+		Tag:        l.Tag,
 	}
-	ports := []world.Port{
+	ports := []deployer.Port{
 		{
 			Port:     389,
 			Name:     "ldap",
@@ -44,21 +43,18 @@ func (d *Ldap) Childs() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   d.Context,
+			Context:   l.Context,
 			Namespace: "ldap",
 		},
 		&deployer.SecretDeployer{
-			Context:   d.Context,
+			Context:   l.Context,
 			Namespace: "ldap",
-			Secrets: world.Secrets{
-				"secret": &world.SecretFromTeamvault{
-					TeamvaultConnector: d.TeamvaultConnector,
-					TeamvaultKey:       "MOPMLG",
-				},
+			Secrets: deployer.Secrets{
+				"secret": l.LdapSecret,
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context: d.Context,
+			Context: l.Context,
 			Requirements: []world.Configuration{
 				&build.Openldap{
 					Image: image,
@@ -93,7 +89,7 @@ func (d *Ldap) Childs() []world.Configuration {
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []world.Mount{
+					Mounts: []deployer.Mount{
 						{
 							Name:   "ldap",
 							Target: "/var/lib/openldap/openldap-data",
@@ -101,16 +97,16 @@ func (d *Ldap) Childs() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []world.Volume{
+			Volumes: []deployer.Volume{
 				{
 					Name:      "ldap",
 					NfsPath:   "/data/ldap",
-					NfsServer: d.NfsServer,
+					NfsServer: l.NfsServer,
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   d.Context,
+			Context:   l.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
 			Ports:     ports,
@@ -118,16 +114,22 @@ func (d *Ldap) Childs() []world.Configuration {
 	}
 }
 
-func (d *Ldap) Validate(ctx context.Context) error {
+func (l *Ldap) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate ldap app ...")
-	if d.Context == "" {
-		return errors.New("context missing in ldap app")
+	if l.Context == "" {
+		return errors.New("Context missing")
 	}
-	if d.NfsServer == "" {
-		return errors.New("nfs-server missing in ldap app")
+	if l.NfsServer == "" {
+		return errors.New("NfsServer missing")
 	}
-	if d.TeamvaultConnector == nil {
-		return errors.New("teamvault-connector missing in ldap app")
+	if l.Tag == "" {
+		return errors.New("Tag missing")
+	}
+	if l.LdapSecret == nil {
+		return errors.New("LdapSecret missing")
+	}
+	if err := l.LdapSecret.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate LdapSecret failed")
 	}
 	return nil
 }
