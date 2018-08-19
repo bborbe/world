@@ -3,8 +3,7 @@ package configuration
 import (
 	"context"
 
-	"github.com/bborbe/teamvault-utils/connector"
-	"github.com/bborbe/teamvault-utils/model"
+	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
@@ -14,7 +13,7 @@ import (
 )
 
 type Configuration struct {
-	TeamvaultConnector connector.Connector
+	TeamvaultConnector teamvault.Connector
 }
 
 func (c *Configuration) Applier() world.Applier {
@@ -35,15 +34,18 @@ func (c *Configuration) Children() []world.Configuration {
 	}
 	var gitSyncVersion docker.Tag = "1.3.0"
 	return []world.Configuration{
+		&app.Backup{
+			Cluster: netcup,
+			Domains: []deployer.Domain{
+				"backup.benjamin-borbe.de",
+			},
+		},
 		&app.Poste{
 			Cluster:      netcup,
 			PosteVersion: "1.0.7",
 			Domains: []deployer.Domain{
 				"mail.benjamin-borbe.de",
 			},
-		},
-		&app.Backup{
-			Cluster: netcup,
 		},
 		&app.Dns{
 			Cluster: netcup,
@@ -156,11 +158,11 @@ func (c *Configuration) Children() []world.Configuration {
 			},
 			GitSyncVersion: gitSyncVersion,
 		},
-		//&app.Ldap{
-		//Cluster: netcup,
-		//	Tag:                "1.1.0",
-		//	TeamvaultConnector: c.TeamvaultConnector,
-		//},
+		&app.Ldap{
+			Cluster:    netcup,
+			Tag:        "1.1.0",
+			LdapSecret: c.teamvaultPassword("MOPMLG"),
+		},
 		//&app.Confluence{
 		//Cluster: netcup,
 		//	Domains: []world.Domain{
@@ -171,7 +173,7 @@ func (c *Configuration) Children() []world.Configuration {
 	}
 }
 
-func (c *Configuration) teamvaultPassword(key model.TeamvaultKey) deployer.SecretValue {
+func (c *Configuration) teamvaultPassword(key teamvault.Key) deployer.SecretValue {
 	return &deployer.SecretFromTeamvault{
 		TeamvaultConnector: c.TeamvaultConnector,
 		TeamvaultKey:       key,

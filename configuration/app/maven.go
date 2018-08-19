@@ -30,6 +30,7 @@ func (m *Maven) Children() []world.Configuration {
 	result = append(result, m.api()...)
 	return result
 }
+
 func (m *Maven) public() []world.Configuration {
 	ports := []deployer.Port{
 		{

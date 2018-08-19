@@ -3,8 +3,7 @@ package deployer
 import (
 	"context"
 
-	"github.com/bborbe/teamvault-utils/connector"
-	"github.com/bborbe/teamvault-utils/model"
+	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -25,8 +24,8 @@ type SecretValue interface {
 }
 
 type SecretFromTeamvault struct {
-	TeamvaultConnector connector.Connector
-	TeamvaultKey       model.TeamvaultKey
+	TeamvaultConnector teamvault.Connector
+	TeamvaultKey       teamvault.Key
 }
 
 func (s *SecretFromTeamvault) Value() ([]byte, error) {

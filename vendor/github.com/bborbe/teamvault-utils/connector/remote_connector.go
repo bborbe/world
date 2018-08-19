@@ -3,28 +3,27 @@ package connector
 import (
 	"fmt"
 	"net/http"
-
 	"net/url"
 
 	http_header "github.com/bborbe/http/header"
 	"github.com/bborbe/http/rest"
-	"github.com/bborbe/teamvault-utils/model"
+	"github.com/bborbe/teamvault-utils"
 )
 
-type teamvaultPasswordProvider struct {
-	url  model.TeamvaultUrl
-	user model.TeamvaultUser
-	pass model.TeamvaultPassword
+type Remote struct {
+	url  teamvault.Url
+	user teamvault.User
+	pass teamvault.Password
 	rest rest.Rest
 }
 
-func New(
+func NewRemote(
 	executeRequest func(req *http.Request) (resp *http.Response, err error),
-	url model.TeamvaultUrl,
-	user model.TeamvaultUser,
-	pass model.TeamvaultPassword,
-) *teamvaultPasswordProvider {
-	t := new(teamvaultPasswordProvider)
+	url teamvault.Url,
+	user teamvault.User,
+	pass teamvault.Password,
+) *Remote {
+	t := new(Remote)
 	t.rest = rest.New(executeRequest)
 	t.url = url
 	t.user = user
@@ -32,13 +31,13 @@ func New(
 	return t
 }
 
-func (t *teamvaultPasswordProvider) Password(key model.TeamvaultKey) (model.TeamvaultPassword, error) {
+func (t *Remote) Password(key teamvault.Key) (teamvault.Password, error) {
 	currentRevision, err := t.CurrentRevision(key)
 	if err != nil {
 		return "", err
 	}
 	var response struct {
-		Password model.TeamvaultPassword `json:"password"`
+		Password teamvault.Password `json:"password"`
 	}
 	if err := t.rest.Call(fmt.Sprintf("%sdata", currentRevision.String()), nil, http.MethodGet, nil, &response, t.createHeader()); err != nil {
 		return "", err
@@ -46,9 +45,9 @@ func (t *teamvaultPasswordProvider) Password(key model.TeamvaultKey) (model.Team
 	return response.Password, nil
 }
 
-func (t *teamvaultPasswordProvider) User(key model.TeamvaultKey) (model.TeamvaultUser, error) {
+func (t *Remote) User(key teamvault.Key) (teamvault.User, error) {
 	var response struct {
-		User model.TeamvaultUser `json:"username"`
+		User teamvault.User `json:"username"`
 	}
 	if err := t.rest.Call(fmt.Sprintf("%s/api/secrets/%s/", t.url.String(), key.String()), nil, http.MethodGet, nil, &response, t.createHeader()); err != nil {
 		return "", err
@@ -56,9 +55,9 @@ func (t *teamvaultPasswordProvider) User(key model.TeamvaultKey) (model.Teamvaul
 	return response.User, nil
 }
 
-func (t *teamvaultPasswordProvider) Url(key model.TeamvaultKey) (model.TeamvaultUrl, error) {
+func (t *Remote) Url(key teamvault.Key) (teamvault.Url, error) {
 	var response struct {
-		Url model.TeamvaultUrl `json:"url"`
+		Url teamvault.Url `json:"url"`
 	}
 	if err := t.rest.Call(fmt.Sprintf("%s/api/secrets/%s/", t.url.String(), key.String()), nil, http.MethodGet, nil, &response, t.createHeader()); err != nil {
 		return "", err
@@ -66,9 +65,9 @@ func (t *teamvaultPasswordProvider) Url(key model.TeamvaultKey) (model.Teamvault
 	return response.Url, nil
 }
 
-func (t *teamvaultPasswordProvider) CurrentRevision(key model.TeamvaultKey) (model.TeamvaultCurrentRevision, error) {
+func (t *Remote) CurrentRevision(key teamvault.Key) (teamvault.TeamvaultCurrentRevision, error) {
 	var response struct {
-		CurrentRevision model.TeamvaultCurrentRevision `json:"current_revision"`
+		CurrentRevision teamvault.TeamvaultCurrentRevision `json:"current_revision"`
 	}
 	if err := t.rest.Call(fmt.Sprintf("%s/api/secrets/%s/", t.url.String(), key.String()), nil, http.MethodGet, nil, &response, t.createHeader()); err != nil {
 		return "", err
@@ -76,13 +75,13 @@ func (t *teamvaultPasswordProvider) CurrentRevision(key model.TeamvaultKey) (mod
 	return response.CurrentRevision, nil
 }
 
-func (t *teamvaultPasswordProvider) File(key model.TeamvaultKey) (model.TeamvaultFile, error) {
+func (t *Remote) File(key teamvault.Key) (teamvault.File, error) {
 	rev, err := t.CurrentRevision(key)
 	if err != nil {
 		return "", fmt.Errorf("get current revision failed: %v", err)
 	}
 	var response struct {
-		File model.TeamvaultFile `json:"file"`
+		File teamvault.File `json:"file"`
 	}
 	if err := t.rest.Call(fmt.Sprintf("%sdata", rev.String()), nil, http.MethodGet, nil, &response, t.createHeader()); err != nil {
 		return "", err
@@ -90,17 +89,17 @@ func (t *teamvaultPasswordProvider) File(key model.TeamvaultKey) (model.Teamvaul
 	return response.File, nil
 }
 
-func (t *teamvaultPasswordProvider) createHeader() http.Header {
+func (t *Remote) createHeader() http.Header {
 	header := make(http.Header)
 	header.Add("Authorization", fmt.Sprintf("Basic %s", http_header.CreateAuthorizationToken(t.user.String(), t.pass.String())))
 	header.Add("Content-Type", "application/json")
 	return header
 }
 
-func (t *teamvaultPasswordProvider) Search(search string) ([]model.TeamvaultKey, error) {
+func (t *Remote) Search(search string) ([]teamvault.Key, error) {
 	var response struct {
 		Results []struct {
-			ApiUrl model.TeamvaultApiUrl `json:"api_url"`
+			ApiUrl teamvault.TeamvaultApiUrl `json:"api_url"`
 		} `json:"results"`
 	}
 	values := url.Values{}
@@ -108,7 +107,7 @@ func (t *teamvaultPasswordProvider) Search(search string) ([]model.TeamvaultKey,
 	if err := t.rest.Call(fmt.Sprintf("%s/api/secrets/", t.url.String()), values, http.MethodGet, nil, &response, t.createHeader()); err != nil {
 		return nil, err
 	}
-	var result []model.TeamvaultKey
+	var result []teamvault.Key
 	for _, re := range response.Results {
 		key, err := re.ApiUrl.Key()
 		if err != nil {

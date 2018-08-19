@@ -9,8 +9,8 @@ import (
 
 	flag "github.com/bborbe/flagenv"
 	"github.com/bborbe/http/client_builder"
-	"github.com/bborbe/teamvault-utils/connector"
-	"github.com/bborbe/teamvault-utils/model"
+	"github.com/bborbe/teamvault-utils"
+	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration"
 	"github.com/golang/glog"
@@ -27,7 +27,7 @@ func main() {
 
 	glog.V(1).Infof("validate all ...")
 
-	teamvaultConfigPath := model.TeamvaultConfigPath("~/.teamvault.json")
+	teamvaultConfigPath := teamvault.TeamvaultConfigPath("~/.teamvault.json")
 	teamvaultConfigPath, err := teamvaultConfigPath.NormalizePath()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "normalize teamvault config path failed: %+v\n", err)
@@ -41,7 +41,9 @@ func main() {
 
 	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
 	conf := &configuration.Configuration{
-		TeamvaultConnector: connector.New(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+		TeamvaultConnector: &teamvaultconnector.DiskFallback{
+			Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+		},
 	}
 
 	if err := world.Validate(ctx, conf); err != nil {

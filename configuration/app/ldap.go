@@ -5,6 +5,7 @@ import (
 
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
+	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,8 +14,7 @@ import (
 )
 
 type Ldap struct {
-	Context    k8s.Context
-	NfsServer  deployer.MountNfsServer
+	Cluster    cluster.Cluster
 	Tag        docker.Tag
 	LdapSecret deployer.SecretValue
 }
@@ -43,24 +43,26 @@ func (l *Ldap) Children() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   l.Context,
+			Context:   l.Cluster.Context,
 			Namespace: "ldap",
 		},
 		&deployer.SecretDeployer{
-			Context:   l.Context,
+			Context:   l.Cluster.Context,
 			Namespace: "ldap",
+			Name:      "ldap",
 			Secrets: deployer.Secrets{
 				"secret": l.LdapSecret,
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context: l.Context,
+			Context:   l.Cluster.Context,
+			Namespace: "ldap",
+			Name:      "ldap",
 			Requirements: []world.Configuration{
 				&build.Openldap{
 					Image: image,
 				},
 			},
-			Namespace: "ldap",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name: "ldap",
@@ -101,12 +103,12 @@ func (l *Ldap) Children() []world.Configuration {
 				{
 					Name:      "ldap",
 					NfsPath:   "/data/ldap",
-					NfsServer: l.NfsServer,
+					NfsServer: l.Cluster.NfsServer,
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   l.Context,
+			Context:   l.Cluster.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
 			Ports:     ports,
@@ -116,11 +118,8 @@ func (l *Ldap) Children() []world.Configuration {
 
 func (l *Ldap) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate ldap app ...")
-	if l.Context == "" {
-		return errors.New("Context missing")
-	}
-	if l.NfsServer == "" {
-		return errors.New("NfsServer missing")
+	if err := l.Cluster.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate cluster failed")
 	}
 	if l.Tag == "" {
 		return errors.New("Tag missing")

@@ -20,7 +20,7 @@ type Uploader struct {
 }
 
 func (u *Uploader) Apply(ctx context.Context) error {
-	glog.V(2).Infof("upload docker image %s ...", u.Image.String())
+	glog.V(1).Infof("upload docker image %s ...", u.Image.String())
 	cmd := exec.CommandContext(ctx, "docker", "push", u.Image.String())
 	if glog.V(4) {
 		cmd.Stdout = os.Stdout
