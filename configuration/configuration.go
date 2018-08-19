@@ -34,6 +34,21 @@ func (c *Configuration) Children() []world.Configuration {
 	}
 	var gitSyncVersion docker.Tag = "1.3.0"
 	return []world.Configuration{
+		&app.Confluence{
+			Cluster: netcup,
+			Domains: []deployer.Domain{
+				"confluence.benjamin-borbe.de",
+			},
+			Version:          "6.8.1",
+			DatabasePassword: c.teamvaultPassword("3OlaLn"),
+			SmtpUsername:     c.teamvaultUsername("nOeNjL"),
+			SmtpPassword:     c.teamvaultPassword("nOeNjL"),
+		},
+		&app.Ldap{
+			Cluster:    netcup,
+			Tag:        "1.1.0",
+			LdapSecret: c.teamvaultPassword("MOPMLG"),
+		},
 		&app.Backup{
 			Cluster: netcup,
 			Domains: []deployer.Domain{
@@ -158,23 +173,18 @@ func (c *Configuration) Children() []world.Configuration {
 			},
 			GitSyncVersion: gitSyncVersion,
 		},
-		&app.Ldap{
-			Cluster:    netcup,
-			Tag:        "1.1.0",
-			LdapSecret: c.teamvaultPassword("MOPMLG"),
-		},
-		//&app.Confluence{
-		//Cluster: netcup,
-		//	Domains: []world.Domain{
-		//		"confluence.benjamin-borbe.de",
-		//	},
-		//	Tag: "6.9.3",
-		//},
 	}
 }
 
 func (c *Configuration) teamvaultPassword(key teamvault.Key) deployer.SecretValue {
-	return &deployer.SecretFromTeamvault{
+	return &deployer.SecretFromTeamvaultPassword{
+		TeamvaultConnector: c.TeamvaultConnector,
+		TeamvaultKey:       key,
+	}
+}
+
+func (c *Configuration) teamvaultUsername(key teamvault.Key) deployer.SecretValue {
+	return &deployer.SecretFromTeamvaultUser{
 		TeamvaultConnector: c.TeamvaultConnector,
 		TeamvaultKey:       key,
 	}

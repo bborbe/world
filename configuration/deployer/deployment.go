@@ -23,12 +23,30 @@ type SecretValue interface {
 	Validate(ctx context.Context) error
 }
 
-type SecretFromTeamvault struct {
+type SecretFromTeamvaultUser struct {
 	TeamvaultConnector teamvault.Connector
 	TeamvaultKey       teamvault.Key
 }
 
-func (s *SecretFromTeamvault) Value() ([]byte, error) {
+func (s *SecretFromTeamvaultUser) Value() ([]byte, error) {
+	teamvaultUsername, err := s.TeamvaultConnector.User(s.TeamvaultKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get teamvault username failed")
+	}
+	return []byte(teamvaultUsername), nil
+}
+
+func (s *SecretFromTeamvaultUser) Validate(ctx context.Context) error {
+	_, err := s.Value()
+	return errors.Wrapf(err, "get teamvault secret %s failed", s.TeamvaultKey.String())
+}
+
+type SecretFromTeamvaultPassword struct {
+	TeamvaultConnector teamvault.Connector
+	TeamvaultKey       teamvault.Key
+}
+
+func (s *SecretFromTeamvaultPassword) Value() ([]byte, error) {
 	teamvaultPassword, err := s.TeamvaultConnector.Password(s.TeamvaultKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "get teamvault password failed")
@@ -36,7 +54,7 @@ func (s *SecretFromTeamvault) Value() ([]byte, error) {
 	return []byte(teamvaultPassword), nil
 }
 
-func (s *SecretFromTeamvault) Validate(ctx context.Context) error {
+func (s *SecretFromTeamvaultPassword) Validate(ctx context.Context) error {
 	_, err := s.Value()
 	return errors.Wrapf(err, "get teamvault secret %s failed", s.TeamvaultKey.String())
 }
