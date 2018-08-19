@@ -15,7 +15,10 @@ func (s Service) String() string {
 
 type ServiceSelector map[string]string
 
+type ClusterIP string
+
 type ServiceSpec struct {
-	Ports    []Port          `yaml:"ports"`
-	Selector ServiceSelector `yaml:"selector"`
+	Ports     []Port          `yaml:"ports"`
+	Selector  ServiceSelector `yaml:"selector"`
+	ClusterIP ClusterIP       `yaml:"clusterIP,omitempty"`
 }

@@ -39,15 +39,13 @@ func (m *Mumble) Children() []world.Configuration {
 			Context:   m.Cluster.Context,
 			Namespace: "mumble",
 			Name:      "mumble",
-			Requirements: []world.Configuration{
-				&build.Mumble{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "mumble",
-					Image:         image,
+					Name:  "mumble",
+					Image: image,
+					Requirement: &build.Mumble{
+						Image: image,
+					},
 					Ports:         ports,
 					CpuLimit:      "200m",
 					MemoryLimit:   "100Mi",

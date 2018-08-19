@@ -41,15 +41,13 @@ func (p *Password) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "password",
 			Name:      "password",
-			Requirements: []world.Configuration{
-				&build.Password{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "password",
-					Image:         image,
+					Name:  "password",
+					Image: image,
+					Requirement: &build.Password{
+						Image: image,
+					},
 					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

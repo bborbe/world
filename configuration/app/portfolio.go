@@ -59,18 +59,13 @@ func (p *Portfolio) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
-			Requirements: []world.Configuration{
-				&build.OverlayWebserver{
-					Image: overlayServerImage,
-				},
-				&build.GitSync{
-					Image: gitSyncImage,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "portfolio",
-					Image:         overlayServerImage,
+					Name:  "portfolio",
+					Image: overlayServerImage,
+					Requirement: &build.OverlayWebserver{
+						Image: overlayServerImage,
+					},
 					CpuLimit:      "50m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
@@ -105,8 +100,11 @@ func (p *Portfolio) Children() []world.Configuration {
 					},
 				},
 				{
-					Name:          "git-sync-portfolio",
-					Image:         gitSyncImage,
+					Name:  "git-sync-portfolio",
+					Image: gitSyncImage,
+					Requirement: &build.GitSync{
+						Image: gitSyncImage,
+					},
 					CpuLimit:      "50m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
@@ -133,8 +131,11 @@ func (p *Portfolio) Children() []world.Configuration {
 					},
 				},
 				{
-					Name:          "git-sync-overlay",
-					Image:         gitSyncImage,
+					Name:  "git-sync-overlay",
+					Image: gitSyncImage,
+					Requirement: &build.GitSync{
+						Image: gitSyncImage,
+					},
 					CpuLimit:      "50m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

@@ -50,18 +50,13 @@ func (s *Slideshow) Children() []world.Configuration {
 			Context:   s.Cluster.Context,
 			Namespace: "slideshow",
 			Name:      "slideshow",
-			Requirements: []world.Configuration{
-				&build.NginxAutoindex{
-					Image: nginxImage,
-				},
-				&build.GitSync{
-					Image: gitSyncImage,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "nginx",
-					Image:         nginxImage,
+					Name:  "nginx",
+					Image: nginxImage,
+					Requirement: &build.NginxAutoindex{
+						Image: nginxImage,
+					},
 					Ports:         ports,
 					CpuLimit:      "250m",
 					MemoryLimit:   "25Mi",
@@ -76,8 +71,11 @@ func (s *Slideshow) Children() []world.Configuration {
 					},
 				},
 				{
-					Name:          "git-sync",
-					Image:         gitSyncImage,
+					Name:  "git-sync",
+					Image: gitSyncImage,
+					Requirement: &build.GitSync{
+						Image: gitSyncImage,
+					},
 					CpuLimit:      "50m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

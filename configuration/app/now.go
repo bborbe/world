@@ -41,15 +41,13 @@ func (n *Now) Children() []world.Configuration {
 			Context:   n.Cluster.Context,
 			Namespace: "now",
 			Name:      "now",
-			Requirements: []world.Configuration{
-				&build.Now{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "now",
-					Image:         image,
+					Name:  "now",
+					Image: image,
+					Requirement: &build.Now{
+						Image: image,
+					},
 					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

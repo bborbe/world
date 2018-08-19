@@ -43,15 +43,13 @@ func (d *Download) Children() []world.Configuration {
 			Context:   d.Cluster.Context,
 			Namespace: "download",
 			Name:      "download",
-			Requirements: []world.Configuration{
-				&build.NginxAutoindex{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "nginx",
-					Image:         image,
+					Name:  "nginx",
+					Image: image,
+					Requirement: &build.NginxAutoindex{
+						Image: image,
+					},
 					Ports:         ports,
 					CpuLimit:      "250m",
 					MemoryLimit:   "25Mi",

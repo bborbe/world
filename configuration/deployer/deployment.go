@@ -165,10 +165,12 @@ type DeploymentDeployer struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
 	Name         k8s.Name
-	Requirements []world.Configuration
 	Containers   []DeploymentDeployerContainer
 	Volumes      []Volume
 	HostNetwork  k8s.PodHostNetwork
+	Requirements []world.Configuration
+	DnsPolicy    k8s.PodDnsPolicy
+	Labels       k8s.Labels
 }
 
 type DeploymentDeployerContainer struct {
@@ -182,6 +184,7 @@ type DeploymentDeployerContainer struct {
 	MemoryRequest MemoryRequest
 	Mounts        []Mount
 	Image         docker.Image
+	Requirement   world.Configuration
 }
 
 func (d *DeploymentDeployer) Applier() world.Applier {
@@ -192,7 +195,12 @@ func (d *DeploymentDeployer) Applier() world.Applier {
 }
 
 func (d *DeploymentDeployer) Children() []world.Configuration {
-	return d.Requirements
+	var result []world.Configuration
+	result = append(result, d.Requirements...)
+	for _, container := range d.Containers {
+		result = append(result, container.Requirement)
+	}
+	return result
 }
 
 func (d *DeploymentDeployer) Validate(ctx context.Context) error {
@@ -211,6 +219,9 @@ func (d *DeploymentDeployer) Validate(ctx context.Context) error {
 	for _, container := range d.Containers {
 		if container.Name == "" {
 			return errors.New("Name missing")
+		}
+		if container.Requirement == nil {
+			return errors.New("Requirement missing")
 		}
 		if container.CpuLimit == "" {
 			return errors.New("CpuLimit missing")

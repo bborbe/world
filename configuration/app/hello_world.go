@@ -44,15 +44,13 @@ func (h *HelloWorld) Children() []world.Configuration {
 			Context:   h.Cluster.Context,
 			Namespace: "hello-world",
 			Name:      "hello-world",
-			Requirements: []world.Configuration{
-				&build.HelloWorld{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "hello-world",
-					Image:         image,
+					Name:  "hello-world",
+					Image: image,
+					Requirement: &build.HelloWorld{
+						Image: image,
+					},
 					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

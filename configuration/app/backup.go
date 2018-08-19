@@ -43,15 +43,13 @@ func (b *Backup) rsync() []world.Configuration {
 			Context:   b.Cluster.Context,
 			Namespace: "backup",
 			Name:      "rsync",
-			Requirements: []world.Configuration{
-				&build.BackupRsyncServer{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:  "backup",
 					Image: image,
+					Requirement: &build.BackupRsyncServer{
+						Image: image,
+					},
 					Ports: []deployer.Port{
 						{
 							Port:     22,
@@ -114,17 +112,15 @@ func (b *Backup) status() []world.Configuration {
 			Context:   b.Cluster.Context,
 			Namespace: "backup",
 			Name:      "status",
-			Requirements: []world.Configuration{
-				&build.BackupStatusClient{
-					VendorVersion: vendorVersion,
-					GitBranch:     buildVersion,
-					Image:         image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "backup",
-					Image:         image,
+					Name:  "backup",
+					Image: image,
+					Requirement: &build.BackupStatusClient{
+						VendorVersion: vendorVersion,
+						GitBranch:     buildVersion,
+						Image:         image,
+					},
 					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

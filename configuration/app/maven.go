@@ -39,25 +39,23 @@ func (m *Maven) public() []world.Configuration {
 			Protocol: "TCP",
 		},
 	}
-	nginxImage := docker.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context: m.Cluster.Context,
-			Requirements: []world.Configuration{
-				&build.NginxAutoindex{
-					Image: nginxImage,
-				},
-			},
+			Context:   m.Cluster.Context,
 			Namespace: "maven",
 			Name:      "api",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "nginx",
-					Image:         nginxImage,
+					Name:  "nginx",
+					Image: image,
+					Requirement: &build.NginxAutoindex{
+						Image: image,
+					},
 					Ports:         ports,
 					CpuLimit:      "250m",
 					MemoryLimit:   "25Mi",
@@ -96,7 +94,7 @@ func (m *Maven) public() []world.Configuration {
 }
 
 func (m *Maven) api() []world.Configuration {
-	mavenRepoImage := docker.Image{
+	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/maven-repo",
 		Tag:        m.MavenRepoVersion,
@@ -110,18 +108,16 @@ func (m *Maven) api() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context: m.Cluster.Context,
-			Requirements: []world.Configuration{
-				&build.Maven{
-					Image: mavenRepoImage,
-				},
-			},
+			Context:   m.Cluster.Context,
 			Namespace: "maven",
 			Name:      "api",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "maven",
-					Image:         mavenRepoImage,
+					Name:  "maven",
+					Image: image,
+					Requirement: &build.Maven{
+						Image: image,
+					},
 					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

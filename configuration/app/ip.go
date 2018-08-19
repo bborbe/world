@@ -45,15 +45,13 @@ func (i *Ip) Children() []world.Configuration {
 			Context:   i.Cluster.Context,
 			Namespace: "ip",
 			Name:      "ip",
-			Requirements: []world.Configuration{
-				&build.Ip{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "ip",
-					Image:         image,
+					Name:  "ip",
+					Image: image,
+					Requirement: &build.Ip{
+						Image: image,
+					},
 					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

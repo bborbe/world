@@ -93,13 +93,6 @@ func (p *Poste) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "poste",
 			Name:      "poste",
-			Requirements: []world.Configuration{
-				&build.Poste{
-					Image:         image,
-					GitBranch:     buildVersion,
-					VendorVersion: p.PosteVersion,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:          "poste",
@@ -108,6 +101,11 @@ func (p *Poste) Children() []world.Configuration {
 					CpuRequest:    "100m",
 					MemoryRequest: "100Mi",
 					Image:         image,
+					Requirement: &build.Poste{
+						Image:         image,
+						GitBranch:     buildVersion,
+						VendorVersion: p.PosteVersion,
+					},
 					Env: []k8s.Env{
 						{
 							Name:  "HTTPS",

@@ -2,8 +2,9 @@ package k8s
 
 type PodSpec struct {
 	Containers  []PodContainer `yaml:"containers"`
-	Volumes     []PodVolume    `yaml:"volumes"`
-	HostNetwork PodHostNetwork `yaml:"hostNetwork"`
+	Volumes     []PodVolume    `yaml:"volumes,omitempty"`
+	HostNetwork PodHostNetwork `yaml:"hostNetwork,omitempty"`
+	DnsPolicy   PodDnsPolicy   `yaml:"dnsPolicy,omitempty"`
 }
 
 type PodVolumeName string
@@ -24,6 +25,8 @@ type PodVolume struct {
 	Nfs      PodNfs        `yaml:"nfs,omitempty"`
 	EmptyDir EmptyDir      `yaml:"emptyDir,omitempty"`
 }
+
+type PodDnsPolicy string
 
 type PodHostNetwork bool
 

@@ -14,6 +14,8 @@ type ServiceDeployer struct {
 	Name         k8s.Name
 	Requirements []world.Configuration
 	Ports        []Port
+	ClusterIP    k8s.ClusterIP
+	Labels       k8s.Labels
 }
 
 func (s *ServiceDeployer) Applier() world.Applier {
@@ -48,15 +50,18 @@ func (s *ServiceDeployer) Data() (interface{}, error) {
 }
 
 func (s *ServiceDeployer) service() k8s.Service {
+	var labels k8s.Labels
+	for k, v := range s.Labels {
+		labels[k] = v
+	}
+	labels["app"] = s.Name.String()
 	service := k8s.Service{
 		ApiVersion: "v1",
 		Kind:       "Service",
 		Metadata: k8s.Metadata{
 			Namespace: s.Namespace,
 			Name:      s.Name,
-			Labels: k8s.Labels{
-				"app": s.Name.String(),
-			},
+			Labels:    labels,
 		},
 		Spec: k8s.ServiceSpec{
 			Selector: k8s.ServiceSelector{

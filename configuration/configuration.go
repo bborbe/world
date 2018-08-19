@@ -34,6 +34,16 @@ func (c *Configuration) Children() []world.Configuration {
 	}
 	var gitSyncVersion docker.Tag = "1.3.0"
 	return []world.Configuration{
+		&app.Jira{
+			Cluster: netcup,
+			Domains: []deployer.Domain{
+				"jira.benjamin-borbe.de",
+			},
+			Version:          "7.11.2",
+			DatabasePassword: c.teamvaultPassword("eOB12w"),
+			SmtpUsername:     c.teamvaultUsername("MwmE0w"),
+			SmtpPassword:     c.teamvaultPassword("MwmE0w"),
+		},
 		&app.Confluence{
 			Cluster: netcup,
 			Domains: []deployer.Domain{
@@ -61,15 +71,6 @@ func (c *Configuration) Children() []world.Configuration {
 			Domains: []deployer.Domain{
 				"mail.benjamin-borbe.de",
 			},
-		},
-		&app.Dns{
-			Cluster: netcup,
-		},
-		&app.Jenkins{
-			Cluster: netcup,
-		},
-		&app.Jira{
-			Cluster: netcup,
 		},
 		&app.Maven{
 			Cluster: netcup,
@@ -173,6 +174,9 @@ func (c *Configuration) Children() []world.Configuration {
 			},
 			GitSyncVersion: gitSyncVersion,
 		},
+		//&app.Dns{
+		//	Cluster: netcup,
+		//},
 	}
 }
 

@@ -58,11 +58,6 @@ func (l *Ldap) Children() []world.Configuration {
 			Context:   l.Cluster.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
-			Requirements: []world.Configuration{
-				&build.Openldap{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name: "ldap",
@@ -85,7 +80,10 @@ func (l *Ldap) Children() []world.Configuration {
 							},
 						},
 					},
-					Image:         image,
+					Image: image,
+					Requirement: &build.Openldap{
+						Image: image,
+					},
 					Ports:         ports,
 					CpuLimit:      "100m",
 					MemoryLimit:   "50Mi",

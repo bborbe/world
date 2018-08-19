@@ -43,19 +43,17 @@ func (b *Bind) Children() []world.Configuration {
 			Namespace: "bind",
 		},
 		&deployer.DeploymentDeployer{
-			Context:   b.Cluster.Context,
-			Namespace: "bind",
-			Name:      "bind",
-			Requirements: []world.Configuration{
-				&build.Bind{
-					Image: image,
-				},
-			},
+			Context:     b.Cluster.Context,
+			Namespace:   "bind",
+			Name:        "bind",
 			HostNetwork: true,
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "bind",
-					Image:         image,
+					Name:  "bind",
+					Image: image,
+					Requirement: &build.Bind{
+						Image: image,
+					},
 					Ports:         ports,
 					CpuLimit:      "200m",
 					MemoryLimit:   "100Mi",

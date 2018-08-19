@@ -50,18 +50,13 @@ func (k *Kickstart) Children() []world.Configuration {
 			Context:   k.Cluster.Context,
 			Namespace: "kickstart",
 			Name:      "kickstart",
-			Requirements: []world.Configuration{
-				&build.NginxAutoindex{
-					Image: nginxImage,
-				},
-				&build.GitSync{
-					Image: gitSyncImage,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "nginx",
-					Image:         nginxImage,
+					Name:  "nginx",
+					Image: nginxImage,
+					Requirement: &build.NginxAutoindex{
+						Image: nginxImage,
+					},
 					Ports:         ports,
 					CpuLimit:      "250m",
 					MemoryLimit:   "25Mi",
@@ -76,8 +71,11 @@ func (k *Kickstart) Children() []world.Configuration {
 					},
 				},
 				{
-					Name:          "git-sync",
-					Image:         gitSyncImage,
+					Name:  "git-sync",
+					Image: gitSyncImage,
+					Requirement: &build.GitSync{
+						Image: gitSyncImage,
+					},
 					CpuLimit:      "50m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",

@@ -50,15 +50,13 @@ func (w *Webdav) Children() []world.Configuration {
 			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
-			Requirements: []world.Configuration{
-				&build.Webdav{
-					Image: image,
-				},
-			},
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "webdav",
-					Image:         image,
+					Name:  "webdav",
+					Image: image,
+					Requirement: &build.Webdav{
+						Image: image,
+					},
 					CpuLimit:      "50m",
 					MemoryLimit:   "50Mi",
 					CpuRequest:    "10m",
