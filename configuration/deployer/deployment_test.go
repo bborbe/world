@@ -129,7 +129,6 @@ spec:
         nfs:
           path: /data/download
           server: 127.0.0.1
-      hostNetwork: false
 `))
 	})
 })

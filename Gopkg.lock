@@ -11,7 +11,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e96979d0d461e545543eb921c74a8a8980ffbec340194e4f0a3f5fd0fcf7a74f"
+  digest = "1:e47538b0e66e45786699b24782b56010f79f723d928e35590a0fd383c336782e"
   name = "github.com/bborbe/http"
   packages = [
     "client_builder",
@@ -19,15 +19,15 @@
     "rest",
   ]
   pruneopts = "UT"
-  revision = "d0d8e291febd74ef570713bd2492380e953afdc1"
+  revision = "e287a546ae1a98427e2dc282488eb9f649fc4292"
 
 [[projects]]
   branch = "master"
-  digest = "1:935076062ad507e931576dc1f3769475c242636f7aa3180f91157e366f74ae5a"
+  digest = "1:d0c31751ab3739f43bfa07b2de690b022b6ac50632fc34d699dab785e6921193"
   name = "github.com/bborbe/io"
   packages = ["util"]
   pruneopts = "UT"
-  revision = "c3edaab04ccf42ba167bebab1f91c1168b80447c"
+  revision = "9ca7e435db82f6d0203c63823d95bb0e3fa85355"
 
 [[projects]]
   branch = "master"
@@ -41,15 +41,15 @@
   revision = "5531e6c5367b287ac0c3d2dda55cb1af7f8172f5"
 
 [[projects]]
-  digest = "1:a93f70f939f034fe2bc7835d5b9ccb56c0d47a691b51c96ae37d1128fa9ca4b7"
+  digest = "1:188e997c145e81036535c4e3e55ae6ad06eb3fdffd510373e81505787eaba707"
   name = "github.com/bborbe/teamvault-utils"
   packages = [
     ".",
     "connector",
   ]
   pruneopts = "UT"
-  revision = "ea48068a51e46a25ddb149603981cbbc5581f572"
-  version = "3.1.1"
+  revision = "b5d8ec04fedab2fd1965fdaa688167d5d20406d2"
+  version = "3.2.0"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"

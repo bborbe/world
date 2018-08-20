@@ -11,8 +11,8 @@ import (
 	"github.com/bborbe/http/client_builder"
 	"github.com/bborbe/teamvault-utils"
 	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
-	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration"
+	"github.com/bborbe/world/pkg/runner"
 	"github.com/golang/glog"
 )
 
@@ -40,13 +40,16 @@ func main() {
 	}
 
 	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
-	conf := &configuration.Configuration{
-		TeamvaultConnector: &teamvaultconnector.DiskFallback{
-			Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+	r := &runner.Runner{
+		Configuration: &configuration.World{
+			TeamvaultConnector: teamvaultconnector.NewCache(
+				&teamvaultconnector.DiskFallback{
+					Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+				},
+			),
 		},
 	}
-
-	if err := world.Validate(ctx, conf); err != nil {
+	if err := r.Validate(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "validate failed: %+v\n", err)
 		os.Exit(1)
 	}

@@ -12,28 +12,38 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Configuration struct {
+type World struct {
 	TeamvaultConnector teamvault.Connector
 }
 
-func (c *Configuration) Applier() world.Applier {
+func (c *World) Applier() world.Applier {
 	return nil
 }
 
-func (c *Configuration) Validate(ctx context.Context) error {
+func (c *World) Validate(ctx context.Context) error {
 	if c.TeamvaultConnector == nil {
-		return errors.New("configuration.teamvault-connector missing")
+		return errors.New("teamvault-connector missing")
 	}
 	return nil
 }
 
-func (c *Configuration) Children() []world.Configuration {
+func (c *World) Children() []world.Configuration {
 	netcup := cluster.Cluster{
 		Context:   "netcup",
 		NfsServer: "185.170.112.48",
 	}
 	var gitSyncVersion docker.Tag = "1.3.0"
 	return []world.Configuration{
+		&app.Confluence{
+			Cluster: netcup,
+			Domains: []deployer.Domain{
+				"confluence.benjamin-borbe.de",
+			},
+			Version:          "6.10.2",
+			DatabasePassword: c.teamvaultPassword("3OlaLn"),
+			SmtpUsername:     c.teamvaultUsername("nOeNjL"),
+			SmtpPassword:     c.teamvaultPassword("nOeNjL"),
+		},
 		&app.Jira{
 			Cluster: netcup,
 			Domains: []deployer.Domain{
@@ -43,16 +53,6 @@ func (c *Configuration) Children() []world.Configuration {
 			DatabasePassword: c.teamvaultPassword("eOB12w"),
 			SmtpUsername:     c.teamvaultUsername("MwmE0w"),
 			SmtpPassword:     c.teamvaultPassword("MwmE0w"),
-		},
-		&app.Confluence{
-			Cluster: netcup,
-			Domains: []deployer.Domain{
-				"confluence.benjamin-borbe.de",
-			},
-			Version:          "6.8.1",
-			DatabasePassword: c.teamvaultPassword("3OlaLn"),
-			SmtpUsername:     c.teamvaultUsername("nOeNjL"),
-			SmtpPassword:     c.teamvaultPassword("nOeNjL"),
 		},
 		&app.Ldap{
 			Cluster:    netcup,
@@ -180,14 +180,14 @@ func (c *Configuration) Children() []world.Configuration {
 	}
 }
 
-func (c *Configuration) teamvaultPassword(key teamvault.Key) deployer.SecretValue {
+func (c *World) teamvaultPassword(key teamvault.Key) deployer.SecretValue {
 	return &deployer.SecretFromTeamvaultPassword{
 		TeamvaultConnector: c.TeamvaultConnector,
 		TeamvaultKey:       key,
 	}
 }
 
-func (c *Configuration) teamvaultUsername(key teamvault.Key) deployer.SecretValue {
+func (c *World) teamvaultUsername(key teamvault.Key) deployer.SecretValue {
 	return &deployer.SecretFromTeamvaultUser{
 		TeamvaultConnector: c.TeamvaultConnector,
 		TeamvaultKey:       key,

@@ -5,11 +5,11 @@ import (
 
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/pkg/k8s"
-	"github.com/bborbe/world/pkg/docker"
 )
 
 type Dns struct {

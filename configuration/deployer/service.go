@@ -50,7 +50,7 @@ func (s *ServiceDeployer) Data() (interface{}, error) {
 }
 
 func (s *ServiceDeployer) service() k8s.Service {
-	var labels k8s.Labels
+	labels := k8s.Labels{}
 	for k, v := range s.Labels {
 		labels[k] = v
 	}

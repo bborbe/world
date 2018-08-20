@@ -26,32 +26,6 @@ type Confluence struct {
 }
 
 func (c *Confluence) Children() []world.Configuration {
-	result := []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   c.Cluster.Context,
-			Namespace: "confluence",
-		},
-		&component.Postges{
-			Context:              c.Cluster.Context,
-			Namespace:            "confluence",
-			DataNfsPath:          "/data/confluence-postgres",
-			DataNfsServer:        c.Cluster.NfsServer,
-			BackupNfsPath:        "/data/confluence-postgres-backup",
-			BackupNfsServer:      c.Cluster.NfsServer,
-			PostgresVersion:      "9.5.14",
-			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
-			PostgresDatabaseName: "confluence",
-			PostgresUsername: &deployer.SecretValueStatic{
-				Content: []byte("confluence"),
-			},
-			PostgresPassword: c.DatabasePassword,
-		},
-	}
-	result = append(result, c.app()...)
-	return result
-}
-
-func (c *Confluence) app() []world.Configuration {
 	var buildVersion docker.GitBranch = "1.3.0"
 	image := docker.Image{
 		Registry:   "docker.io",
@@ -66,6 +40,25 @@ func (c *Confluence) app() []world.Configuration {
 		},
 	}
 	return []world.Configuration{
+		&deployer.NamespaceDeployer{
+			Context:   c.Cluster.Context,
+			Namespace: "confluence",
+		},
+		&component.Postgres{
+			Context:              c.Cluster.Context,
+			Namespace:            "confluence",
+			DataNfsPath:          "/data/confluence-postgres",
+			DataNfsServer:        c.Cluster.NfsServer,
+			BackupNfsPath:        "/data/confluence-postgres-backup",
+			BackupNfsServer:      c.Cluster.NfsServer,
+			PostgresVersion:      "9.5.14",
+			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
+			PostgresDatabaseName: "confluence",
+			PostgresUsername: &deployer.SecretValueStatic{
+				Content: []byte("confluence"),
+			},
+			PostgresPassword: c.DatabasePassword,
+		},
 		&deployer.DeploymentDeployer{
 			Context:      c.Cluster.Context,
 			Namespace:    "confluence",

@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Postges struct {
+type Postgres struct {
 	Context              k8s.Context
 	Namespace            k8s.NamespaceName
 	DataNfsPath          deployer.MountNfsPath
@@ -26,7 +26,7 @@ type Postges struct {
 	PostgresPassword     deployer.SecretValue
 }
 
-func (p *Postges) Children() []world.Configuration {
+func (p *Postgres) Children() []world.Configuration {
 	postgresImage := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/postgres",
@@ -75,6 +75,7 @@ func (p *Postges) Children() []world.Configuration {
 					MemoryLimit:   "200Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "100Mi",
+					Args:          []k8s.Arg{"postgres", "-c", "max_connections=150"},
 					Env: []k8s.Env{
 						{
 							Name:  "POSTGRES_INITDB_ARGS",
@@ -256,11 +257,11 @@ func (p *Postges) Children() []world.Configuration {
 	}
 }
 
-func (p *Postges) Applier() world.Applier {
+func (p *Postgres) Applier() world.Applier {
 	return nil
 }
 
-func (p *Postges) Validate(ctx context.Context) error {
+func (p *Postgres) Validate(ctx context.Context) error {
 	if p.Context == "" {
 		return errors.New("Context empty")
 	}

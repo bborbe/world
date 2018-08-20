@@ -26,32 +26,6 @@ type Jira struct {
 }
 
 func (c *Jira) Children() []world.Configuration {
-	result := []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   c.Cluster.Context,
-			Namespace: "jira",
-		},
-		&component.Postges{
-			Context:              c.Cluster.Context,
-			Namespace:            "jira",
-			DataNfsPath:          "/data/jira-postgres",
-			DataNfsServer:        c.Cluster.NfsServer,
-			BackupNfsPath:        "/data/jira-postgres-backup",
-			BackupNfsServer:      c.Cluster.NfsServer,
-			PostgresVersion:      "9.6-alpine",
-			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=POSIX.UTF-8 --lc-ctype=POSIX.UTF-8 -T",
-			PostgresDatabaseName: "jira",
-			PostgresUsername: &deployer.SecretValueStatic{
-				Content: []byte("jira"),
-			},
-			PostgresPassword: c.DatabasePassword,
-		},
-	}
-	result = append(result, c.app()...)
-	return result
-}
-
-func (c *Jira) app() []world.Configuration {
 	var buildVersion docker.GitBranch = "1.2.0"
 	image := docker.Image{
 		Registry:   "docker.io",
@@ -66,6 +40,25 @@ func (c *Jira) app() []world.Configuration {
 		},
 	}
 	return []world.Configuration{
+		&deployer.NamespaceDeployer{
+			Context:   c.Cluster.Context,
+			Namespace: "jira",
+		},
+		&component.Postgres{
+			Context:              c.Cluster.Context,
+			Namespace:            "jira",
+			DataNfsPath:          "/data/jira-postgres",
+			DataNfsServer:        c.Cluster.NfsServer,
+			BackupNfsPath:        "/data/jira-postgres-backup",
+			BackupNfsServer:      c.Cluster.NfsServer,
+			PostgresVersion:      "9.6-alpine",
+			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=POSIX.UTF-8 --lc-ctype=POSIX.UTF-8 -T",
+			PostgresDatabaseName: "jira",
+			PostgresUsername: &deployer.SecretValueStatic{
+				Content: []byte("jira"),
+			},
+			PostgresPassword: c.DatabasePassword,
+		},
 		&deployer.DeploymentDeployer{
 			Context:      c.Cluster.Context,
 			Namespace:    "jira",

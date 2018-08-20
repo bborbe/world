@@ -11,8 +11,8 @@ import (
 	"github.com/bborbe/http/client_builder"
 	temvault "github.com/bborbe/teamvault-utils"
 	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
-	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration"
+	"github.com/bborbe/world/pkg/runner"
 	"github.com/golang/glog"
 )
 
@@ -38,21 +38,25 @@ func main() {
 	}
 
 	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
-	conf := &configuration.Configuration{
-		TeamvaultConnector: &teamvaultconnector.DiskFallback{
-			Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+	r := &runner.Runner{
+		Configuration: &configuration.World{
+			TeamvaultConnector: teamvaultconnector.NewCache(
+				&teamvaultconnector.DiskFallback{
+					Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+				},
+			),
 		},
 	}
 
 	glog.V(1).Infof("validate all ...")
-	if err := world.Validate(ctx, conf); err != nil {
+	if err := r.Validate(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "validate failed: %+v\n", err)
 		os.Exit(1)
 	}
 	glog.V(1).Infof("validate all finished")
 
 	glog.V(1).Infof("apply all ...")
-	if err := world.Apply(ctx, conf); err != nil {
+	if err := r.Apply(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "apply failed: %+v\n", err)
 		os.Exit(1)
 	}
