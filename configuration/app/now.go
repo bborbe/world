@@ -15,7 +15,7 @@ import (
 
 type Now struct {
 	Cluster cluster.Cluster
-	Domains []deployer.Domain
+	Domains []k8s.IngressHost
 	Tag     docker.Tag
 }
 
@@ -73,6 +73,7 @@ func (n *Now) Children() []world.Configuration {
 			Context:   n.Cluster.Context,
 			Namespace: "now",
 			Name:      "now",
+			Port:      "http",
 			Domains:   n.Domains,
 		},
 	}

@@ -15,7 +15,7 @@ import (
 
 type Password struct {
 	Cluster cluster.Cluster
-	Domains []deployer.Domain
+	Domains []k8s.IngressHost
 	Tag     docker.Tag
 }
 
@@ -67,6 +67,7 @@ func (p *Password) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "password",
 			Name:      "password",
+			Port:      "http",
 			Domains:   p.Domains,
 		},
 	}

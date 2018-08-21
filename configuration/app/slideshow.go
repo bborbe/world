@@ -15,7 +15,7 @@ import (
 
 type Slideshow struct {
 	Cluster        cluster.Cluster
-	Domains        []deployer.Domain
+	Domains        []k8s.IngressHost
 	GitSyncVersion docker.Tag
 }
 
@@ -62,10 +62,10 @@ func (s *Slideshow) Children() []world.Configuration {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "slideshow",
-							Target:   "/usr/share/nginx/html",
+							Path:     "/usr/share/nginx/html",
 							ReadOnly: true,
 						},
 					},
@@ -94,18 +94,18 @@ func (s *Slideshow) Children() []world.Configuration {
 							Value: "/slideshow",
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "slideshow",
-							Target: "/slideshow",
+							Name: "slideshow",
+							Path: "/slideshow",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
 					Name:     "slideshow",
-					EmptyDir: true,
+					EmptyDir: &k8s.EmptyDir{},
 				},
 			},
 		},
@@ -119,6 +119,7 @@ func (s *Slideshow) Children() []world.Configuration {
 			Context:   s.Cluster.Context,
 			Namespace: "slideshow",
 			Name:      "slideshow",
+			Port:      "http",
 			Domains:   s.Domains,
 		},
 	}

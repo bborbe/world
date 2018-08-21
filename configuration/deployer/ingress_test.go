@@ -3,20 +3,26 @@ package deployer
 import (
 	"bytes"
 
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"golang.org/x/net/context"
 )
 
 var _ = Describe("IngressDeployer", func() {
 	It("ingress", func() {
 		ingressDeployer := &IngressDeployer{
+			Context:   "banana",
 			Namespace: "banana",
 			Name:      "banana",
-			Domains:   []Domain{"example.com"},
+			Port:      "http",
+			Domains:   []k8s.IngressHost{"example.com"},
 		}
+		err := ingressDeployer.Validate(context.Background())
+		Expect(err).NotTo(HaveOccurred())
 		b := &bytes.Buffer{}
-		err := yaml.NewEncoder(b).Encode(ingressDeployer.ingress())
+		err = yaml.NewEncoder(b).Encode(ingressDeployer.ingress())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
 kind: Ingress

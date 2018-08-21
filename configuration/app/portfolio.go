@@ -17,7 +17,7 @@ import (
 
 type Portfolio struct {
 	Cluster              cluster.Cluster
-	Domains              []deployer.Domain
+	Domains              []k8s.IngressHost
 	OverlayServerVersion docker.Tag
 	GitSyncVersion       docker.Tag
 	GitSyncPassword      deployer.SecretValue
@@ -86,15 +86,15 @@ func (p *Portfolio) Children() []world.Configuration {
 							Value: "/overlay",
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "portfolio",
-							Target:   "/portfolio",
+							Path:     "/portfolio",
 							ReadOnly: true,
 						},
 						{
 							Name:     "overlay",
-							Target:   "/overlay",
+							Path:     "/overlay",
 							ReadOnly: true,
 						},
 					},
@@ -123,10 +123,10 @@ func (p *Portfolio) Children() []world.Configuration {
 							Value: "/portfolio",
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "portfolio",
-							Target: "/portfolio",
+							Name: "portfolio",
+							Path: "/portfolio",
 						},
 					},
 				},
@@ -167,22 +167,22 @@ func (p *Portfolio) Children() []world.Configuration {
 							},
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "overlay",
-							Target: "/overlay",
+							Name: "overlay",
+							Path: "/overlay",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
 					Name:     "portfolio",
-					EmptyDir: true,
+					EmptyDir: &k8s.EmptyDir{},
 				},
 				{
 					Name:     "overlay",
-					EmptyDir: true,
+					EmptyDir: &k8s.EmptyDir{},
 				},
 			},
 		},
@@ -196,6 +196,7 @@ func (p *Portfolio) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
+			Port:      "http",
 			Domains:   p.Domains,
 		},
 	}

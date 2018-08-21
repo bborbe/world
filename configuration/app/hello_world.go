@@ -8,13 +8,14 @@ import (
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type HelloWorld struct {
 	Cluster cluster.Cluster
-	Domains []deployer.Domain
+	Domains []k8s.IngressHost
 	Tag     docker.Tag
 }
 
@@ -69,6 +70,7 @@ func (h *HelloWorld) Children() []world.Configuration {
 			Context:   h.Cluster.Context,
 			Namespace: "hello-world",
 			Name:      "hello-world",
+			Port:      "http",
 			Domains:   h.Domains,
 		},
 	}

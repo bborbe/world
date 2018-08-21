@@ -15,7 +15,7 @@ import (
 
 type Maven struct {
 	Cluster          cluster.Cluster
-	Domains          []deployer.Domain
+	Domains          []k8s.IngressHost
 	MavenRepoVersion docker.Tag
 }
 
@@ -61,20 +61,22 @@ func (m *Maven) public() []world.Configuration {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "maven",
-							Target:   "/usr/share/nginx/html",
+							Path:     "/usr/share/nginx/html",
 							ReadOnly: true,
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "maven",
-					NfsPath:   "/data/maven",
-					NfsServer: m.Cluster.NfsServer,
+					Name: "maven",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/maven",
+						Server: m.Cluster.NfsServer,
+					},
 				},
 			},
 		},
@@ -88,6 +90,7 @@ func (m *Maven) public() []world.Configuration {
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
 			Name:      "api",
+			Port:      "http",
 			Domains:   m.Domains,
 		},
 	}
@@ -130,19 +133,21 @@ func (m *Maven) api() []world.Configuration {
 							Value: "/data",
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "maven",
-							Target: "/data",
+							Name: "maven",
+							Path: "/data",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "maven",
-					NfsPath:   "/data/maven",
-					NfsServer: m.Cluster.NfsServer,
+					Name: "maven",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/maven",
+						Server: m.Cluster.NfsServer,
+					},
 				},
 			},
 		},

@@ -18,7 +18,7 @@ import (
 
 type Confluence struct {
 	Cluster          cluster.Cluster
-	Domains          []deployer.Domain
+	Domains          []k8s.IngressHost
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
@@ -92,20 +92,22 @@ func (c *Confluence) Children() []world.Configuration {
 							Value: c.Domains[0].String(),
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "data",
-							Target: "/var/lib/confluence",
+							Name: "data",
+							Path: "/var/lib/confluence",
 						},
 					},
 				},
 				c.smtp().Container(),
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "data",
-					NfsPath:   "/data/confluence-data",
-					NfsServer: c.Cluster.NfsServer,
+					Name: "data",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/confluence-data",
+						Server: k8s.PodNfsServer(c.Cluster.NfsServer),
+					},
 				},
 			},
 		},
@@ -119,6 +121,7 @@ func (c *Confluence) Children() []world.Configuration {
 			Context:   c.Cluster.Context,
 			Namespace: "confluence",
 			Name:      "confluence",
+			Port:      "http",
 			Domains:   c.Domains,
 		},
 	}

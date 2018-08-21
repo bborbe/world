@@ -8,13 +8,14 @@ import (
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Download struct {
 	Cluster cluster.Cluster
-	Domains []deployer.Domain
+	Domains []k8s.IngressHost
 }
 
 func (d *Download) Applier() world.Applier {
@@ -55,20 +56,22 @@ func (d *Download) Children() []world.Configuration {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "download",
-							Target:   "/usr/share/nginx/html",
+							Path:     "/usr/share/nginx/html",
 							ReadOnly: true,
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "download",
-					NfsPath:   "/data/download",
-					NfsServer: d.Cluster.NfsServer,
+					Name: "download",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/download",
+						Server: d.Cluster.NfsServer,
+					},
 				},
 			},
 		},
@@ -82,6 +85,7 @@ func (d *Download) Children() []world.Configuration {
 			Context:   d.Cluster.Context,
 			Namespace: "download",
 			Name:      "download",
+			Port:      "http",
 			Domains:   d.Domains,
 		},
 	}

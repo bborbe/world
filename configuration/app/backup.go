@@ -17,7 +17,7 @@ import (
 
 type Backup struct {
 	Cluster cluster.Cluster
-	Domains []deployer.Domain
+	Domains []k8s.IngressHost
 }
 
 func (b *Backup) Children() []world.Configuration {
@@ -62,30 +62,34 @@ func (b *Backup) rsync() []world.Configuration {
 					MemoryLimit:   "200Mi",
 					CpuRequest:    "250m",
 					MemoryRequest: "100Mi",
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "backup",
-							Target:   "/data",
+							Path:     "/data",
 							ReadOnly: true,
 						},
 						{
 							Name:     "ssh",
-							Target:   "/etc/ssh",
+							Path:     "/etc/ssh",
 							ReadOnly: true,
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "backup",
-					NfsPath:   "/data",
-					NfsServer: b.Cluster.NfsServer,
+					Name: "backup",
+					Nfs: k8s.PodNfs{
+						Path:   "/data",
+						Server: b.Cluster.NfsServer,
+					},
 				},
 				{
-					Name:      "ssh",
-					NfsPath:   "/data/backup-ssh",
-					NfsServer: b.Cluster.NfsServer,
+					Name: "ssh",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/backup-ssh",
+						Server: b.Cluster.NfsServer,
+					},
 				},
 			},
 		},
@@ -150,6 +154,7 @@ func (b *Backup) status() []world.Configuration {
 			Context:   b.Cluster.Context,
 			Namespace: "backup",
 			Name:      "status",
+			Port:      "http",
 			Domains:   b.Domains,
 		},
 	}

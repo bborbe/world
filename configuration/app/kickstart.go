@@ -15,7 +15,7 @@ import (
 
 type Kickstart struct {
 	Cluster        cluster.Cluster
-	Domains        []deployer.Domain
+	Domains        []k8s.IngressHost
 	GitSyncVersion docker.Tag
 }
 
@@ -62,10 +62,10 @@ func (k *Kickstart) Children() []world.Configuration {
 					MemoryLimit:   "25Mi",
 					CpuRequest:    "10m",
 					MemoryRequest: "10Mi",
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "kickstart",
-							Target:   "/usr/share/nginx/html",
+							Path:     "/usr/share/nginx/html",
 							ReadOnly: true,
 						},
 					},
@@ -94,18 +94,18 @@ func (k *Kickstart) Children() []world.Configuration {
 							Value: "/kickstart",
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "kickstart",
-							Target: "/kickstart",
+							Name: "kickstart",
+							Path: "/kickstart",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
 					Name:     "kickstart",
-					EmptyDir: true,
+					EmptyDir: &k8s.EmptyDir{},
 				},
 			},
 		},
@@ -119,6 +119,7 @@ func (k *Kickstart) Children() []world.Configuration {
 			Context:   k.Cluster.Context,
 			Namespace: "kickstart",
 			Name:      "kickstart",
+			Port:      "http",
 			Domains:   k.Domains,
 		},
 	}

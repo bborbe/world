@@ -15,7 +15,7 @@ import (
 
 type Ip struct {
 	Cluster cluster.Cluster
-	Domains []deployer.Domain
+	Domains []k8s.IngressHost
 	Tag     docker.Tag
 }
 
@@ -71,6 +71,7 @@ func (i *Ip) Children() []world.Configuration {
 			Context:   i.Cluster.Context,
 			Namespace: "ip",
 			Name:      "ip",
+			Port:      "http",
 			Domains:   i.Domains,
 		},
 	}

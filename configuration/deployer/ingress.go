@@ -8,18 +8,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Domain string
-
-func (d Domain) String() string {
-	return string(d)
-}
-
 type IngressDeployer struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
 	Name         k8s.Name
 	Requirements []world.Configuration
-	Domains      []Domain
+	Domains      []k8s.IngressHost
+	Port         k8s.PortName
 }
 
 func (i *IngressDeployer) Applier() world.Applier {
@@ -35,16 +30,19 @@ func (i *IngressDeployer) Children() []world.Configuration {
 
 func (i *IngressDeployer) Validate(ctx context.Context) error {
 	if i.Context == "" {
-		return errors.New("Context missing in ingress deployer")
+		return errors.New("Context missing")
 	}
 	if i.Namespace == "" {
-		return errors.New("Namespace missing in ingress deployer")
+		return errors.New("Namespace missing")
 	}
 	if i.Name == "" {
-		return errors.New("Name missing in ingress deployer")
+		return errors.New("Name missing")
+	}
+	if i.Port == "" {
+		return errors.New("Port missing")
 	}
 	if len(i.Domains) == 0 {
-		return errors.New("Domains missing in ingress deployer")
+		return errors.New("Domains missing")
 	}
 	return nil
 }
@@ -72,14 +70,14 @@ func (i *IngressDeployer) ingress() k8s.Ingress {
 	}
 	for _, domain := range i.Domains {
 		ingress.Spec.Rules = append(ingress.Spec.Rules, k8s.IngressRule{
-			Host: k8s.IngressHost(domain),
+			Host: domain,
 			Http: k8s.IngressHttp{
 				Paths: []k8s.IngressPath{
 					{
 						Path: "/",
 						Backends: k8s.IngressBackend{
 							ServiceName: k8s.IngressBackendServiceName(i.Name),
-							ServicePort: "http",
+							ServicePort: k8s.IngressBackendServicePort(i.Port),
 						},
 					},
 				},

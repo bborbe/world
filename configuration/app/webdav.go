@@ -15,7 +15,7 @@ import (
 
 type Webdav struct {
 	Cluster  cluster.Cluster
-	Domains  []deployer.Domain
+	Domains  []k8s.IngressHost
 	Tag      docker.Tag
 	Password deployer.SecretValue
 }
@@ -77,19 +77,21 @@ func (w *Webdav) Children() []world.Configuration {
 							},
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "webdav",
-							Target: "/data",
+							Name: "webdav",
+							Path: "/data",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "webdav",
-					NfsPath:   "/data/webdav",
-					NfsServer: w.Cluster.NfsServer,
+					Name: "webdav",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/webdav",
+						Server: w.Cluster.NfsServer,
+					},
 				},
 			},
 		},
@@ -103,6 +105,7 @@ func (w *Webdav) Children() []world.Configuration {
 			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
+			Port:      "http",
 			Domains:   w.Domains,
 		},
 	}

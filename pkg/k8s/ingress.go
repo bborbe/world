@@ -19,6 +19,10 @@ type IngressSpec struct {
 
 type IngressHost string
 
+func (i IngressHost) String() string {
+	return string(i)
+}
+
 type IngressRule struct {
 	Host IngressHost `yaml:"host"`
 	Http IngressHttp `yaml:"http"`

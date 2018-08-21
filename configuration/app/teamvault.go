@@ -3,23 +3,268 @@ package app
 import (
 	"context"
 
+	"fmt"
+
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/configuration/component"
+	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Teamvault struct {
-	Cluster cluster.Cluster
+	Cluster          cluster.Cluster
+	Domains          []k8s.IngressHost
+	DatabasePassword deployer.SecretValue
+	SmtpPassword     deployer.SecretValue
+	SmtpUsername     deployer.SecretValue
+	LdapPassword     deployer.SecretValue
+	SecretKey        deployer.SecretValue
+	FernetKey        deployer.SecretValue
+	Salt             deployer.SecretValue
 }
 
 func (t *Teamvault) Children() []world.Configuration {
+	image := docker.Image{
+		Registry:   "docker.io",
+		Repository: "bborbe/teamvault",
+		Tag:        "0.7.3",
+	}
+	ports := []deployer.Port{
+		{
+			Port:     8000,
+			Protocol: "TCP",
+			Name:     "http",
+		},
+	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   t.Cluster.Context,
 			Namespace: "teamvault",
 		},
+		&component.Postgres{
+			Context:              t.Cluster.Context,
+			Namespace:            "teamvault",
+			DataNfsPath:          "/data/teamvault-postgres",
+			DataNfsServer:        t.Cluster.NfsServer,
+			BackupNfsPath:        "/data/teamvault-postgres-backup",
+			BackupNfsServer:      t.Cluster.NfsServer,
+			PostgresVersion:      "10.5",
+			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
+			PostgresDatabaseName: "teamvault",
+			PostgresUsername: &deployer.SecretValueStatic{
+				Content: []byte("teamvault"),
+			},
+			PostgresPassword: t.DatabasePassword,
+		},
+		&deployer.SecretDeployer{
+			Context:   t.Cluster.Context,
+			Namespace: "teamvault",
+			Name:      "teamvault",
+			Secrets: deployer.Secrets{
+				"database-password": t.DatabasePassword,
+				"secret-key":        t.SecretKey,
+				"fernet-key":        t.FernetKey,
+				"salt":              t.Salt,
+				"ldap-password":     t.LdapPassword,
+			},
+		},
+		&deployer.DeploymentDeployer{
+			Context:      t.Cluster.Context,
+			Namespace:    "teamvault",
+			Name:         "teamvault",
+			Requirements: t.smtp().Requirements(),
+			Containers: []deployer.DeploymentDeployerContainer{
+				{
+					Name:  "teamvault",
+					Image: image,
+					Requirement: &build.Teamvault{
+						Image: image,
+					},
+					Ports:         ports,
+					CpuLimit:      "2000m",
+					MemoryLimit:   "400Mi",
+					CpuRequest:    "10m",
+					MemoryRequest: "100Mi",
+					Env: []k8s.Env{
+						{
+							Name:  "BASE_URL",
+							Value: fmt.Sprintf("https://%s", t.Domains[0]),
+						},
+						{
+							Name:  "DEBUG",
+							Value: "disabled",
+						},
+						{
+							Name:  "EMAIL_ENABLED",
+							Value: "true",
+						},
+						{
+							Name:  "EMAIL_HOST",
+							Value: "localhost",
+						},
+						{
+							Name:  "EMAIL_PORT",
+							Value: "25",
+						},
+						{
+							Name:  "EMAIL_USER",
+							Value: "",
+						},
+						{
+							Name:  "EMAIL_PASSWORD",
+							Value: "",
+						},
+						{
+							Name:  "EMAIL_USE_TLS",
+							Value: "False",
+						},
+						{
+							Name:  "EMAIL_USE_SSL",
+							Value: "False",
+						},
+						{
+							Name:  "DATABASE_HOST",
+							Value: "postgres",
+						},
+						{
+							Name:  "DATABASE_PORT",
+							Value: "5432",
+						},
+						{
+							Name:  "DATABASE_NAME",
+							Value: "teamvault",
+						},
+						{
+							Name:  "DATABASE_USER",
+							Value: "teamvault",
+						},
+						{
+							Name: "DATABASE_PASSWORD",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "database-password",
+									Name: "teamvault",
+								},
+							},
+						},
+						{
+							Name: "SECRET_KEY",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "secret-key",
+									Name: "teamvault",
+								},
+							},
+						},
+						{
+							Name: "FERNET_KEY",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "fernet-key",
+									Name: "teamvault",
+								},
+							},
+						},
+						{
+							Name: "SALT",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "salt",
+									Name: "teamvault",
+								},
+							},
+						},
+						{
+							Name:  "LDAP_ENABLED",
+							Value: "true",
+						},
+						{
+							Name:  "LDAP_SERVER_URI",
+							Value: "ldap://ldap.ldap.svc.cluster.local",
+						},
+						{
+							Name:  "LDAP_BIND_DN",
+							Value: "cn=root,dc=benjamin-borbe,dc=de",
+						},
+						{
+							Name: "LDAP_PASSWORD",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "ldap-password",
+									Name: "teamvault",
+								},
+							},
+						},
+						{
+							Name:  "LDAP_USER_BASE_DN",
+							Value: "ou=users,dc=benjamin-borbe,dc=de",
+						},
+						{
+							Name:  "LDAP_USER_SEARCH_FILTER",
+							Value: "(uid=%%(user)s)",
+						},
+						{
+							Name:  "LDAP_GROUP_BASE_DN",
+							Value: "ou=groups,dc=benjamin-borbe,dc=de",
+						},
+						{
+							Name:  "LDAP_GROUP_SEARCH_FILTER",
+							Value: "(objectClass=groupOfNames)",
+						},
+						{
+							Name:  "LDAP_REQUIRE_GROUP",
+							Value: "ou=employees,ou=groups,dc=benjamin-borbe,dc=de",
+						},
+						{
+							Name:  "LDAP_ADMIN_GROUP",
+							Value: "ou=admins,ou=groups,dc=benjamin-borbe,dc=de",
+						},
+						{
+							Name:  "LDAP_ATTR_EMAIL",
+							Value: "mail",
+						},
+						{
+							Name:  "LDAP_ATTR_FIRST_NAME",
+							Value: "givenName",
+						},
+						{
+							Name:  "LDAP_ATTR_LAST_NAME",
+							Value: "sn",
+						},
+					},
+				},
+				t.smtp().Container(),
+			},
+		},
+		&deployer.ServiceDeployer{
+			Context:   t.Cluster.Context,
+			Namespace: "teamvault",
+			Name:      "teamvault",
+			Ports:     ports,
+		},
+		&deployer.IngressDeployer{
+			Context:   t.Cluster.Context,
+			Namespace: "teamvault",
+			Name:      "teamvault",
+			Port:      "http",
+			Domains:   t.Domains,
+		},
+	}
+}
+
+func (c *Teamvault) smtp() *container.SmtpProvider {
+	return &container.SmtpProvider{
+		Hostname:     c.Domains[0].String(),
+		Context:      c.Cluster.Context,
+		Namespace:    "teamvault",
+		SmtpPassword: c.SmtpPassword,
+		SmtpUsername: c.SmtpUsername,
 	}
 }
 
@@ -32,5 +277,58 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 	if err := t.Cluster.Validate(ctx); err != nil {
 		return errors.Wrap(err, "validate teamvault app failed")
 	}
+	if len(t.Domains) != 1 {
+		return errors.New("need exact one domain")
+	}
+
+	if t.DatabasePassword == nil {
+		return errors.New("DatabasePassword missing")
+	}
+	if err := t.DatabasePassword.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate DatabasePassword failed")
+	}
+
+	if t.SmtpPassword == nil {
+		return errors.New("SmtpPassword missing")
+	}
+	if err := t.SmtpPassword.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate SmtpPassword failed")
+	}
+
+	if t.SmtpUsername == nil {
+		return errors.New("SmtpUsername missing")
+	}
+	if err := t.SmtpUsername.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate SmtpUsername failed")
+	}
+
+	if t.LdapPassword == nil {
+		return errors.New("LdapPassword missing")
+	}
+	if err := t.LdapPassword.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate LdapPassword failed")
+	}
+
+	if t.SecretKey == nil {
+		return errors.New("SecretKey missing")
+	}
+	if err := t.SecretKey.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate SecretKey failed")
+	}
+
+	if t.FernetKey == nil {
+		return errors.New("FernetKey missing")
+	}
+	if err := t.FernetKey.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate FernetKey failed")
+	}
+
+	if t.Salt == nil {
+		return errors.New("Salt missing")
+	}
+	if err := t.Salt.Validate(ctx); err != nil {
+		return errors.Wrap(err, "validate Salt failed")
+	}
+
 	return nil
 }

@@ -18,7 +18,7 @@ import (
 type Poste struct {
 	Cluster      cluster.Cluster
 	PosteVersion docker.Tag
-	Domains      []deployer.Domain
+	Domains      []k8s.IngressHost
 }
 
 func (p *Poste) Children() []world.Configuration {
@@ -113,19 +113,21 @@ func (p *Poste) Children() []world.Configuration {
 						},
 					},
 					Ports: ports,
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "poste",
-							Target: "/data",
+							Name: "poste",
+							Path: "/data",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "poste",
-					NfsPath:   "/data/poste",
-					NfsServer: p.Cluster.NfsServer,
+					Name: "poste",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/poste",
+						Server: p.Cluster.NfsServer,
+					},
 				},
 			},
 		},
@@ -139,6 +141,7 @@ func (p *Poste) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "poste",
 			Name:      "poste",
+			Port:      "http",
 			Domains:   p.Domains,
 		},
 	}

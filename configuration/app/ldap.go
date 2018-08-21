@@ -85,23 +85,25 @@ func (l *Ldap) Children() []world.Configuration {
 						Image: image,
 					},
 					Ports:         ports,
-					CpuLimit:      "100m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Mounts: []deployer.Mount{
+					CpuLimit:      "500m",
+					MemoryLimit:   "75Mi",
+					CpuRequest:    "100m",
+					MemoryRequest: "25Mi",
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "ldap",
-							Target: "/var/lib/openldap/openldap-data",
+							Name: "ldap",
+							Path: "/var/lib/openldap/openldap-data",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "ldap",
-					NfsPath:   "/data/ldap",
-					NfsServer: l.Cluster.NfsServer,
+					Name: "ldap",
+					Nfs: k8s.PodNfs{
+						Path:   "/data/ldap",
+						Server: l.Cluster.NfsServer,
+					},
 				},
 			},
 		},
