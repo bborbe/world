@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type BackupRsyncServer struct {
@@ -22,15 +19,8 @@ func (b *BackupRsyncServer) Children() []world.Configuration {
 	}
 }
 
-func (b *BackupRsyncServer) Applier() world.Applier {
+func (b *BackupRsyncServer) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: b.Image,
-	}
-}
-
-func (b *BackupRsyncServer) Validate(ctx context.Context) error {
-	if err := b.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	return nil
+	}, nil
 }

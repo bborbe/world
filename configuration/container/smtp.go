@@ -1,14 +1,11 @@
 package container
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/pkg/errors"
 )
 
 type SmtpProvider struct {
@@ -38,10 +35,16 @@ func (s *SmtpProvider) Container() deployer.DeploymentDeployerContainer {
 				Name:     "smtp",
 			},
 		},
-		CpuLimit:      "250m",
-		MemoryLimit:   "100Mi",
-		CpuRequest:    "10m",
-		MemoryRequest: "10Mi",
+		Resources: k8s.PodResources{
+			Limits: k8s.Resources{
+				Cpu:    "250m",
+				Memory: "100Mi",
+			},
+			Requests: k8s.Resources{
+				Cpu:    "10m",
+				Memory: "10Mi",
+			},
+		},
 		Env: []k8s.Env{
 			{
 				Name:  "HOSTNAME",
@@ -87,25 +90,6 @@ func (s *SmtpProvider) Container() deployer.DeploymentDeployerContainer {
 			},
 		},
 	}
-}
-
-func (s *SmtpProvider) Validate(ctx context.Context) error {
-	if s.Context == "" {
-		return errors.New("Context missing")
-	}
-	if s.Namespace == "" {
-		return errors.New("Namespace context missing")
-	}
-	if s.Hostname == "" {
-		return errors.New("Hostname missing")
-	}
-	if err := s.SmtpUsername.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	if err := s.SmtpPassword.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	return nil
 }
 
 func (s *SmtpProvider) Requirements() []world.Configuration {

@@ -13,6 +13,7 @@ import (
 	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world/configuration"
 	"github.com/bborbe/world/pkg/runner"
+	"github.com/bborbe/world/pkg/secret"
 	"github.com/golang/glog"
 )
 
@@ -24,8 +25,6 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	glog.V(1).Infof("validate all ...")
 
 	teamvaultConfigPath := teamvault.TeamvaultConfigPath("~/.teamvault.json")
 	teamvaultConfigPath, err := teamvaultConfigPath.NormalizePath()
@@ -40,19 +39,24 @@ func main() {
 	}
 
 	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
-	r := &runner.Runner{
-		Configuration: &configuration.World{
+	r, err := runner.New(&configuration.World{
+		TeamvaultSecrets: &secret.Teamvault{
 			TeamvaultConnector: teamvaultconnector.NewCache(
 				&teamvaultconnector.DiskFallback{
 					Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
 				},
 			),
 		},
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "create runtime failed: %+v\n", err)
+		os.Exit(1)
 	}
+
+	glog.V(1).Infof("validate all ...")
 	if err := r.Validate(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "validate failed: %+v\n", err)
 		os.Exit(1)
 	}
-
 	glog.V(1).Infof("validate all finished")
 }

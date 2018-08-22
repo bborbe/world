@@ -1,47 +1,28 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type BackupStatusClient struct {
-	VendorVersion docker.Tag
-	Image         docker.Image
-	GitBranch     docker.GitBranch
+	Image docker.Image
 }
 
 func (b *BackupStatusClient) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo: "https://github.com/bborbe/docker-backup-rsync-client.git",
-			Image:   b.Image,
-			BuildArgs: docker.BuildArgs{
-				"VENDOR_VERSION": b.VendorVersion.String(),
-			},
-			GitBranch: b.GitBranch,
+		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
+			Name:            "backup-status-client",
+			GitRepo:         "https://github.com/bborbe/backup.git",
+			SourceDirectory: "github.com/bborbe/backup",
+			Package:         "github.com/bborbe/backup/cmd/backup-status-client",
+			Image:           b.Image,
 		}),
 	}
 }
 
-func (b *BackupStatusClient) Applier() world.Applier {
+func (b *BackupStatusClient) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: b.Image,
-	}
-}
-
-func (b *BackupStatusClient) Validate(ctx context.Context) error {
-	if err := b.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	if b.GitBranch == "" {
-		return errors.New("GitBranch missing")
-	}
-	if b.VendorVersion == "" {
-		return errors.New("VendorVersion missing")
-	}
-	return nil
+	}, nil
 }

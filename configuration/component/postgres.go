@@ -1,7 +1,6 @@
 package component
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/bborbe/world"
@@ -9,16 +8,15 @@ import (
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/pkg/errors"
 )
 
 type Postgres struct {
 	Context              k8s.Context
 	Namespace            k8s.NamespaceName
-	DataNfsPath          deployer.MountNfsPath
-	DataNfsServer        deployer.MountNfsServer
-	BackupNfsPath        deployer.MountNfsPath
-	BackupNfsServer      deployer.MountNfsServer
+	DataNfsPath          k8s.PodNfsPath
+	DataNfsServer        k8s.PodNfsServer
+	BackupNfsPath        k8s.PodNfsPath
+	BackupNfsServer      k8s.PodNfsServer
 	PostgresVersion      docker.Tag
 	PostgresDatabaseName string
 	PostgresInitDbArgs   string
@@ -70,12 +68,18 @@ func (p *Postgres) Children() []world.Configuration {
 					Requirement: &build.Postgres{
 						Image: postgresImage,
 					},
-					Ports:         ports,
-					CpuLimit:      "2000m",
-					MemoryLimit:   "200Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "100Mi",
-					Args:          []k8s.Arg{"postgres", "-c", "max_connections=150"},
+					Ports: ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "2000m",
+							Memory: "200Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "100Mi",
+						},
+					},
+					Args: []k8s.Arg{"postgres", "-c", "max_connections=150"},
 					Env: []k8s.Env{
 						{
 							Name:  "POSTGRES_INITDB_ARGS",
@@ -108,19 +112,21 @@ func (p *Postgres) Children() []world.Configuration {
 							},
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "data",
-							Target: "/var/lib/postgresql/data",
+							Name: "data",
+							Path: "/var/lib/postgresql/data",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "data",
-					NfsServer: p.DataNfsServer,
-					NfsPath:   p.DataNfsPath,
+					Name: "data",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   k8s.PodNfsPath(p.DataNfsPath),
+						Server: k8s.PodNfsServer(p.DataNfsServer),
+					},
 				},
 			},
 		},
@@ -141,11 +147,17 @@ func (p *Postgres) Children() []world.Configuration {
 					Requirement: &build.PostgresBackup{
 						Image: postgresBackupImage,
 					},
-					CpuLimit:      "500m",
-					MemoryLimit:   "100Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Args:          []k8s.Arg{"-logtostderr", "-v=1"},
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "500m",
+							Memory: "100Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Args: []k8s.Arg{"-logtostderr", "-v=1"},
 					Env: []k8s.Env{
 						{
 							Name:  "LOCK",
@@ -194,10 +206,10 @@ func (p *Postgres) Children() []world.Configuration {
 							Value: "false",
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "backup",
-							Target: "/backup",
+							Name: "backup",
+							Path: "/backup",
 						},
 					},
 				},
@@ -207,11 +219,17 @@ func (p *Postgres) Children() []world.Configuration {
 					Requirement: &build.BackupCleanupCron{
 						Image: backupCleanUpImage,
 					},
-					CpuLimit:      "100m",
-					MemoryLimit:   "100Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Args:          []k8s.Arg{"-logtostderr", "-v=1"},
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "100Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Args: []k8s.Arg{"-logtostderr", "-v=1"},
 					Env: []k8s.Env{
 						{
 							Name:  "LOCK",
@@ -238,59 +256,27 @@ func (p *Postgres) Children() []world.Configuration {
 							Value: fmt.Sprintf("postgres_%s_.*.dump", p.PostgresDatabaseName),
 						},
 					},
-					Mounts: []deployer.Mount{
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "backup",
-							Target: "/backup",
+							Name: "backup",
+							Path: "/backup",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "backup",
-					NfsPath:   "/data/confluence-postgres-backup",
-					NfsServer: p.DataNfsServer,
+					Name: "backup",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/confluence-postgres-backup",
+						Server: k8s.PodNfsServer(p.DataNfsServer),
+					},
 				},
 			},
 		},
 	}
 }
 
-func (p *Postgres) Applier() world.Applier {
-	return nil
-}
-
-func (p *Postgres) Validate(ctx context.Context) error {
-	if p.Context == "" {
-		return errors.New("Context empty")
-	}
-	if p.Namespace == "" {
-		return errors.New("Namespace empty")
-	}
-	if p.DataNfsPath == "" {
-		return errors.New("DataNfsPath empty")
-	}
-	if p.DataNfsServer == "" {
-		return errors.New("DataNfsServer empty")
-	}
-	if p.BackupNfsPath == "" {
-		return errors.New("BackupNfsPath empty")
-	}
-	if p.BackupNfsServer == "" {
-		return errors.New("BackupNfsServer empty")
-	}
-	if p.PostgresVersion == "" {
-		return errors.New("PostgresVersion empty")
-	}
-	if p.PostgresDatabaseName == "" {
-		return errors.New("PostgresDatabaseName empty")
-	}
-	if err := p.PostgresUsername.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	if err := p.PostgresPassword.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	return nil
+func (p *Postgres) Applier() (world.Applier, error) {
+	return nil, nil
 }

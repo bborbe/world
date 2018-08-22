@@ -1,6 +1,35 @@
 package k8s
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+)
+
+type DeploymentApplier struct {
+	Context    Context
+	Deployment Deployment
+}
+
+func (s *DeploymentApplier) Satisfied(ctx context.Context) (bool, error) {
+	return false, nil
+}
+
+func (s *DeploymentApplier) Apply(ctx context.Context) error {
+	deployer := &Deployer{
+		Context: s.Context,
+		Data:    s.Deployment,
+	}
+	return deployer.Apply(ctx)
+}
+
+func (s *DeploymentApplier) Validate(ctx context.Context) error {
+	if s.Context == "" {
+		return errors.New("context missing")
+	}
+	return s.Deployment.Validate(ctx)
+}
 
 type Deployment struct {
 	ApiVersion ApiVersion     `yaml:"apiVersion"`
@@ -11,6 +40,10 @@ type Deployment struct {
 
 func (s Deployment) String() string {
 	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
+}
+
+func (s *Deployment) Validate(ctx context.Context) error {
+	return nil
 }
 
 type DeploymentReplicas int

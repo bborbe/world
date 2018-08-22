@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Ip struct {
@@ -19,8 +15,8 @@ type Ip struct {
 	Tag     docker.Tag
 }
 
-func (i *Ip) Applier() world.Applier {
-	return nil
+func (i *Ip) Applier() (world.Applier, error) {
+	return nil, nil
 }
 
 func (i *Ip) Children() []world.Configuration {
@@ -52,12 +48,18 @@ func (i *Ip) Children() []world.Configuration {
 					Requirement: &build.Ip{
 						Image: image,
 					},
-					CpuLimit:      "100m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Args:          []k8s.Arg{"-logtostderr", "-v=2"},
-					Ports:         ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Args:  []k8s.Arg{"-logtostderr", "-v=2"},
+					Ports: ports,
 				},
 			},
 		},
@@ -75,18 +77,4 @@ func (i *Ip) Children() []world.Configuration {
 			Domains:   i.Domains,
 		},
 	}
-}
-
-func (i *Ip) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate ip app ...")
-	if err := i.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate ip app failed")
-	}
-	if i.Tag == "" {
-		return errors.New("tag missing")
-	}
-	if len(i.Domains) == 0 {
-		return errors.New("domains empty")
-	}
-	return nil
 }

@@ -34,7 +34,7 @@ func (u *Uploader) Apply(ctx context.Context) error {
 }
 
 func (u *Uploader) Satisfied(ctx context.Context) (bool, error) {
-	glog.V(2).Infof("check image %s exists an registry ...", u.Image.String())
+	glog.V(3).Infof("check image %s exists an registry ...", u.Image.String())
 	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/tags/%s/", u.Image.Repository, u.Image.Tag)
 	resp, err := getUrl(url)
 	if err != nil {
@@ -56,7 +56,7 @@ func (u *Uploader) Satisfied(ctx context.Context) (bool, error) {
 		glog.V(2).Infof("tag mismatch")
 		return false, nil
 	}
-	glog.V(2).Infof("image %s exists on registry", u.Image.String())
+	glog.V(3).Infof("image %s exists on registry", u.Image.String())
 	return true, nil
 }
 

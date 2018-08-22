@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Traefik struct {
@@ -68,12 +64,18 @@ func (t *Traefik) Children() []world.Configuration {
 					Requirement: &build.Traefik{
 						Image: traefikImage,
 					},
-					Ports:         traefikPorts,
-					CpuLimit:      "200m",
-					MemoryLimit:   "100Mi",
-					CpuRequest:    "100m",
-					MemoryRequest: "25Mi",
-					Args:          []k8s.Arg{"--configfile=/config/traefik.toml"},
+					Ports: traefikPorts,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "200m",
+							Memory: "100Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "25Mi",
+						},
+					},
+					Args: []k8s.Arg{"--configfile=/config/traefik.toml"},
 					Mounts: []k8s.VolumeMount{
 						{
 							Name: "config",
@@ -89,7 +91,7 @@ func (t *Traefik) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "config",
-					ConfigMap: k8s.PodConfigMap{
+					ConfigMap: k8s.PodVolumeConfigMap{
 						Name: "traefik",
 						Items: []k8s.PodConfigMapItem{
 							{
@@ -101,7 +103,7 @@ func (t *Traefik) Children() []world.Configuration {
 				},
 				{
 					Name: "acme",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/traefik-acme",
 						Server: t.Cluster.NfsServer,
 					},
@@ -119,10 +121,16 @@ func (t *Traefik) Children() []world.Configuration {
 					Requirement: &build.TraefikCertificateExtractor{
 						Image: exporterImage,
 					},
-					CpuLimit:      "200m",
-					MemoryLimit:   "100Mi",
-					CpuRequest:    "100m",
-					MemoryRequest: "25Mi",
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "200m",
+							Memory: "100Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "25Mi",
+						},
+					},
 					Mounts: []k8s.VolumeMount{
 						{
 							Name: "acme",
@@ -139,14 +147,14 @@ func (t *Traefik) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "acme",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/traefik-acme",
 						Server: t.Cluster.NfsServer,
 					},
 				},
 				{
 					Name: "certs",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/traefik-extract",
 						Server: t.Cluster.NfsServer,
 					},
@@ -175,19 +183,8 @@ func (t *Traefik) Children() []world.Configuration {
 	}
 }
 
-func (t *Traefik) Applier() world.Applier {
-	return nil
-}
-
-func (t *Traefik) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate traefik app ...")
-	if err := t.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate traefik app failed")
-	}
-	if len(t.Domains) == 0 {
-		return errors.New("domains empty")
-	}
-	return nil
+func (t *Traefik) Applier() (world.Applier, error) {
+	return nil, nil
 }
 
 const traefikConfig = `graceTimeOut = 10

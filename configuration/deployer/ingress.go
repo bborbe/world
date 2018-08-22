@@ -1,11 +1,8 @@
 package deployer
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/pkg/errors"
 )
 
 type IngressDeployer struct {
@@ -17,38 +14,15 @@ type IngressDeployer struct {
 	Port         k8s.PortName
 }
 
-func (i *IngressDeployer) Applier() world.Applier {
-	return &k8s.Deployer{
+func (i *IngressDeployer) Applier() (world.Applier, error) {
+	return &k8s.IngressApplier{
 		Context: i.Context,
-		Data:    i,
-	}
+		Ingress: i.ingress(),
+	}, nil
 }
 
 func (i *IngressDeployer) Children() []world.Configuration {
 	return i.Requirements
-}
-
-func (i *IngressDeployer) Validate(ctx context.Context) error {
-	if i.Context == "" {
-		return errors.New("Context missing")
-	}
-	if i.Namespace == "" {
-		return errors.New("Namespace missing")
-	}
-	if i.Name == "" {
-		return errors.New("Name missing")
-	}
-	if i.Port == "" {
-		return errors.New("Port missing")
-	}
-	if len(i.Domains) == 0 {
-		return errors.New("Domains missing")
-	}
-	return nil
-}
-
-func (i *IngressDeployer) Data() (interface{}, error) {
-	return i.ingress(), nil
 }
 
 func (i *IngressDeployer) ingress() k8s.Ingress {

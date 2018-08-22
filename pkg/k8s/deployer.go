@@ -3,7 +3,6 @@ package k8s
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -12,23 +11,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type DataProvider interface {
-	Data() (interface{}, error)
-}
-
 type Deployer struct {
 	Context Context
-	Data    DataProvider
+	Data    interface{}
 }
 
 func (d *Deployer) Apply(ctx context.Context) error {
-	data, err := d.Data.Data()
-	if err != nil {
-		return errors.Wrap(err, "get data failed")
-	}
-	glog.V(2).Infof("deploy %s to %s ...", data, d.Context)
+	glog.V(3).Infof("deploy %s to %s ...", d.Data, d.Context)
 	buf := &bytes.Buffer{}
-	if err := yaml.NewEncoder(buf).Encode(data); err != nil {
+	if err := yaml.NewEncoder(buf).Encode(d.Data); err != nil {
 		return err
 	}
 	if glog.V(4) {
@@ -41,23 +32,9 @@ func (d *Deployer) Apply(ctx context.Context) error {
 		cmd.Stderr = os.Stderr
 	}
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "deploy %T to %s failed", data, d.Context)
+		return errors.Wrapf(err, "deploy %T to %s failed", d.Data, d.Context)
 
 	}
-	glog.V(1).Infof("deploy %s to %s finished", data, d.Context)
+	glog.V(3).Infof("deploy %s to %s finished", d.Data, d.Context)
 	return nil
-}
-
-func (d *Deployer) Validate(ctx context.Context) error {
-	if d.Context == "" {
-		return fmt.Errorf("context missing")
-	}
-	if d.Data == nil {
-		return fmt.Errorf("data missing")
-	}
-	return nil
-}
-
-func (d *Deployer) Satisfied(ctx context.Context) (bool, error) {
-	return false, nil
 }

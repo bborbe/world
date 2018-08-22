@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Now struct {
@@ -48,11 +44,17 @@ func (n *Now) Children() []world.Configuration {
 					Requirement: &build.Now{
 						Image: image,
 					},
-					CpuLimit:      "100m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Args:          []k8s.Arg{"-logtostderr", "-v=2"},
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Args: []k8s.Arg{"-logtostderr", "-v=2"},
 					Env: []k8s.Env{
 						{
 							Name:  "PORT",
@@ -79,20 +81,6 @@ func (n *Now) Children() []world.Configuration {
 	}
 }
 
-func (n *Now) Applier() world.Applier {
-	return nil
-}
-
-func (n *Now) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate now app ...")
-	if err := n.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate now app failed")
-	}
-	if n.Tag == "" {
-		return errors.New("tag missing in now app")
-	}
-	if len(n.Domains) == 0 {
-		return errors.New("domains empty in now app")
-	}
-	return nil
+func (n *Now) Applier() (world.Applier, error) {
+	return nil, nil
 }

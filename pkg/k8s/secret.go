@@ -1,6 +1,35 @@
 package k8s
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+)
+
+type SecretApplier struct {
+	Context Context
+	Secret  Secret
+}
+
+func (s *SecretApplier) Satisfied(ctx context.Context) (bool, error) {
+	return false, nil
+}
+
+func (s *SecretApplier) Apply(ctx context.Context) error {
+	deployer := &Deployer{
+		Context: s.Context,
+		Data:    s.Secret,
+	}
+	return deployer.Apply(ctx)
+}
+
+func (s *SecretApplier) Validate(ctx context.Context) error {
+	if s.Context == "" {
+		return errors.New("context missing")
+	}
+	return s.Secret.Validate(ctx)
+}
 
 type Secret struct {
 	ApiVersion ApiVersion `yaml:"apiVersion"`
@@ -8,6 +37,10 @@ type Secret struct {
 	Metadata   Metadata   `yaml:"metadata"`
 	Type       SecretType `yaml:"type"`
 	Data       SecretData `yaml:"data"`
+}
+
+func (s *Secret) Validate(ctx context.Context) error {
+	return nil
 }
 
 func (s Secret) String() string {

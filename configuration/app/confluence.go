@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/bborbe/world"
@@ -12,8 +11,6 @@ import (
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Confluence struct {
@@ -73,11 +70,17 @@ func (c *Confluence) Children() []world.Configuration {
 						GitBranch:     buildVersion,
 						Image:         image,
 					},
-					Ports:         ports,
-					CpuLimit:      "4000m",
-					MemoryLimit:   "3000Mi",
-					CpuRequest:    "100m",
-					MemoryRequest: "2000Mi",
+					Ports: ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "4000m",
+							Memory: "3000Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "2000Mi",
+						},
+					},
 					Env: []k8s.Env{
 						{
 							Name:  "PORT",
@@ -104,7 +107,7 @@ func (c *Confluence) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "data",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/confluence-data",
 						Server: k8s.PodNfsServer(c.Cluster.NfsServer),
 					},
@@ -137,32 +140,6 @@ func (c *Confluence) smtp() *container.SmtpProvider {
 	}
 }
 
-func (c *Confluence) Applier() world.Applier {
-	return nil
-}
-
-func (c *Confluence) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate confluence app ...")
-	if err := c.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	if len(c.Domains) != 1 {
-		return errors.New("need exact one domain")
-	}
-	if c.Version == "" {
-		return errors.New("Tag empty")
-	}
-	if err := c.DatabasePassword.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	if err := c.SmtpUsername.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	if err := c.SmtpPassword.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	if err := c.smtp().Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate failed")
-	}
-	return nil
+func (c *Confluence) Applier() (world.Applier, error) {
+	return nil, nil
 }

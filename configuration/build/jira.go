@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type Jira struct {
@@ -27,21 +24,8 @@ func (c *Jira) Children() []world.Configuration {
 	}
 }
 
-func (c *Jira) Applier() world.Applier {
+func (c *Jira) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: c.Image,
-	}
-}
-
-func (c *Jira) Validate(ctx context.Context) error {
-	if err := c.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	if c.GitBranch == "" {
-		return errors.New("GitBranch missing")
-	}
-	if c.VendorVersion == "" {
-		return errors.New("VendorVersion missing")
-	}
-	return nil
+	}, nil
 }

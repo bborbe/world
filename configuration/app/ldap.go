@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Ldap struct {
@@ -19,8 +15,8 @@ type Ldap struct {
 	LdapSecret deployer.SecretValue
 }
 
-func (l *Ldap) Applier() world.Applier {
-	return nil
+func (l *Ldap) Applier() (world.Applier, error) {
+	return nil, nil
 }
 
 func (l *Ldap) Children() []world.Configuration {
@@ -84,11 +80,17 @@ func (l *Ldap) Children() []world.Configuration {
 					Requirement: &build.Openldap{
 						Image: image,
 					},
-					Ports:         ports,
-					CpuLimit:      "500m",
-					MemoryLimit:   "75Mi",
-					CpuRequest:    "100m",
-					MemoryRequest: "25Mi",
+					Ports: ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "500m",
+							Memory: "75Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "25Mi",
+						},
+					},
 					Mounts: []k8s.VolumeMount{
 						{
 							Name: "ldap",
@@ -100,7 +102,7 @@ func (l *Ldap) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "ldap",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/ldap",
 						Server: l.Cluster.NfsServer,
 					},
@@ -114,21 +116,4 @@ func (l *Ldap) Children() []world.Configuration {
 			Ports:     ports,
 		},
 	}
-}
-
-func (l *Ldap) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate ldap app ...")
-	if err := l.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate cluster failed")
-	}
-	if l.Tag == "" {
-		return errors.New("Tag missing")
-	}
-	if l.LdapSecret == nil {
-		return errors.New("LdapSecret missing")
-	}
-	if err := l.LdapSecret.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate LdapSecret failed")
-	}
-	return nil
 }

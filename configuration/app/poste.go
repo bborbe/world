@@ -1,8 +1,6 @@
 package app
 
 import (
-	"context"
-
 	"fmt"
 
 	"github.com/bborbe/world"
@@ -11,8 +9,6 @@ import (
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Poste struct {
@@ -95,12 +91,18 @@ func (p *Poste) Children() []world.Configuration {
 			Name:      "poste",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
-					Name:          "poste",
-					CpuLimit:      "1500m",
-					MemoryLimit:   "750Mi",
-					CpuRequest:    "100m",
-					MemoryRequest: "100Mi",
-					Image:         image,
+					Name: "poste",
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "1500m",
+							Memory: "750Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "100Mi",
+						},
+					},
+					Image: image,
 					Requirement: &build.Poste{
 						Image:         image,
 						GitBranch:     buildVersion,
@@ -124,7 +126,7 @@ func (p *Poste) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "poste",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/poste",
 						Server: p.Cluster.NfsServer,
 					},
@@ -147,20 +149,6 @@ func (p *Poste) Children() []world.Configuration {
 	}
 }
 
-func (p *Poste) Applier() world.Applier {
-	return nil
-}
-
-func (p *Poste) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate poste app ...")
-	if err := p.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate poste app failed")
-	}
-	if len(p.Domains) == 0 {
-		return errors.New("Domains empty")
-	}
-	if p.PosteVersion == "" {
-		return errors.New("PosteVersion empty")
-	}
-	return nil
+func (p *Poste) Applier() (world.Applier, error) {
+	return nil, nil
 }

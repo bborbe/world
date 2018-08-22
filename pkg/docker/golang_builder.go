@@ -87,16 +87,16 @@ func (g *GolangBuilder) Validate(ctx context.Context) error {
 		return errors.Wrap(err, "validate golang builder failed")
 	}
 	if g.Name == "" {
-		return errors.New("name missing in golang builder")
+		return errors.New("name missing")
 	}
 	if g.SourceDirectory == "" {
-		return errors.New("source directory missing in golang builder")
+		return errors.New("source directory missing")
 	}
 	if g.GitRepo == "" {
-		return errors.New("git repo missing in golang builder")
+		return errors.New("git repo missing")
 	}
 	if g.Package == "" {
-		return errors.New("package missing in golang builder")
+		return errors.New("package missing")
 	}
 	return nil
 }

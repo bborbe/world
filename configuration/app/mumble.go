@@ -1,15 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
+	"github.com/bborbe/world/pkg/k8s"
 )
 
 type Mumble struct {
@@ -46,11 +43,17 @@ func (m *Mumble) Children() []world.Configuration {
 					Requirement: &build.Mumble{
 						Image: image,
 					},
-					Ports:         ports,
-					CpuLimit:      "200m",
-					MemoryLimit:   "100Mi",
-					CpuRequest:    "100m",
-					MemoryRequest: "25Mi",
+					Ports: ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "200m",
+							Memory: "100Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "25Mi",
+						},
+					},
 				},
 			},
 		},
@@ -63,17 +66,6 @@ func (m *Mumble) Children() []world.Configuration {
 	}
 }
 
-func (m *Mumble) Applier() world.Applier {
-	return nil
-}
-
-func (m *Mumble) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate mumble app ...")
-	if err := m.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate mumble app failed")
-	}
-	if m.Tag == "" {
-		return errors.New("tag missing in mumble app")
-	}
-	return nil
+func (m *Mumble) Applier() (world.Applier, error) {
+	return nil, nil
 }

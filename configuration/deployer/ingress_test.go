@@ -7,7 +7,6 @@ import (
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"golang.org/x/net/context"
 )
 
 var _ = Describe("IngressDeployer", func() {
@@ -19,10 +18,8 @@ var _ = Describe("IngressDeployer", func() {
 			Port:      "http",
 			Domains:   []k8s.IngressHost{"example.com"},
 		}
-		err := ingressDeployer.Validate(context.Background())
-		Expect(err).NotTo(HaveOccurred())
 		b := &bytes.Buffer{}
-		err = yaml.NewEncoder(b).Encode(ingressDeployer.ingress())
+		err := yaml.NewEncoder(b).Encode(ingressDeployer.ingress())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
 kind: Ingress

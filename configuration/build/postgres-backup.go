@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type PostgresBackup struct {
@@ -22,15 +19,8 @@ func (b *PostgresBackup) Children() []world.Configuration {
 	}
 }
 
-func (b *PostgresBackup) Applier() world.Applier {
+func (b *PostgresBackup) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: b.Image,
-	}
-}
-
-func (b *PostgresBackup) Validate(ctx context.Context) error {
-	if err := b.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	return nil
+	}, nil
 }

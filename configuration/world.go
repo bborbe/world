@@ -1,30 +1,22 @@
 package configuration
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
+	//"github.com/bborbe/world/pkg/docker"
+	//"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
-	"github.com/pkg/errors"
 )
 
 type World struct {
 	TeamvaultSecrets *secret.Teamvault
 }
 
-func (c *World) Applier() world.Applier {
-	return nil
-}
-
-func (c *World) Validate(ctx context.Context) error {
-	if c.TeamvaultSecrets == nil {
-		return errors.New("Teamvault missing")
-	}
-	return nil
+func (c *World) Applier() (world.Applier, error) {
+	return nil, nil
 }
 
 func (c *World) Children() []world.Configuration {
@@ -37,6 +29,10 @@ func (c *World) Children() []world.Configuration {
 		//&app.Dns{
 		//	Cluster: netcup,
 		//},
+		&app.Proxy{
+			Cluster:  netcup,
+			Password: c.TeamvaultSecrets.Htpasswd("zL89oq"),
+		},
 		&app.Ldap{
 			Cluster:    netcup,
 			Tag:        "1.1.0",
@@ -117,9 +113,6 @@ func (c *World) Children() []world.Configuration {
 			GitSyncPassword:      c.TeamvaultSecrets.Password("YLb4wV"),
 		},
 		&app.Prometheus{
-			Cluster: netcup,
-		},
-		&app.Proxy{
 			Cluster: netcup,
 		},
 		&app.Webdav{

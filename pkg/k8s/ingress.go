@@ -1,6 +1,35 @@
 package k8s
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+)
+
+type IngressApplier struct {
+	Context Context
+	Ingress Ingress
+}
+
+func (s *IngressApplier) Satisfied(ctx context.Context) (bool, error) {
+	return false, nil
+}
+
+func (s *IngressApplier) Apply(ctx context.Context) error {
+	deployer := &Deployer{
+		Context: s.Context,
+		Data:    s.Ingress,
+	}
+	return deployer.Apply(ctx)
+}
+
+func (s *IngressApplier) Validate(ctx context.Context) error {
+	if s.Context == "" {
+		return errors.New("context missing")
+	}
+	return s.Ingress.Validate(ctx)
+}
 
 type Ingress struct {
 	ApiVersion ApiVersion  `yaml:"apiVersion"`
@@ -11,6 +40,10 @@ type Ingress struct {
 
 func (s Ingress) String() string {
 	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
+}
+
+func (s *Ingress) Validate(ctx context.Context) error {
+	return nil
 }
 
 type IngressSpec struct {

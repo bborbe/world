@@ -13,17 +13,51 @@ type PodNfsPath string
 
 type PodNfsServer string
 
-type PodNfs struct {
+type PodVolumeNfs struct {
 	Path   PodNfsPath   `yaml:"path"`
 	Server PodNfsServer `yaml:"server"`
 }
 
-type EmptyDir map[string]string
+type PodVolumeSecret struct {
+	Name  PodSecretName   `yaml:"secretName"`
+	Items []PodSecretItem `yaml:"items"`
+}
+
+type PodSecretName string
+
+type PodSecretItem struct {
+	Key  PodSecretItemKey  `yaml:"key"`
+	Path PodSecretItemPath `yaml:"path"`
+}
+
+type PodSecretItemKey string
+
+type PodSecretItemPath string
+
+type PodVolumeConfigMap struct {
+	Name  PodConfigMapName   `yaml:"name"`
+	Items []PodConfigMapItem `yaml:"items"`
+}
+
+type PodConfigMapName string
+
+type PodConfigMapItem struct {
+	Key  PodConfigMapItemKey  `yaml:"key"`
+	Path PodConfigMapItemPath `yaml:"path"`
+}
+
+type PodConfigMapItemKey string
+
+type PodConfigMapItemPath string
+
+type PodVolumeEmptyDir struct{}
 
 type PodVolume struct {
-	Name     PodVolumeName `yaml:"name"`
-	Nfs      PodNfs        `yaml:"nfs,omitempty"`
-	EmptyDir EmptyDir      `yaml:"emptyDir,omitempty"`
+	Name      PodVolumeName      `yaml:"name"`
+	Nfs       PodVolumeNfs       `yaml:"nfs,omitempty"`
+	ConfigMap PodVolumeConfigMap `yaml:"configMap,omitempty"`
+	Secret    PodVolumeSecret    `yaml:"secret,omitempty"`
+	EmptyDir  *PodVolumeEmptyDir `yaml:"emptyDir,omitempty"`
 }
 
 type PodDnsPolicy string
@@ -66,11 +100,17 @@ type PodPort struct {
 	Protocol      PodPortProtocol      `yaml:"protocol,omitempty"`
 }
 
-type ResourceList map[string]string
+type CpuLimit string
+type MemoryLimit string
+
+type Resources struct {
+	Cpu    string      `yaml:"cpu"`
+	Memory MemoryLimit `yaml:"memory"`
+}
 
 type PodResources struct {
-	Limits   ResourceList `yaml:"limits"`
-	Requests ResourceList `yaml:"requests"`
+	Limits   Resources `yaml:"limits"`
+	Requests Resources `yaml:"requests"`
 }
 
 type VolumeMountPath string
@@ -80,9 +120,9 @@ type VolumeName string
 type VolumeReadOnly bool
 
 type VolumeMount struct {
-	MountPath VolumeMountPath `yaml:"mountPath"`
-	Name      VolumeName      `yaml:"name"`
-	ReadOnly  VolumeReadOnly  `yaml:"readOnly"`
+	Path     VolumeMountPath `yaml:"mountPath"`
+	Name     VolumeName      `yaml:"name"`
+	ReadOnly VolumeReadOnly  `yaml:"readOnly"`
 }
 
 type PodContainer struct {

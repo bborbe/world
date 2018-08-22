@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Maven struct {
@@ -48,7 +44,7 @@ func (m *Maven) public() []world.Configuration {
 		&deployer.DeploymentDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
-			Name:      "api",
+			Name:      "public",
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name:  "nginx",
@@ -56,11 +52,17 @@ func (m *Maven) public() []world.Configuration {
 					Requirement: &build.NginxAutoindex{
 						Image: image,
 					},
-					Ports:         ports,
-					CpuLimit:      "250m",
-					MemoryLimit:   "25Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
+					Ports: ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "250m",
+							Memory: "25Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
 					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "maven",
@@ -73,7 +75,7 @@ func (m *Maven) public() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "maven",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/maven",
 						Server: m.Cluster.NfsServer,
 					},
@@ -83,13 +85,13 @@ func (m *Maven) public() []world.Configuration {
 		&deployer.ServiceDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
-			Name:      "api",
+			Name:      "public",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
-			Name:      "api",
+			Name:      "public",
 			Port:      "http",
 			Domains:   m.Domains,
 		},
@@ -121,12 +123,18 @@ func (m *Maven) api() []world.Configuration {
 					Requirement: &build.Maven{
 						Image: image,
 					},
-					CpuLimit:      "100m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Args:          []k8s.Arg{"-logtostderr", "-v=1"},
-					Ports:         ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Args:  []k8s.Arg{"-logtostderr", "-v=1"},
+					Ports: ports,
 					Env: []k8s.Env{
 						{
 							Name:  "ROOT",
@@ -144,7 +152,7 @@ func (m *Maven) api() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "maven",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/maven",
 						Server: m.Cluster.NfsServer,
 					},
@@ -160,20 +168,6 @@ func (m *Maven) api() []world.Configuration {
 	}
 }
 
-func (m *Maven) Applier() world.Applier {
-	return nil
-}
-
-func (m *Maven) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate maven app ...")
-	if err := m.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate maven app failed")
-	}
-	if m.MavenRepoVersion == "" {
-		return errors.New("tag missing in maven app")
-	}
-	if len(m.Domains) == 0 {
-		return errors.New("domains empty in maven app")
-	}
-	return nil
+func (m *Maven) Applier() (world.Applier, error) {
+	return nil, nil
 }

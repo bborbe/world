@@ -75,10 +75,10 @@ func (b *Builder) Validate(ctx context.Context) error {
 		return errors.Wrap(err, "validate docker builder failed")
 	}
 	if b.GitRepo == "" {
-		return errors.New("git repo missing in docker builder")
+		return errors.New("git repo missing")
 	}
 	if b.GitBranch == "" {
-		return errors.New("git branch missing in docker builder")
+		return errors.New("git branch missing")
 	}
 	return nil
 }

@@ -1,8 +1,6 @@
 package app
 
 import (
-	"context"
-
 	"strconv"
 
 	"github.com/bborbe/world"
@@ -11,8 +9,6 @@ import (
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Portfolio struct {
@@ -66,12 +62,18 @@ func (p *Portfolio) Children() []world.Configuration {
 					Requirement: &build.OverlayWebserver{
 						Image: overlayServerImage,
 					},
-					CpuLimit:      "50m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Args:          []k8s.Arg{"-logtostderr", "-v=1"},
-					Ports:         ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "50m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Args:  []k8s.Arg{"-logtostderr", "-v=1"},
+					Ports: ports,
 					Env: []k8s.Env{
 						{
 							Name:  "PORT",
@@ -105,10 +107,16 @@ func (p *Portfolio) Children() []world.Configuration {
 					Requirement: &build.GitSync{
 						Image: gitSyncImage,
 					},
-					CpuLimit:      "50m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "50m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
 					Args: []k8s.Arg{
 						"-logtostderr",
 						"-v=1",
@@ -136,10 +144,16 @@ func (p *Portfolio) Children() []world.Configuration {
 					Requirement: &build.GitSync{
 						Image: gitSyncImage,
 					},
-					CpuLimit:      "50m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "50m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
 					Args: []k8s.Arg{
 						"-logtostderr",
 						"-v=1",
@@ -178,11 +192,11 @@ func (p *Portfolio) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name:     "portfolio",
-					EmptyDir: &k8s.EmptyDir{},
+					EmptyDir: &k8s.PodVolumeEmptyDir{},
 				},
 				{
 					Name:     "overlay",
-					EmptyDir: &k8s.EmptyDir{},
+					EmptyDir: &k8s.PodVolumeEmptyDir{},
 				},
 			},
 		},
@@ -202,29 +216,6 @@ func (p *Portfolio) Children() []world.Configuration {
 	}
 }
 
-func (p *Portfolio) Applier() world.Applier {
-	return nil
-}
-
-func (p *Portfolio) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate portfolio app ...")
-	if err := p.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate portfolio app failed")
-	}
-	if p.OverlayServerVersion == "" {
-		return errors.New("tag missing in portfolio app")
-	}
-	if len(p.Domains) == 0 {
-		return errors.New("domains empty in portfolio app")
-	}
-	if p.GitSyncVersion == "" {
-		return errors.New("git-sync-version missing in portfolio app")
-	}
-	if p.GitSyncPassword == nil {
-		return errors.New("git-sync-password missing in portfolio app")
-	}
-	if err := p.GitSyncPassword.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate portfolio app failed")
-	}
-	return nil
+func (p *Portfolio) Applier() (world.Applier, error) {
+	return nil, nil
 }

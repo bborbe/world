@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type Maven struct {
@@ -24,15 +21,8 @@ func (p *Maven) Children() []world.Configuration {
 	}
 }
 
-func (p *Maven) Applier() world.Applier {
+func (p *Maven) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: p.Image,
-	}
-}
-
-func (p *Maven) Validate(ctx context.Context) error {
-	if err := p.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	return nil
+	}, nil
 }

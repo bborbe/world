@@ -1,11 +1,8 @@
 package deployer
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/pkg/errors"
 )
 
 type ServiceDeployer struct {
@@ -16,37 +13,18 @@ type ServiceDeployer struct {
 	Ports        []Port
 	ClusterIP    k8s.ClusterIP
 	Labels       k8s.Labels
+	Annotations  k8s.Annotations
 }
 
-func (s *ServiceDeployer) Applier() world.Applier {
-	return &k8s.Deployer{
+func (s *ServiceDeployer) Applier() (world.Applier, error) {
+	return &k8s.ServiceApplier{
 		Context: s.Context,
-		Data:    s,
-	}
+		Service: s.service(),
+	}, nil
 }
 
 func (s *ServiceDeployer) Children() []world.Configuration {
 	return s.Requirements
-}
-
-func (s *ServiceDeployer) Validate(ctx context.Context) error {
-	if s.Context == "" {
-		return errors.New("Context missing in service deployer")
-	}
-	if s.Namespace == "" {
-		return errors.New("Namespace missing in service deployer")
-	}
-	if s.Name == "" {
-		return errors.New("Name missing in service deployer")
-	}
-	if len(s.Ports) == 0 {
-		return errors.New("Ports missing in service deployer")
-	}
-	return nil
-}
-
-func (s *ServiceDeployer) Data() (interface{}, error) {
-	return s.service(), nil
 }
 
 func (s *ServiceDeployer) service() k8s.Service {
@@ -59,9 +37,10 @@ func (s *ServiceDeployer) service() k8s.Service {
 		ApiVersion: "v1",
 		Kind:       "Service",
 		Metadata: k8s.Metadata{
-			Namespace: s.Namespace,
-			Name:      s.Name,
-			Labels:    labels,
+			Namespace:   s.Namespace,
+			Name:        s.Name,
+			Labels:      labels,
+			Annotations: s.Annotations,
 		},
 		Spec: k8s.ServiceSpec{
 			Selector: k8s.ServiceSelector{

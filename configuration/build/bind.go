@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type Bind struct {
@@ -22,15 +19,8 @@ func (o *Bind) Children() []world.Configuration {
 	}
 }
 
-func (o *Bind) Applier() world.Applier {
+func (o *Bind) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: o.Image,
-	}
-}
-
-func (o *Bind) Validate(ctx context.Context) error {
-	if err := o.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	return nil
+	}, nil
 }

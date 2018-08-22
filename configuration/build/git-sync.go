@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type GitSync struct {
@@ -22,15 +19,8 @@ func (m *GitSync) Children() []world.Configuration {
 	}
 }
 
-func (m *GitSync) Applier() world.Applier {
+func (m *GitSync) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: m.Image,
-	}
-}
-
-func (m *GitSync) Validate(ctx context.Context) error {
-	if err := m.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	return nil
+	}, nil
 }

@@ -1,15 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
+	"github.com/bborbe/world/pkg/k8s"
 )
 
 type Bind struct {
@@ -54,45 +51,42 @@ func (b *Bind) Children() []world.Configuration {
 					Requirement: &build.Bind{
 						Image: image,
 					},
-					Ports:         ports,
-					CpuLimit:      "200m",
-					MemoryLimit:   "100Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "25Mi",
-					Mounts: []deployer.Mount{
+					Ports: ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "200m",
+							Memory: "100Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "25Mi",
+						},
+					},
+					Mounts: []k8s.VolumeMount{
 						{
-							Name:   "bind",
-							Target: "/etc/bind",
+							Name: "bind",
+							Path: "/etc/bind",
 						},
 						{
-							Name:   "bind",
-							Target: "/var/lib/bind",
+							Name: "bind",
+							Path: "/var/lib/bind",
 						},
 					},
 				},
 			},
-			Volumes: []deployer.Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "bind",
-					NfsPath:   "/data/bind",
-					NfsServer: b.Cluster.NfsServer,
+					Name: "bind",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/bind",
+						Server: k8s.PodNfsServer(b.Cluster.NfsServer),
+					},
 				},
 			},
 		},
 	}
 }
 
-func (b *Bind) Applier() world.Applier {
-	return nil
-}
-
-func (b *Bind) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate bind app ...")
-	if err := b.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate bind app failed")
-	}
-	if b.Tag == "" {
-		return errors.New("tag missing in bind app")
-	}
-	return nil
+func (b *Bind) Applier() (world.Applier, error) {
+	return nil, nil
 }

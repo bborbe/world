@@ -7,13 +7,18 @@ import (
 	"github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world/configuration"
 	"github.com/bborbe/world/pkg/runner"
+	"github.com/bborbe/world/pkg/secret"
 )
 
 func TestValidate(t *testing.T) {
-	r := &runner.Runner{
-		Configuration: &configuration.World{
-			TeamvaultConnector: connector.NewDummy(),
-		},
+	r, err := runner.New(
+		&configuration.World{
+			TeamvaultSecrets: &secret.Teamvault{
+				TeamvaultConnector: connector.NewDummy(),
+			},
+		})
+	if err != nil {
+		t.Fatal(err)
 	}
 	if err := r.Validate(context.Background()); err != nil {
 		t.Fatal(err)

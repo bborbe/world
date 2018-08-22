@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type Password struct {
@@ -24,15 +21,8 @@ func (p *Password) Children() []world.Configuration {
 	}
 }
 
-func (p *Password) Applier() world.Applier {
+func (p *Password) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: p.Image,
-	}
-}
-
-func (p *Password) Validate(ctx context.Context) error {
-	if err := p.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	return nil
+	}, nil
 }

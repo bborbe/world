@@ -1,11 +1,8 @@
 package build
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/pkg/errors"
 )
 
 type Ip struct {
@@ -24,15 +21,8 @@ func (i *Ip) Children() []world.Configuration {
 	}
 }
 
-func (i *Ip) Applier() world.Applier {
+func (i *Ip) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: i.Image,
-	}
-}
-
-func (i *Ip) Validate(ctx context.Context) error {
-	if err := i.Image.Validate(ctx); err != nil {
-		return errors.Wrap(err, "Image missing")
-	}
-	return nil
+	}, nil
 }

@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Webdav struct {
@@ -57,11 +53,17 @@ func (w *Webdav) Children() []world.Configuration {
 					Requirement: &build.Webdav{
 						Image: image,
 					},
-					CpuLimit:      "50m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Ports:         ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "50m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Ports: ports,
 					Env: []k8s.Env{
 						{
 							Name:  "WEBDAV_USERNAME",
@@ -88,7 +90,7 @@ func (w *Webdav) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "webdav",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/webdav",
 						Server: w.Cluster.NfsServer,
 					},
@@ -111,26 +113,6 @@ func (w *Webdav) Children() []world.Configuration {
 	}
 }
 
-func (w *Webdav) Applier() world.Applier {
-	return nil
-}
-
-func (w *Webdav) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate webdav app ...")
-	if err := w.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate webdav app failed")
-	}
-	if w.Tag == "" {
-		return errors.New("tag missing in webdav app")
-	}
-	if len(w.Domains) == 0 {
-		return errors.New("domains empty in webdav app")
-	}
-	if w.Password == nil {
-		return errors.New("password missing in webdav app")
-	}
-	if err := w.Password.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate webdav app failed")
-	}
-	return nil
+func (w *Webdav) Applier() (world.Applier, error) {
+	return nil, nil
 }

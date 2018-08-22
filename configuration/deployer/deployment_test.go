@@ -41,24 +41,32 @@ var _ = Describe("DeploymentDeployer", func() {
 							Value: "b",
 						},
 					},
-					CpuLimit:      "250m",
-					MemoryLimit:   "25Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Mounts: []Mount{
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "250m",
+							Memory: "25Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "data",
-							Target:   "/usr/share/nginx/html",
+							Path:     "/usr/share/nginx/html",
 							ReadOnly: true,
 						},
 					},
 				},
 			},
-			Volumes: []Volume{
+			Volumes: []k8s.PodVolume{
 				{
-					Name:      "data",
-					NfsPath:   "/data/download",
-					NfsServer: "127.0.0.1",
+					Name: "data",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/download",
+						Server: "127.0.0.1",
+					},
 				},
 			},
 		}

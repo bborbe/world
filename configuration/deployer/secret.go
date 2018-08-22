@@ -1,13 +1,67 @@
 package deployer
 
 import (
-	"context"
 	"encoding/base64"
 
+	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/pkg/errors"
 )
+
+type SecretValue interface {
+	Value() ([]byte, error)
+}
+
+type SecretFromTeamvaultUser struct {
+	TeamvaultConnector teamvault.Connector
+	TeamvaultKey       teamvault.Key
+}
+
+func (s *SecretFromTeamvaultUser) Value() ([]byte, error) {
+	teamvaultUsername, err := s.TeamvaultConnector.User(s.TeamvaultKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get teamvault username failed")
+	}
+	return []byte(teamvaultUsername), nil
+}
+
+type SecretFromTeamvaultHtpasswd struct {
+	TeamvaultConnector teamvault.Connector
+	TeamvaultKey       teamvault.Key
+}
+
+func (s *SecretFromTeamvaultHtpasswd) Value() ([]byte, error) {
+	htpasswd := teamvault.Htpasswd{Connector: s.TeamvaultConnector}
+	bytes, err := htpasswd.Generate(s.TeamvaultKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get teamvault htpasswd failed")
+	}
+	return bytes, nil
+}
+
+type SecretFromTeamvaultPassword struct {
+	TeamvaultConnector teamvault.Connector
+	TeamvaultKey       teamvault.Key
+}
+
+func (s *SecretFromTeamvaultPassword) Value() ([]byte, error) {
+	teamvaultPassword, err := s.TeamvaultConnector.Password(s.TeamvaultKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get teamvault password failed")
+	}
+	return []byte(teamvaultPassword), nil
+}
+
+type SecretValueStatic struct {
+	Content []byte
+}
+
+func (s *SecretValueStatic) Value() ([]byte, error) {
+	return s.Content, nil
+}
+
+type Secrets map[string]SecretValue
 
 type SecretDeployer struct {
 	Context      k8s.Context
@@ -17,32 +71,19 @@ type SecretDeployer struct {
 	Secrets      Secrets
 }
 
-func (i *SecretDeployer) Applier() world.Applier {
-	return &k8s.Deployer{
-		Context: i.Context,
-		Data:    i,
+func (i *SecretDeployer) Applier() (world.Applier, error) {
+	secret, err := i.secret()
+	if err != nil {
+		return nil, err
 	}
+	return &k8s.SecretApplier{
+		Context: i.Context,
+		Secret:  *secret,
+	}, nil
 }
 
 func (i *SecretDeployer) Children() []world.Configuration {
 	return i.Requirements
-}
-
-func (i *SecretDeployer) Validate(ctx context.Context) error {
-	if i.Context == "" {
-		return errors.New("Context missing in secret deployer")
-	}
-	if i.Namespace == "" {
-		return errors.New("Namespace missing in secret deployer")
-	}
-	if i.Namespace == "" {
-		return errors.New("Name missing in secret deployer")
-	}
-	return nil
-}
-
-func (i *SecretDeployer) Data() (interface{}, error) {
-	return i.secret()
 }
 
 func (i *SecretDeployer) secret() (*k8s.Secret, error) {

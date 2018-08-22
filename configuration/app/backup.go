@@ -1,18 +1,12 @@
 package app
 
 import (
-	"context"
-
-	"fmt"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Backup struct {
@@ -58,10 +52,16 @@ func (b *Backup) rsync() []world.Configuration {
 							Protocol: "TCP",
 						},
 					},
-					CpuLimit:      "1000m",
-					MemoryLimit:   "200Mi",
-					CpuRequest:    "250m",
-					MemoryRequest: "100Mi",
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "1000m",
+							Memory: "200Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "250m",
+							Memory: "100Mi",
+						},
+					},
 					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "backup",
@@ -79,14 +79,14 @@ func (b *Backup) rsync() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "backup",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data",
 						Server: b.Cluster.NfsServer,
 					},
 				},
 				{
 					Name: "ssh",
-					Nfs: k8s.PodNfs{
+					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/backup-ssh",
 						Server: b.Cluster.NfsServer,
 					},
@@ -97,8 +97,6 @@ func (b *Backup) rsync() []world.Configuration {
 }
 
 func (b *Backup) status() []world.Configuration {
-	var vendorVersion docker.Tag = "2.0.0"
-	var buildVersion docker.GitBranch = "1.0.1"
 	ports := []deployer.Port{
 		{
 			Port:     8080,
@@ -109,7 +107,7 @@ func (b *Backup) status() []world.Configuration {
 	image := docker.Image{
 		Registry:   "docker.io",
 		Repository: "bborbe/backup-status-client",
-		Tag:        docker.Tag(fmt.Sprintf("%s-%s", vendorVersion, buildVersion)),
+		Tag:        "2.0.0",
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
@@ -121,16 +119,20 @@ func (b *Backup) status() []world.Configuration {
 					Name:  "backup",
 					Image: image,
 					Requirement: &build.BackupStatusClient{
-						VendorVersion: vendorVersion,
-						GitBranch:     buildVersion,
-						Image:         image,
+						Image: image,
 					},
-					CpuLimit:      "100m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
-					Args:          []k8s.Arg{"-logtostderr", "-v=1"},
-					Ports:         ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "100m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
+					Args:  []k8s.Arg{"-logtostderr", "-v=1"},
+					Ports: ports,
 					Env: []k8s.Env{
 						{
 							Name:  "PORT",
@@ -160,17 +162,6 @@ func (b *Backup) status() []world.Configuration {
 	}
 }
 
-func (b *Backup) Applier() world.Applier {
-	return nil
-}
-
-func (b *Backup) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate backup app ...")
-	if err := b.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate cluster failed")
-	}
-	if len(b.Domains) == 0 {
-		return errors.New("domains empty")
-	}
-	return nil
+func (b *Backup) Applier() (world.Applier, error) {
+	return nil, nil
 }

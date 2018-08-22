@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 type Kickstart struct {
@@ -19,8 +15,8 @@ type Kickstart struct {
 	GitSyncVersion docker.Tag
 }
 
-func (k *Kickstart) Applier() world.Applier {
-	return nil
+func (k *Kickstart) Applier() (world.Applier, error) {
+	return nil, nil
 }
 
 func (k *Kickstart) Children() []world.Configuration {
@@ -57,11 +53,17 @@ func (k *Kickstart) Children() []world.Configuration {
 					Requirement: &build.NginxAutoindex{
 						Image: nginxImage,
 					},
-					Ports:         ports,
-					CpuLimit:      "250m",
-					MemoryLimit:   "25Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
+					Ports: ports,
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "250m",
+							Memory: "25Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
 					Mounts: []k8s.VolumeMount{
 						{
 							Name:     "kickstart",
@@ -76,10 +78,16 @@ func (k *Kickstart) Children() []world.Configuration {
 					Requirement: &build.GitSync{
 						Image: gitSyncImage,
 					},
-					CpuLimit:      "50m",
-					MemoryLimit:   "50Mi",
-					CpuRequest:    "10m",
-					MemoryRequest: "10Mi",
+					Resources: k8s.PodResources{
+						Limits: k8s.Resources{
+							Cpu:    "50m",
+							Memory: "50Mi",
+						},
+						Requests: k8s.Resources{
+							Cpu:    "10m",
+							Memory: "10Mi",
+						},
+					},
 					Args: []k8s.Arg{
 						"-logtostderr",
 						"-v=4",
@@ -105,7 +113,7 @@ func (k *Kickstart) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name:     "kickstart",
-					EmptyDir: &k8s.EmptyDir{},
+					EmptyDir: &k8s.PodVolumeEmptyDir{},
 				},
 			},
 		},
@@ -123,18 +131,4 @@ func (k *Kickstart) Children() []world.Configuration {
 			Domains:   k.Domains,
 		},
 	}
-}
-
-func (k *Kickstart) Validate(ctx context.Context) error {
-	glog.V(4).Infof("validate kickstart app ...")
-	if err := k.Cluster.Validate(ctx); err != nil {
-		return errors.Wrap(err, "validate kickstart app failed")
-	}
-	if len(k.Domains) == 0 {
-		return errors.New("domains empty in kickstart app")
-	}
-	if k.GitSyncVersion == "" {
-		return errors.New("git-sync-version missing in kickstart app")
-	}
-	return nil
 }

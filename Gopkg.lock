@@ -41,15 +41,23 @@
   revision = "5531e6c5367b287ac0c3d2dda55cb1af7f8172f5"
 
 [[projects]]
-  digest = "1:188e997c145e81036535c4e3e55ae6ad06eb3fdffd510373e81505787eaba707"
+  digest = "1:7a0bb434ec965a383cf95611c13004f41f6eb7f06b7ee23f5573978dfa73a7fd"
   name = "github.com/bborbe/teamvault-utils"
   packages = [
     ".",
     "connector",
   ]
   pruneopts = "UT"
-  revision = "b5d8ec04fedab2fd1965fdaa688167d5d20406d2"
-  version = "3.2.0"
+  revision = "ed596affcdc23ba8266539d6545f95153a5679d3"
+  version = "3.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:a8b78968e7cbc9ca9fd02d2d251702ce5936cb5a1b61a3ee3242629d4961b40e"
+  name = "github.com/foomo/htpasswd"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cb63c4ac0e5029b961b3ac7dcc281ed2a9232e4e"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
@@ -141,9 +149,21 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a02aa415a75c3de7ea637f7cf5551bdb1bf72f7b0eae6a462e835d6fbed4e426"
+  digest = "1:1ecf2a49df33be51e757d0033d5d51d5f784f35f68e5a38f797b2d3f03357d71"
+  name = "golang.org/x/crypto"
+  packages = [
+    "bcrypt",
+    "blowfish",
+  ]
+  pruneopts = "UT"
+  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
+
+[[projects]]
+  branch = "master"
+  digest = "1:69c9160034ef8869921ed316499f7e7e94b9e029338bce6dcb63a7ba9e753397"
   name = "golang.org/x/net"
   packages = [
+    "context",
     "html",
     "html/atom",
     "html/charset",
@@ -225,6 +245,7 @@
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
     "github.com/pkg/errors",
+    "golang.org/x/net/context",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
