@@ -1,12 +1,22 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Bind struct {
 	Image docker.Image
+}
+
+func (w *Bind) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		w.Image,
+	)
 }
 
 func (o *Bind) Children() []world.Configuration {

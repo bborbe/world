@@ -3,19 +3,33 @@ package deployer
 import (
 	"encoding/base64"
 
+	"context"
+
 	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
 )
 
 type SecretValue interface {
 	Value() ([]byte, error)
+	Validate(ctx context.Context) error
 }
 
 type SecretFromTeamvaultUser struct {
 	TeamvaultConnector teamvault.Connector
 	TeamvaultKey       teamvault.Key
+}
+
+func (s SecretFromTeamvaultUser) Validate(ctx context.Context) error {
+	if s.TeamvaultConnector == nil {
+		return errors.New("TeamvaultConnector missing")
+	}
+	if s.TeamvaultKey == "" {
+		return errors.New("TeamvaultKey missing")
+	}
+	return nil
 }
 
 func (s *SecretFromTeamvaultUser) Value() ([]byte, error) {
@@ -31,6 +45,16 @@ type SecretFromTeamvaultHtpasswd struct {
 	TeamvaultKey       teamvault.Key
 }
 
+func (s SecretFromTeamvaultHtpasswd) Validate(ctx context.Context) error {
+	if s.TeamvaultConnector == nil {
+		return errors.New("TeamvaultConnector missing")
+	}
+	if s.TeamvaultKey == "" {
+		return errors.New("TeamvaultKey missing")
+	}
+	return nil
+}
+
 func (s *SecretFromTeamvaultHtpasswd) Value() ([]byte, error) {
 	htpasswd := teamvault.Htpasswd{Connector: s.TeamvaultConnector}
 	bytes, err := htpasswd.Generate(s.TeamvaultKey)
@@ -43,6 +67,16 @@ func (s *SecretFromTeamvaultHtpasswd) Value() ([]byte, error) {
 type SecretFromTeamvaultPassword struct {
 	TeamvaultConnector teamvault.Connector
 	TeamvaultKey       teamvault.Key
+}
+
+func (s SecretFromTeamvaultPassword) Validate(ctx context.Context) error {
+	if s.TeamvaultConnector == nil {
+		return errors.New("TeamvaultConnector missing")
+	}
+	if s.TeamvaultKey == "" {
+		return errors.New("TeamvaultKey missing")
+	}
+	return nil
 }
 
 func (s *SecretFromTeamvaultPassword) Value() ([]byte, error) {
@@ -61,14 +95,40 @@ func (s *SecretValueStatic) Value() ([]byte, error) {
 	return s.Content, nil
 }
 
+func (s SecretValueStatic) Validate(ctx context.Context) error {
+	return nil
+}
+
 type Secrets map[string]SecretValue
+
+func (w Secrets) Validate(ctx context.Context) error {
+	for k, v := range w {
+		if k == "" {
+			return errors.New("secret has no name")
+		}
+		if err := v.Validate(ctx); err != nil {
+			return errors.Wrapf(err, "value of secret %s invalid", k)
+		}
+	}
+	return nil
+}
 
 type SecretDeployer struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
-	Name         k8s.Name
-	Requirements []world.Configuration
+	Name         k8s.MetadataName
 	Secrets      Secrets
+	Requirements []world.Configuration
+}
+
+func (w *SecretDeployer) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		w.Context,
+		w.Namespace,
+		w.Name,
+		w.Secrets,
+	)
 }
 
 func (i *SecretDeployer) Applier() (world.Applier, error) {

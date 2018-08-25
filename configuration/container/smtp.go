@@ -18,7 +18,6 @@ type SmtpProvider struct {
 
 func (s *SmtpProvider) Container() deployer.DeploymentDeployerContainer {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/smtp",
 		Tag:        "1.2.1",
 	}

@@ -1,12 +1,15 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Proxy struct {
@@ -14,14 +17,20 @@ type Proxy struct {
 	Password deployer.SecretValue
 }
 
+func (d *Proxy) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Cluster,
+		d.Password,
+	)
+}
+
 func (p *Proxy) Children() []world.Configuration {
 	squidImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/squid",
 		Tag:        "1.2.0",
 	}
 	privoxyImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/privoxy",
 		Tag:        "1.2.0",
 	}
@@ -34,7 +43,7 @@ func (p *Proxy) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "proxy",
 			Name:      "proxy",
-			ConfigMap: k8s.ConfigMapData{
+			ConfigMapData: k8s.ConfigMapData{
 				"user.action": privoxyUserAction,
 				"user.filter": privoxyUserConfig,
 			},

@@ -1,8 +1,11 @@
 package secret
 
 import (
+	"context"
+
 	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world/configuration/deployer"
+	"github.com/pkg/errors"
 )
 
 type Teamvault struct {
@@ -28,4 +31,11 @@ func (c *Teamvault) Username(key teamvault.Key) deployer.SecretValue {
 		TeamvaultConnector: c.TeamvaultConnector,
 		TeamvaultKey:       key,
 	}
+}
+
+func (w *Teamvault) Validate(ctx context.Context) error {
+	if w.TeamvaultConnector == nil {
+		return errors.New("TeamvaultConnector missing")
+	}
+	return nil
 }

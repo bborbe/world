@@ -1,5 +1,11 @@
 package k8s
 
+import (
+	"context"
+
+	"github.com/pkg/errors"
+)
+
 type PodSpec struct {
 	Containers  []PodContainer `yaml:"containers"`
 	Volumes     []PodVolume    `yaml:"volumes,omitempty"`
@@ -11,7 +17,21 @@ type PodVolumeName string
 
 type PodNfsPath string
 
+func (d PodNfsPath) Validate(ctx context.Context) error {
+	if d == "" {
+		return errors.New("PodNfsPath empty")
+	}
+	return nil
+}
+
 type PodNfsServer string
+
+func (d PodNfsServer) Validate(ctx context.Context) error {
+	if d == "" {
+		return errors.New("PodNfsServer empty")
+	}
+	return nil
+}
 
 type PodVolumeNfs struct {
 	Path   PodNfsPath   `yaml:"path"`

@@ -1,12 +1,22 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Mumble struct {
 	Image docker.Image
+}
+
+func (t *Mumble) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Image,
+	)
 }
 
 func (m *Mumble) Children() []world.Configuration {

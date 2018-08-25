@@ -1,18 +1,30 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Maven struct {
 	Cluster          cluster.Cluster
-	Domains          []k8s.IngressHost
+	Domains          k8s.IngressHosts
 	MavenRepoVersion docker.Tag
+}
+
+func (t *Maven) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+		t.MavenRepoVersion,
+	)
 }
 
 func (m *Maven) Children() []world.Configuration {
@@ -36,7 +48,6 @@ func (m *Maven) public() []world.Configuration {
 		},
 	}
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}
@@ -100,7 +111,6 @@ func (m *Maven) public() []world.Configuration {
 
 func (m *Maven) api() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/maven-repo",
 		Tag:        m.MavenRepoVersion,
 	}

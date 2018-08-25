@@ -1,8 +1,11 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Openldap struct {
@@ -23,4 +26,11 @@ func (o *Openldap) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: o.Image,
 	}, nil
+}
+
+func (d *Openldap) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Image,
+	)
 }

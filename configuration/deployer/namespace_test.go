@@ -19,6 +19,7 @@ var _ = Describe("NamespaceDeployer", func() {
 		Expect(b.String()).To(Equal(`apiVersion: v1
 kind: Namespace
 metadata:
+  namespace: banana
   name: banana
   labels:
     app: banana

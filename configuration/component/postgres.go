@@ -3,12 +3,29 @@ package component
 import (
 	"fmt"
 
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
+
+type DatabaseName string
+
+func (d DatabaseName) String() string {
+	return string(d)
+}
+
+func (d DatabaseName) Validate(ctx context.Context) error {
+	if d == "" {
+		return errors.New("DatabaseName empty")
+	}
+	return nil
+}
 
 type Postgres struct {
 	Context              k8s.Context
@@ -18,25 +35,38 @@ type Postgres struct {
 	BackupNfsPath        k8s.PodNfsPath
 	BackupNfsServer      k8s.PodNfsServer
 	PostgresVersion      docker.Tag
-	PostgresDatabaseName string
+	PostgresDatabaseName DatabaseName
 	PostgresInitDbArgs   string
 	PostgresUsername     deployer.SecretValue
 	PostgresPassword     deployer.SecretValue
 }
 
+func (t *Postgres) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Context,
+		t.Namespace,
+		t.DataNfsPath,
+		t.DataNfsServer,
+		t.BackupNfsPath,
+		t.BackupNfsServer,
+		t.PostgresVersion,
+		t.PostgresDatabaseName,
+		t.PostgresUsername,
+		t.PostgresPassword,
+	)
+}
+
 func (p *Postgres) Children() []world.Configuration {
 	postgresImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/postgres",
 		Tag:        p.PostgresVersion,
 	}
 	postgresBackupImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/postgres-backup",
 		Tag:        "2.0.1",
 	}
 	backupCleanUpImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/backup-cleanup",
 		Tag:        "1.2.0",
 	}
@@ -91,7 +121,7 @@ func (p *Postgres) Children() []world.Configuration {
 						},
 						{
 							Name:  "POSTGRES_DB",
-							Value: p.PostgresDatabaseName,
+							Value: p.PostgresDatabaseName.String(),
 						},
 						{
 							Name: "POSTGRES_USER",
@@ -173,7 +203,7 @@ func (p *Postgres) Children() []world.Configuration {
 						},
 						{
 							Name:  "DATABASE",
-							Value: p.PostgresDatabaseName,
+							Value: p.PostgresDatabaseName.String(),
 						},
 						{
 							Name: "USERNAME",

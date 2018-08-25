@@ -1,14 +1,23 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Now struct {
 	Image docker.Image
 }
 
+func (t *Now) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Image,
+	)
+}
 func (p *Now) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.GolangBuilder{

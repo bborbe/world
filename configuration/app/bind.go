@@ -1,12 +1,15 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Bind struct {
@@ -14,9 +17,16 @@ type Bind struct {
 	Tag     docker.Tag
 }
 
+func (t *Bind) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Tag,
+	)
+}
+
 func (b *Bind) Children() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/bind",
 		Tag:        b.Tag,
 	}

@@ -1,9 +1,12 @@
 package world
 
+import "context"
+
 //go:generate counterfeiter -o mocks/configuration.go --fake-name Configuration . Configuration
 type Configuration interface {
 	Children() []Configuration
 	Applier() (Applier, error)
+	Validate(ctx context.Context) error
 }
 
 type ConfigurationBuilder struct {
@@ -31,4 +34,8 @@ func (c *ConfigurationBuilder) Children() []Configuration {
 
 func (c *ConfigurationBuilder) Applier() (Applier, error) {
 	return c.applier, nil
+}
+
+func (c *ConfigurationBuilder) Validate(ctx context.Context) error {
+	return nil
 }

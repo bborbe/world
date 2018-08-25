@@ -8,30 +8,30 @@ import (
 	"github.com/bborbe/world/pkg/validation"
 )
 
-type NginxAutoindex struct {
+type KubednsMasq struct {
 	Image docker.Image
 }
 
-func (t *NginxAutoindex) Validate(ctx context.Context) error {
+func (t *KubednsMasq) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Image,
 	)
 }
 
-func (n *NginxAutoindex) Children() []world.Configuration {
+func (n *KubednsMasq) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
 			SourceImage: docker.Image{
-				Repository: "jrelva/nginx-autoindex",
-				Tag:        "latest",
+				Repository: "gcr.io/google_containers/kube-dnsmasq-amd64",
+				Tag:        n.Image.Tag,
 			},
 			TargetImage: n.Image,
 		}),
 	}
 }
 
-func (n *NginxAutoindex) Applier() (world.Applier, error) {
+func (n *KubednsMasq) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: n.Image,
 	}, nil

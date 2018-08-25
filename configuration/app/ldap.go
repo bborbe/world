@@ -1,12 +1,15 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Ldap struct {
@@ -15,13 +18,20 @@ type Ldap struct {
 	LdapSecret deployer.SecretValue
 }
 
+func (d *Ldap) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Tag,
+		d.LdapSecret,
+	)
+}
+
 func (l *Ldap) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
 func (l *Ldap) Children() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/openldap",
 		Tag:        l.Tag,
 	}

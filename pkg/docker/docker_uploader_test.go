@@ -21,7 +21,6 @@ func TestUploaderCallsUrl(t *testing.T) {
 	}
 	u := Uploader{
 		Image: Image{
-			Registry:   "docker.io",
 			Repository: "bborbe/poste.io",
 			Tag:        "1.0.6",
 		},

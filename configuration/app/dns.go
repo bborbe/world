@@ -1,20 +1,30 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Dns struct {
 	Cluster cluster.Cluster
 }
 
+func (d *Dns) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Cluster,
+	)
+}
+
 func (d *Dns) Children() []world.Configuration {
 	kubednsImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/kubedns",
 		Tag:        "1.8",
 	}
@@ -31,7 +41,6 @@ func (d *Dns) Children() []world.Configuration {
 		},
 	}
 	kubednsMasqImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/kube-dnsmasq",
 		Tag:        "1.4",
 	}
@@ -47,9 +56,7 @@ func (d *Dns) Children() []world.Configuration {
 			Protocol: "TCP",
 		},
 	}
-
 	healthzImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/exechealthz",
 		Tag:        "1.2",
 	}
@@ -69,6 +76,9 @@ func (d *Dns) Children() []world.Configuration {
 				{
 					Name:  "kubedns",
 					Image: kubednsImage,
+					Requirement: &build.Kubedns{
+						Image: kubednsImage,
+					},
 					Ports: kubednsPorts,
 					Resources: k8s.PodResources{
 						Limits: k8s.Resources{
@@ -88,6 +98,9 @@ func (d *Dns) Children() []world.Configuration {
 				{
 					Name:  "dnsmasq",
 					Image: kubednsMasqImage,
+					Requirement: &build.KubednsMasq{
+						Image: kubednsMasqImage,
+					},
 					Ports: kubednsMasqPorts,
 					Resources: k8s.PodResources{
 						Limits: k8s.Resources{
@@ -107,8 +120,11 @@ func (d *Dns) Children() []world.Configuration {
 					},
 				},
 				{
-					Name:  "dnsmasq",
+					Name:  "healthz",
 					Image: healthzImage,
+					Requirement: &build.Healthz{
+						Image: healthzImage,
+					},
 					Ports: healthzPorts,
 					Resources: k8s.PodResources{
 						Limits: k8s.Resources{

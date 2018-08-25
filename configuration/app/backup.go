@@ -1,17 +1,28 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Backup struct {
 	Cluster cluster.Cluster
-	Domains []k8s.IngressHost
+	Domains k8s.IngressHosts
+}
+
+func (t *Backup) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+	)
 }
 
 func (b *Backup) Children() []world.Configuration {
@@ -28,7 +39,6 @@ func (b *Backup) Children() []world.Configuration {
 
 func (b *Backup) rsync() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/backup-rsync-server",
 		Tag:        "1.1.0",
 	}
@@ -105,7 +115,6 @@ func (b *Backup) status() []world.Configuration {
 		},
 	}
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/backup-status-client",
 		Tag:        "2.0.0",
 	}

@@ -11,30 +11,43 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Runner struct {
-	Name    string
-	Applier world.Applier
-	Runners []Runner
+type Builder struct {
+	Configuration world.Configuration
 }
 
-func New(configuration world.Configuration) (*Runner, error) {
+func (b *Builder) Build(ctx context.Context) (*Runner, error) {
+	return build(ctx, b.Configuration, nil)
+}
+
+func build(ctx context.Context, configuration world.Configuration, path []string) (*Runner, error) {
+	name := reflect.TypeOf(configuration).String()
+	path = append(path, name)
+	if err := configuration.Validate(ctx); err != nil {
+		return nil, errors.Wrapf(err, "validate configuration %s failed", strings.Join(path, " -> "))
+	}
 	applier, err := configuration.Applier()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "get applier failed")
 	}
 	var runners []Runner
 	for _, configuration := range configuration.Children() {
-		runner, err := New(configuration)
+		runner, err := build(ctx, configuration, path)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "get runner failed")
 		}
 		runners = append(runners, *runner)
 	}
 	return &Runner{
 		Applier: applier,
 		Runners: runners,
-		Name:    reflect.TypeOf(configuration).String(),
+		Name:    name,
 	}, nil
+}
+
+type Runner struct {
+	Name    string
+	Applier world.Applier
+	Runners []Runner
 }
 
 func (r Runner) Apply(ctx context.Context) error {

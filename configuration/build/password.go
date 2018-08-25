@@ -1,12 +1,22 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Password struct {
 	Image docker.Image
+}
+
+func (t *Password) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Image,
+	)
 }
 
 func (p *Password) Children() []world.Configuration {

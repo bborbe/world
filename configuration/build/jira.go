@@ -1,14 +1,26 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Jira struct {
 	Image         docker.Image
 	VendorVersion docker.Tag
 	GitBranch     docker.GitBranch
+}
+
+func (t *Jira) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Image,
+		t.VendorVersion,
+		t.GitBranch,
+	)
 }
 
 func (c *Jira) Children() []world.Configuration {

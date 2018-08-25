@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
@@ -11,21 +13,37 @@ import (
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
 
 type Confluence struct {
 	Cluster          cluster.Cluster
-	Domains          []k8s.IngressHost
+	Domains          k8s.IngressHosts
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
 	SmtpUsername     deployer.SecretValue
 }
 
+func (t *Confluence) Validate(ctx context.Context) error {
+	if len(t.Domains) != 1 {
+		return errors.New("exact one Domains needed")
+	}
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+		t.Version,
+		t.DatabasePassword,
+		t.SmtpPassword,
+		t.SmtpUsername,
+	)
+}
+
 func (c *Confluence) Children() []world.Configuration {
 	var buildVersion docker.GitBranch = "1.3.0"
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/atlassian-confluence",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", c.Version, buildVersion)),
 	}

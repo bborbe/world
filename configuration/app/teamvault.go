@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
@@ -11,11 +13,13 @@ import (
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
 
 type Teamvault struct {
 	Cluster          cluster.Cluster
-	Domains          []k8s.IngressHost
+	Domains          k8s.IngressHosts
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
 	SmtpUsername     deployer.SecretValue
@@ -25,9 +29,26 @@ type Teamvault struct {
 	Salt             deployer.SecretValue
 }
 
+func (t *Teamvault) Validate(ctx context.Context) error {
+	if len(t.Domains) != 1 {
+		return errors.New("need 1 domain")
+	}
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+		t.DatabasePassword,
+		t.SmtpPassword,
+		t.SmtpUsername,
+		t.LdapPassword,
+		t.SecretKey,
+		t.FernetKey,
+		t.Salt,
+	)
+}
+
 func (t *Teamvault) Children() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/teamvault",
 		Tag:        "0.7.3",
 	}
@@ -260,13 +281,13 @@ func (t *Teamvault) Children() []world.Configuration {
 	}
 }
 
-func (c *Teamvault) smtp() *container.SmtpProvider {
+func (t *Teamvault) smtp() *container.SmtpProvider {
 	return &container.SmtpProvider{
-		Hostname:     c.Domains[0].String(),
-		Context:      c.Cluster.Context,
+		Hostname:     t.Domains[0].String(),
+		Context:      t.Cluster.Context,
 		Namespace:    "teamvault",
-		SmtpPassword: c.SmtpPassword,
-		SmtpUsername: c.SmtpUsername,
+		SmtpPassword: t.SmtpPassword,
+		SmtpUsername: t.SmtpUsername,
 	}
 }
 

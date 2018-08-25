@@ -39,15 +39,19 @@ func main() {
 	}
 
 	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
-	r, err := runner.New(&configuration.World{
-		TeamvaultSecrets: &secret.Teamvault{
-			TeamvaultConnector: teamvaultconnector.NewCache(
-				&teamvaultconnector.DiskFallback{
-					Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
-				},
-			),
+	b := runner.Builder{
+		Configuration: &configuration.World{
+			TeamvaultSecrets: &secret.Teamvault{
+				TeamvaultConnector: teamvaultconnector.NewCache(
+					&teamvaultconnector.DiskFallback{
+						Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+					},
+				),
+			},
 		},
-	})
+	}
+
+	r, err := b.Build(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "create runtime failed: %+v\n", err)
 		os.Exit(1)

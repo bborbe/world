@@ -3,24 +3,35 @@ package app
 import (
 	"fmt"
 
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Poste struct {
 	Cluster      cluster.Cluster
 	PosteVersion docker.Tag
-	Domains      []k8s.IngressHost
+	Domains      k8s.IngressHosts
+}
+
+func (t *Poste) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.PosteVersion,
+		t.Domains,
+	)
 }
 
 func (p *Poste) Children() []world.Configuration {
 	var buildVersion docker.GitBranch = "1.0.0"
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/poste.io",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", p.PosteVersion, buildVersion)),
 	}

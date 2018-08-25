@@ -16,7 +16,7 @@ var _ = Describe("IngressDeployer", func() {
 			Namespace: "banana",
 			Name:      "banana",
 			Port:      "http",
-			Domains:   []k8s.IngressHost{"example.com"},
+			Domains:   k8s.IngressHosts{"example.com"},
 		}
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(ingressDeployer.ingress())

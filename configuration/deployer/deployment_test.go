@@ -23,7 +23,6 @@ var _ = Describe("DeploymentDeployer", func() {
 				{
 					Name: "banana",
 					Image: docker.Image{
-						Registry:   "docker.io",
 						Repository: "bborbe/test",
 						Tag:        "latest",
 					},
@@ -115,7 +114,7 @@ spec:
         env:
         - name: a
           value: b
-        image: docker.io/bborbe/test:latest
+        image: bborbe/test:latest
         name: banana
         ports:
         - containerPort: 1337

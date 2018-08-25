@@ -1,8 +1,11 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type PostgresBackup struct {
@@ -23,4 +26,11 @@ func (b *PostgresBackup) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: b.Image,
 	}, nil
+}
+
+func (t *PostgresBackup) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Image,
+	)
 }

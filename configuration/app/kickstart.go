@@ -1,18 +1,30 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Kickstart struct {
 	Cluster        cluster.Cluster
-	Domains        []k8s.IngressHost
+	Domains        k8s.IngressHosts
 	GitSyncVersion docker.Tag
+}
+
+func (t *Kickstart) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+		t.GitSyncVersion,
+	)
 }
 
 func (k *Kickstart) Applier() (world.Applier, error) {
@@ -21,12 +33,10 @@ func (k *Kickstart) Applier() (world.Applier, error) {
 
 func (k *Kickstart) Children() []world.Configuration {
 	nginxImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}
 	gitSyncImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/git-sync",
 		Tag:        k.GitSyncVersion,
 	}

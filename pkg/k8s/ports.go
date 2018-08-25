@@ -1,6 +1,19 @@
 package k8s
 
+import (
+	"context"
+
+	"github.com/pkg/errors"
+)
+
 type PortName string
+
+func (p PortName) Validate(ctx context.Context) error {
+	if p == "" {
+		return errors.New("portName empty")
+	}
+	return nil
+}
 
 type PortNumber int
 

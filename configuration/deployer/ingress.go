@@ -1,17 +1,34 @@
 package deployer
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
 
 type IngressDeployer struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
-	Name         k8s.Name
-	Requirements []world.Configuration
-	Domains      []k8s.IngressHost
+	Name         k8s.MetadataName
+	Domains      k8s.IngressHosts
 	Port         k8s.PortName
+	Requirements []world.Configuration
+}
+
+func (t *IngressDeployer) Validate(ctx context.Context) error {
+	if len(t.Domains) == 0 {
+		return errors.New("Domains empty")
+	}
+	return validation.Validate(
+		ctx,
+		t.Context,
+		t.Namespace,
+		t.Name,
+		t.Port,
+	)
 }
 
 func (i *IngressDeployer) Applier() (world.Applier, error) {

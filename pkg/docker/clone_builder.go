@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -20,7 +22,7 @@ func (c *CloneBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("docker clone %s ...", c.TargetImage.String())
 
 	glog.V(4).Infof("docker pull %s ...", c.SourceImage.String())
-	cmd := exec.CommandContext(ctx, "docker", "pull", c.SourceImage.String())
+	cmd := createCommand(ctx, "docker", "pull", c.SourceImage.String())
 	if glog.V(4) {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -29,23 +31,28 @@ func (c *CloneBuilder) Apply(ctx context.Context) error {
 		return errors.Wrap(err, "pull docker image failed")
 	}
 
-	glog.V(4).Infof("find docker hash for %s ...", c.SourceImage.String())
-	cmd = exec.CommandContext(ctx, "docker", "images", c.SourceImage.Repository.String()+":"+c.SourceImage.Tag.String(), "-q")
+	glog.V(4).Infof("find docker hash for %s", c.SourceImage.Repository.String()+":"+c.SourceImage.Tag.String())
+	cmd = createCommand(ctx, "docker", "images", c.SourceImage.Repository.String()+":"+c.SourceImage.Tag.String(), "-q")
 	hash := &bytes.Buffer{}
 	cmd.Stdout = hash
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "find docker hash failed")
 	}
+
+	if hash.Len() == 0 {
+		return fmt.Errorf("could not find hash for image: %s", c.SourceImage.Repository.String()+":"+c.SourceImage.Tag.String())
+	}
+
 	glog.V(4).Infof("found hash %s", hash.String())
 
-	glog.V(4).Infof("docker tag %s ...", c.SourceImage.String())
-	cmd = exec.CommandContext(ctx, "docker", "tag", strings.TrimSpace(hash.String()), c.TargetImage.String())
+	glog.V(4).Infof("tag image %s with %s", c.SourceImage.String(), c.TargetImage.String())
+	cmd = createCommand(ctx, "docker", "tag", strings.TrimSpace(hash.String()), c.TargetImage.String())
 	if glog.V(4) {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "pull docker image failed")
+		return errors.Wrap(err, "tag docker image failed")
 	}
 
 	glog.V(1).Infof("docker clone %s finished", c.TargetImage.String())
@@ -65,4 +72,9 @@ func (c *CloneBuilder) Validate(ctx context.Context) error {
 
 func (c *CloneBuilder) Satisfied(ctx context.Context) (bool, error) {
 	return ImageExists(ctx, c.TargetImage)
+}
+
+func createCommand(ctx context.Context, name string, arg ...string) *exec.Cmd {
+	glog.V(4).Infof("create commmand: %s %s", name, strings.Join(arg, " "))
+	return exec.CommandContext(ctx, name, arg...)
 }

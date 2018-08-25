@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
 )
 
@@ -11,6 +12,13 @@ type NamespaceName string
 
 func (n NamespaceName) String() string {
 	return string(n)
+}
+
+func (a NamespaceName) Validate(ctx context.Context) error {
+	if a == "" {
+		return errors.New("NamespaceName missing")
+	}
+	return nil
 }
 
 type NamespaceApplier struct {
@@ -44,7 +52,11 @@ type Namespace struct {
 }
 
 func (s *Namespace) Validate(ctx context.Context) error {
-	return nil
+	return validation.Validate(ctx,
+		s.ApiVersion,
+		s.Kind,
+		s.Metadata,
+	)
 }
 
 func (n Namespace) String() string {

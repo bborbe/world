@@ -42,6 +42,13 @@ func (g GitBranch) String() string {
 	return string(g)
 }
 
+func (w GitBranch) Validate(ctx context.Context) error {
+	if w == "" {
+		return errors.New("GitBranch empty")
+	}
+	return nil
+}
+
 type BuildArgs map[string]string
 
 type Registry string
@@ -62,25 +69,28 @@ func (v Tag) String() string {
 	return string(v)
 }
 
+func (w Tag) Validate(ctx context.Context) error {
+	if w == "" {
+		return errors.New("Tag empty")
+	}
+	return nil
+}
+
 type Image struct {
 	Repository Repository
-	Registry   Registry
 	Tag        Tag
 }
 
 func (i Image) String() string {
-	return i.Registry.String() + "/" + i.Repository.String() + ":" + i.Tag.String()
+	return i.Repository.String() + ":" + i.Tag.String()
 }
 
-func (b *Image) Validate(ctx context.Context) error {
+func (i Image) Validate(ctx context.Context) error {
 	glog.V(4).Infof("validate image ...")
-	if b.Tag == "" {
+	if i.Tag == "" {
 		return errors.New("Tag missing")
 	}
-	if b.Registry == "" {
-		return errors.New("Registry missing")
-	}
-	if b.Repository == "" {
+	if i.Repository == "" {
 		return errors.New("Repository missing")
 	}
 	return nil

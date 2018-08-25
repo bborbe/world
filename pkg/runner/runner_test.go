@@ -11,16 +11,20 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	r, err := runner.New(
-		&configuration.World{
+	ctx := context.Background()
+	b := runner.Builder{
+		Configuration: &configuration.World{
 			TeamvaultSecrets: &secret.Teamvault{
 				TeamvaultConnector: connector.NewDummy(),
 			},
-		})
+		},
+	}
+	r, err := b.Build(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Validate(context.Background()); err != nil {
+	if err := r.Validate(ctx); err != nil {
 		t.Fatal(err)
 	}
+
 }

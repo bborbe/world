@@ -1,12 +1,22 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Teamvault struct {
 	Image docker.Image
+}
+
+func (t *Teamvault) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Image,
+	)
 }
 
 func (p *Teamvault) Children() []world.Configuration {

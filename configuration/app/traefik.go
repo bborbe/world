@@ -1,22 +1,32 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Traefik struct {
 	Cluster cluster.Cluster
-	Domains []k8s.IngressHost
+	Domains k8s.IngressHosts
+}
+
+func (t *Traefik) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+	)
 }
 
 func (t *Traefik) Children() []world.Configuration {
 	traefikImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/traefik",
 		Tag:        "1.5.3-alpine",
 	}
@@ -40,7 +50,6 @@ func (t *Traefik) Children() []world.Configuration {
 		},
 	}
 	exporterImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/traefik-certificate-extractor",
 		Tag:        "latest",
 	}
@@ -49,7 +58,7 @@ func (t *Traefik) Children() []world.Configuration {
 			Context:   t.Cluster.Context,
 			Namespace: "kube-system",
 			Name:      "traefik",
-			ConfigMap: k8s.ConfigMapData{
+			ConfigMapData: k8s.ConfigMapData{
 				"config": traefikConfig,
 			},
 		},

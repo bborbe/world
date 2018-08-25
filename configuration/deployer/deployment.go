@@ -1,9 +1,13 @@
 package deployer
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
 
 type Port struct {
@@ -13,16 +17,38 @@ type Port struct {
 	Protocol string
 }
 
+func (t *Port) Validate(ctx context.Context) error {
+	if t.Name == "" {
+		return errors.New("Name missing")
+	}
+	if t.Port == 0 {
+		return errors.New("Port missing")
+	}
+	if t.Protocol != "TCP" && t.Protocol != "UDP" {
+		return errors.New("Protocol missing")
+	}
+	return nil
+}
+
 type DeploymentDeployer struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
-	Name         k8s.Name
+	Name         k8s.MetadataName
 	Containers   []DeploymentDeployerContainer
 	Volumes      []k8s.PodVolume
 	HostNetwork  k8s.PodHostNetwork
 	Requirements []world.Configuration
 	DnsPolicy    k8s.PodDnsPolicy
 	Labels       k8s.Labels
+}
+
+func (w *DeploymentDeployer) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		w.Context,
+		w.Namespace,
+		w.Name,
+	)
 }
 
 type DeploymentDeployerContainer struct {
@@ -47,7 +73,9 @@ func (d *DeploymentDeployer) Children() []world.Configuration {
 	var result []world.Configuration
 	result = append(result, d.Requirements...)
 	for _, container := range d.Containers {
-		result = append(result, container.Requirement)
+		if container.Requirement != nil {
+			result = append(result, container.Requirement)
+		}
 	}
 	return result
 }

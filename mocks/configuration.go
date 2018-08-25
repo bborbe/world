@@ -2,6 +2,7 @@
 package mocks
 
 import (
+	"context"
 	"sync"
 
 	"github.com/bborbe/world"
@@ -27,6 +28,17 @@ type Configuration struct {
 	applierReturnsOnCall map[int]struct {
 		result1 world.Applier
 		result2 error
+	}
+	ValidateStub        func(ctx context.Context) error
+	validateMutex       sync.RWMutex
+	validateArgsForCall []struct {
+		ctx context.Context
+	}
+	validateReturns struct {
+		result1 error
+	}
+	validateReturnsOnCall map[int]struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -115,6 +127,54 @@ func (fake *Configuration) ApplierReturnsOnCall(i int, result1 world.Applier, re
 	}{result1, result2}
 }
 
+func (fake *Configuration) Validate(ctx context.Context) error {
+	fake.validateMutex.Lock()
+	ret, specificReturn := fake.validateReturnsOnCall[len(fake.validateArgsForCall)]
+	fake.validateArgsForCall = append(fake.validateArgsForCall, struct {
+		ctx context.Context
+	}{ctx})
+	fake.recordInvocation("Validate", []interface{}{ctx})
+	fake.validateMutex.Unlock()
+	if fake.ValidateStub != nil {
+		return fake.ValidateStub(ctx)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.validateReturns.result1
+}
+
+func (fake *Configuration) ValidateCallCount() int {
+	fake.validateMutex.RLock()
+	defer fake.validateMutex.RUnlock()
+	return len(fake.validateArgsForCall)
+}
+
+func (fake *Configuration) ValidateArgsForCall(i int) context.Context {
+	fake.validateMutex.RLock()
+	defer fake.validateMutex.RUnlock()
+	return fake.validateArgsForCall[i].ctx
+}
+
+func (fake *Configuration) ValidateReturns(result1 error) {
+	fake.ValidateStub = nil
+	fake.validateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *Configuration) ValidateReturnsOnCall(i int, result1 error) {
+	fake.ValidateStub = nil
+	if fake.validateReturnsOnCall == nil {
+		fake.validateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.validateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *Configuration) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -122,6 +182,8 @@ func (fake *Configuration) Invocations() map[string][][]interface{} {
 	defer fake.childrenMutex.RUnlock()
 	fake.applierMutex.RLock()
 	defer fake.applierMutex.RUnlock()
+	fake.validateMutex.RLock()
+	defer fake.validateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

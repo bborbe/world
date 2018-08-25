@@ -1,12 +1,15 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Mumble struct {
@@ -14,14 +17,22 @@ type Mumble struct {
 	Tag     docker.Tag
 }
 
+func (t *Mumble) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Tag,
+	)
+}
+
 func (m *Mumble) Children() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/mumble",
 		Tag:        m.Tag,
 	}
 	ports := []deployer.Port{
 		{
+			Name:     "mumble",
 			Port:     64738,
 			HostPort: 64738,
 			Protocol: "TCP",

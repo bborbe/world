@@ -50,10 +50,31 @@ type IngressSpec struct {
 	Rules []IngressRule `yaml:"rules"`
 }
 
+type IngressHosts []IngressHost
+
+func (i IngressHosts) Validate(ctx context.Context) error {
+	if len(i) == 0 {
+		return errors.New("IngressHosts empty")
+	}
+	for _, domain := range i {
+		if err := domain.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type IngressHost string
 
 func (i IngressHost) String() string {
 	return string(i)
+}
+
+func (i IngressHost) Validate(ctx context.Context) error {
+	if i == "" {
+		return errors.New("ingressHost empty")
+	}
+	return nil
 }
 
 type IngressRule struct {

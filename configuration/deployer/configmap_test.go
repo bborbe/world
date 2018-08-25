@@ -14,7 +14,7 @@ var _ = Describe("ConfigMapDeployer", func() {
 		configMapDeployer := &ConfigMapDeployer{
 			Namespace: "banana",
 			Name:      "banana",
-			ConfigMap: k8s.ConfigMapData{
+			ConfigMapData: k8s.ConfigMapData{
 				"key": "value",
 			},
 		}

@@ -1,18 +1,30 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Ip struct {
 	Cluster cluster.Cluster
-	Domains []k8s.IngressHost
+	Domains k8s.IngressHosts
 	Tag     docker.Tag
+}
+
+func (t *Ip) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+		t.Tag,
+	)
 }
 
 func (i *Ip) Applier() (world.Applier, error) {
@@ -21,7 +33,6 @@ func (i *Ip) Applier() (world.Applier, error) {
 
 func (i *Ip) Children() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/ip",
 		Tag:        i.Tag,
 	}

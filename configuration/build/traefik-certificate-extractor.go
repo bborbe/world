@@ -1,12 +1,22 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type TraefikCertificateExtractor struct {
 	Image docker.Image
+}
+
+func (w *TraefikCertificateExtractor) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		w.Image,
+	)
 }
 
 func (i *TraefikCertificateExtractor) Children() []world.Configuration {

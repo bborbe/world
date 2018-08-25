@@ -1,17 +1,28 @@
 package app
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Download struct {
 	Cluster cluster.Cluster
-	Domains []k8s.IngressHost
+	Domains k8s.IngressHosts
+}
+
+func (t *Download) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+	)
 }
 
 func (d *Download) Applier() (world.Applier, error) {
@@ -20,7 +31,6 @@ func (d *Download) Applier() (world.Applier, error) {
 
 func (d *Download) Children() []world.Configuration {
 	image := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}

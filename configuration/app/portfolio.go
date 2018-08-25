@@ -3,31 +3,43 @@ package app
 import (
 	"strconv"
 
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Portfolio struct {
 	Cluster              cluster.Cluster
-	Domains              []k8s.IngressHost
+	Domains              k8s.IngressHosts
 	OverlayServerVersion docker.Tag
 	GitSyncVersion       docker.Tag
 	GitSyncPassword      deployer.SecretValue
 }
 
+func (t *Portfolio) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Cluster,
+		t.Domains,
+		t.OverlayServerVersion,
+		t.GitSyncVersion,
+		t.GitSyncPassword,
+	)
+}
+
 func (p *Portfolio) Children() []world.Configuration {
 	port := 8080
 	overlayServerImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/portfolio",
 		Tag:        p.OverlayServerVersion,
 	}
 	gitSyncImage := docker.Image{
-		Registry:   "docker.io",
 		Repository: "bborbe/git-sync",
 		Tag:        p.GitSyncVersion,
 	}
