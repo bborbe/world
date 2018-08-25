@@ -34,18 +34,14 @@ func (c *World) Children() []world.Configuration {
 	}
 	var gitSyncVersion docker.Tag = "1.3.0"
 	return []world.Configuration{
-		&app.Monitoring{
-			Cluster:         netcup,
-			GitSyncVersion:  gitSyncVersion,
-			GitSyncPassword: c.TeamvaultSecrets.Password("YLb4wV"),
-			SmtpPassword:    c.TeamvaultSecrets.Password("QL3VQO"),
-		},
 		&app.Dns{
 			Cluster: netcup,
 		},
-		&app.Proxy{
-			Cluster:  netcup,
-			Password: c.TeamvaultSecrets.Htpasswd("zL89oq"),
+		&app.Traefik{
+			Cluster: netcup,
+			Domains: k8s.IngressHosts{
+				"traefik.benjamin-borbe.de",
+			},
 		},
 		&app.Ldap{
 			Cluster:    netcup,
@@ -65,11 +61,15 @@ func (c *World) Children() []world.Configuration {
 			FernetKey:        c.TeamvaultSecrets.Password("5wYZ2O"),
 			Salt:             c.TeamvaultSecrets.Password("Rwg74w"),
 		},
-		&app.Traefik{
-			Cluster: netcup,
-			Domains: k8s.IngressHosts{
-				"traefik.benjamin-borbe.de",
-			},
+		&app.Monitoring{
+			Cluster:         netcup,
+			GitSyncVersion:  gitSyncVersion,
+			GitSyncPassword: c.TeamvaultSecrets.Password("YLb4wV"),
+			SmtpPassword:    c.TeamvaultSecrets.Password("QL3VQO"),
+		},
+		&app.Proxy{
+			Cluster:  netcup,
+			Password: c.TeamvaultSecrets.Htpasswd("zL89oq"),
 		},
 		&app.Confluence{
 			Cluster: netcup,

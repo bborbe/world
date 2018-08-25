@@ -7,7 +7,7 @@ import (
 )
 
 type PodSpec struct {
-	Containers  []PodContainer `yaml:"containers"`
+	Containers  []Container    `yaml:"containers"`
 	Volumes     []PodVolume    `yaml:"volumes,omitempty"`
 	HostNetwork PodHostNetwork `yaml:"hostNetwork,omitempty"`
 	DnsPolicy   PodDnsPolicy   `yaml:"dnsPolicy,omitempty"`
@@ -84,14 +84,6 @@ type PodDnsPolicy string
 
 type PodHostNetwork bool
 
-type Arg string
-
-type Env struct {
-	Name      string    `yaml:"name"`
-	Value     string    `yaml:"value,omitempty"`
-	ValueFrom ValueFrom `yaml:"valueFrom,omitempty"`
-}
-
 type ValueFrom struct {
 	SecretKeyRef SecretKeyRef `yaml:"secretKeyRef"`
 }
@@ -99,58 +91,4 @@ type ValueFrom struct {
 type SecretKeyRef struct {
 	Key  string `yaml:"key"`
 	Name string `yaml:"name"`
-}
-
-type PodImage string
-
-type PodName string
-
-type PodPortContainerPort int
-
-type PodPortHostPort int
-
-type PodPortName string
-
-type PodPortProtocol string
-
-type PodPort struct {
-	ContainerPort PodPortContainerPort `yaml:"containerPort,omitempty"`
-	HostPort      PodPortHostPort      `yaml:"hostPort,omitempty"`
-	Name          PodPortName          `yaml:"name,omitempty"`
-	Protocol      PodPortProtocol      `yaml:"protocol,omitempty"`
-}
-
-type CpuLimit string
-type MemoryLimit string
-
-type Resources struct {
-	Cpu    string      `yaml:"cpu"`
-	Memory MemoryLimit `yaml:"memory"`
-}
-
-type PodResources struct {
-	Limits   Resources `yaml:"limits"`
-	Requests Resources `yaml:"requests"`
-}
-
-type VolumeMountPath string
-
-type VolumeName string
-
-type VolumeReadOnly bool
-
-type VolumeMount struct {
-	Path     VolumeMountPath `yaml:"mountPath"`
-	Name     VolumeName      `yaml:"name"`
-	ReadOnly VolumeReadOnly  `yaml:"readOnly"`
-}
-
-type PodContainer struct {
-	Args         []Arg         `yaml:"args,omitempty"`
-	Env          []Env         `yaml:"env,omitempty"`
-	Image        PodImage      `yaml:"image"`
-	Name         PodName       `yaml:"name"`
-	Ports        []PodPort     `yaml:"ports,omitempty"`
-	Resources    PodResources  `yaml:"resources"`
-	VolumeMounts []VolumeMount `yaml:"volumeMounts,omitempty"`
 }

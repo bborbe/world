@@ -62,17 +62,17 @@ func (b *Bind) Children() []world.Configuration {
 						Image: image,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "200m",
 							Memory: "100Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "25Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "bind",
 							Path: "/etc/bind",

@@ -75,17 +75,17 @@ func (p *Proxy) Children() []world.Configuration {
 							Protocol: "TCP",
 						},
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "200m",
 							Memory: "200Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "50m",
 							Memory: "50Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "auth",
 							Path: "/etc/squid/auth",
@@ -105,17 +105,17 @@ func (p *Proxy) Children() []world.Configuration {
 							Protocol: "TCP",
 						},
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "100Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "config",
 							Path: "/etc/privoxy/user",

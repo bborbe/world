@@ -86,12 +86,12 @@ volumes:
 `))
 	})
 	It("encode resources", func() {
-		p := k8s.PodResources{
-			Limits: k8s.Resources{
+		p := k8s.Resources{
+			Limits: k8s.ContainerResource{
 				Cpu:    "1",
 				Memory: "2",
 			},
-			Requests: k8s.Resources{
+			Requests: k8s.ContainerResource{
 				Cpu:    "3",
 				Memory: "4",
 			},

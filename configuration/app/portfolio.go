@@ -74,12 +74,12 @@ func (p *Portfolio) Children() []world.Configuration {
 					Requirement: &build.OverlayWebserver{
 						Image: overlayServerImage,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "50m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
@@ -100,7 +100,7 @@ func (p *Portfolio) Children() []world.Configuration {
 							Value: "/overlay",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name:     "portfolio",
 							Path:     "/portfolio",
@@ -119,12 +119,12 @@ func (p *Portfolio) Children() []world.Configuration {
 					Requirement: &build.GitSync{
 						Image: gitSyncImage,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "50m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
@@ -143,7 +143,7 @@ func (p *Portfolio) Children() []world.Configuration {
 							Value: "/portfolio",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "portfolio",
 							Path: "/portfolio",
@@ -156,12 +156,12 @@ func (p *Portfolio) Children() []world.Configuration {
 					Requirement: &build.GitSync{
 						Image: gitSyncImage,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "50m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
@@ -193,7 +193,7 @@ func (p *Portfolio) Children() []world.Configuration {
 							},
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "overlay",
 							Path: "/overlay",

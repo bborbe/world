@@ -74,18 +74,18 @@ func (t *Traefik) Children() []world.Configuration {
 						Image: traefikImage,
 					},
 					Ports: traefikPorts,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "200m",
 							Memory: "100Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "25Mi",
 						},
 					},
 					Args: []k8s.Arg{"--configfile=/config/traefik.toml"},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "config",
 							Path: "/config",
@@ -130,17 +130,17 @@ func (t *Traefik) Children() []world.Configuration {
 					Requirement: &build.TraefikCertificateExtractor{
 						Image: exporterImage,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "200m",
 							Memory: "100Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "25Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "acme",
 							Path: "/app/data",

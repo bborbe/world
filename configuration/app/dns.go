@@ -79,13 +79,34 @@ func (d *Dns) Children() []world.Configuration {
 					Requirement: &build.Kubedns{
 						Image: kubednsImage,
 					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/readiness",
+							Port:   8081,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 3,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      5,
+					},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/healthz-kubedns",
+							Port:   8080,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
 					Ports: kubednsPorts,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "500m",
 							Memory: "200Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "100Mi",
 						},
@@ -101,13 +122,24 @@ func (d *Dns) Children() []world.Configuration {
 					Requirement: &build.KubednsMasq{
 						Image: kubednsMasqImage,
 					},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/healthz-dnsmasq",
+							Port:   8080,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
 					Ports: kubednsMasqPorts,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "500m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "50Mi",
 						},
@@ -126,12 +158,12 @@ func (d *Dns) Children() []world.Configuration {
 						Image: healthzImage,
 					},
 					Ports: healthzPorts,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "500m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "50Mi",
 						},

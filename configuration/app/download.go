@@ -58,17 +58,17 @@ func (d *Download) Children() []world.Configuration {
 						Image: image,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "250m",
 							Memory: "25Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name:     "download",
 							Path:     "/usr/share/nginx/html",

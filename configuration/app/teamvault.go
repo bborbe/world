@@ -104,12 +104,12 @@ func (t *Teamvault) Children() []world.Configuration {
 						Image: image,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "2000m",
 							Memory: "400Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "100Mi",
 						},

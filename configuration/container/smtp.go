@@ -34,12 +34,12 @@ func (s *SmtpProvider) Container() deployer.DeploymentDeployerContainer {
 				Name:     "smtp",
 			},
 		},
-		Resources: k8s.PodResources{
-			Limits: k8s.Resources{
+		Resources: k8s.Resources{
+			Limits: k8s.ContainerResource{
 				Cpu:    "250m",
 				Memory: "100Mi",
 			},
-			Requests: k8s.Resources{
+			Requests: k8s.ContainerResource{
 				Cpu:    "10m",
 				Memory: "10Mi",
 			},

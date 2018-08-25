@@ -52,14 +52,16 @@ func (w *DeploymentDeployer) Validate(ctx context.Context) error {
 }
 
 type DeploymentDeployerContainer struct {
-	Name        k8s.PodName
-	Args        []k8s.Arg
-	Ports       []Port
-	Env         []k8s.Env
-	Resources   k8s.PodResources
-	Mounts      []k8s.VolumeMount
-	Image       docker.Image
-	Requirement world.Configuration
+	Name           k8s.ContainerName
+	Args           []k8s.Arg
+	Ports          []Port
+	Env            []k8s.Env
+	Resources      k8s.Resources
+	Mounts         []k8s.ContainerMount
+	Image          docker.Image
+	Requirement    world.Configuration
+	LivenessProbe  k8s.Probe
+	ReadinessProbe k8s.Probe
 }
 
 func (d *DeploymentDeployer) Applier() (world.Applier, error) {
@@ -116,33 +118,36 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 					Containers:  d.containers(),
 					Volumes:     d.Volumes,
 					HostNetwork: d.HostNetwork,
+					DnsPolicy:   d.DnsPolicy,
 				},
 			},
 		},
 	}
 }
 
-func (d *DeploymentDeployer) containers() []k8s.PodContainer {
-	var result []k8s.PodContainer
+func (d *DeploymentDeployer) containers() []k8s.Container {
+	var result []k8s.Container
 	for _, container := range d.Containers {
 		result = append(result, d.container(container))
 	}
 	return result
 }
 
-func (d *DeploymentDeployer) container(container DeploymentDeployerContainer) k8s.PodContainer {
-	podContainer := k8s.PodContainer{
-		Image:        k8s.PodImage(container.Image.String()),
-		Name:         container.Name,
-		Resources:    container.Resources,
-		VolumeMounts: container.Mounts,
+func (d *DeploymentDeployer) container(container DeploymentDeployerContainer) k8s.Container {
+	podContainer := k8s.Container{
+		Image:          k8s.Image(container.Image.String()),
+		Name:           container.Name,
+		Resources:      container.Resources,
+		VolumeMounts:   container.Mounts,
+		LivenessProbe:  container.LivenessProbe,
+		ReadinessProbe: container.ReadinessProbe,
 	}
 	for _, port := range container.Ports {
-		podContainer.Ports = append(podContainer.Ports, k8s.PodPort{
-			Name:          k8s.PodPortName(port.Name),
-			ContainerPort: k8s.PodPortContainerPort(port.Port),
-			HostPort:      k8s.PodPortHostPort(port.HostPort),
-			Protocol:      k8s.PodPortProtocol(port.Protocol),
+		podContainer.Ports = append(podContainer.Ports, k8s.ContainerPort{
+			Name:          k8s.ContainerPortName(port.Name),
+			ContainerPort: k8s.ContainerPortNumer(port.Port),
+			HostPort:      k8s.ContainerPortHostPort(port.HostPort),
+			Protocol:      k8s.ContainerPortProtocol(port.Protocol),
 		})
 	}
 	for _, arg := range container.Args {

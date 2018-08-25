@@ -62,17 +62,17 @@ func (b *Backup) rsync() []world.Configuration {
 							Protocol: "TCP",
 						},
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "1000m",
 							Memory: "200Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "250m",
 							Memory: "100Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name:     "backup",
 							Path:     "/data",
@@ -130,12 +130,12 @@ func (b *Backup) status() []world.Configuration {
 					Requirement: &build.BackupStatusClient{
 						Image: image,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},

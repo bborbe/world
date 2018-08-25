@@ -40,17 +40,17 @@ var _ = Describe("DeploymentDeployer", func() {
 							Value: "b",
 						},
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "250m",
 							Memory: "25Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name:     "data",
 							Path:     "/usr/share/nginx/html",
@@ -109,13 +109,13 @@ spec:
         app: banana
     spec:
       containers:
-      - args:
+      - name: banana
+        image: bborbe/test:latest
+        args:
         - -v=4
         env:
         - name: a
           value: b
-        image: bborbe/test:latest
-        name: banana
         ports:
         - containerPort: 1337
           name: root

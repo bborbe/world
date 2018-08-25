@@ -103,12 +103,12 @@ func (p *Poste) Children() []world.Configuration {
 			Containers: []deployer.DeploymentDeployerContainer{
 				{
 					Name: "poste",
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "1500m",
 							Memory: "750Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "100Mi",
 						},
@@ -126,7 +126,7 @@ func (p *Poste) Children() []world.Configuration {
 						},
 					},
 					Ports: ports,
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "poste",
 							Path: "/data",

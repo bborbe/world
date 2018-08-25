@@ -99,12 +99,12 @@ func (p *Postgres) Children() []world.Configuration {
 						Image: postgresImage,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "2000m",
 							Memory: "200Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "100Mi",
 						},
@@ -142,7 +142,7 @@ func (p *Postgres) Children() []world.Configuration {
 							},
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "data",
 							Path: "/var/lib/postgresql/data",
@@ -177,12 +177,12 @@ func (p *Postgres) Children() []world.Configuration {
 					Requirement: &build.PostgresBackup{
 						Image: postgresBackupImage,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "500m",
 							Memory: "100Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
@@ -236,7 +236,7 @@ func (p *Postgres) Children() []world.Configuration {
 							Value: "false",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "backup",
 							Path: "/backup",
@@ -249,12 +249,12 @@ func (p *Postgres) Children() []world.Configuration {
 					Requirement: &build.BackupCleanupCron{
 						Image: backupCleanUpImage,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "100Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
@@ -286,7 +286,7 @@ func (p *Postgres) Children() []world.Configuration {
 							Value: fmt.Sprintf("postgres_%s_.*.dump", p.PostgresDatabaseName),
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "backup",
 							Path: "/backup",

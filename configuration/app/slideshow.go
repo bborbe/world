@@ -64,17 +64,17 @@ func (s *Slideshow) Children() []world.Configuration {
 						Image: nginxImage,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "250m",
 							Memory: "25Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name:     "slideshow",
 							Path:     "/usr/share/nginx/html",
@@ -88,12 +88,12 @@ func (s *Slideshow) Children() []world.Configuration {
 					Requirement: &build.GitSync{
 						Image: gitSyncImage,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "50m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
@@ -112,7 +112,7 @@ func (s *Slideshow) Children() []world.Configuration {
 							Value: "/slideshow",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "slideshow",
 							Path: "/slideshow",

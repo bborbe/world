@@ -64,17 +64,17 @@ func (m *Maven) public() []world.Configuration {
 						Image: image,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "250m",
 							Memory: "25Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name:     "maven",
 							Path:     "/usr/share/nginx/html",
@@ -133,12 +133,12 @@ func (m *Maven) api() []world.Configuration {
 					Requirement: &build.Maven{
 						Image: image,
 					},
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "50Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
 						},
@@ -151,7 +151,7 @@ func (m *Maven) api() []world.Configuration {
 							Value: "/data",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "maven",
 							Path: "/data",

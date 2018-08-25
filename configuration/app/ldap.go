@@ -91,17 +91,17 @@ func (l *Ldap) Children() []world.Configuration {
 						Image: image,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "500m",
 							Memory: "75Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "25Mi",
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "ldap",
 							Path: "/var/lib/openldap/openldap-data",

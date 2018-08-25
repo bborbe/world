@@ -89,12 +89,12 @@ func (c *Confluence) Children() []world.Configuration {
 						Image:         image,
 					},
 					Ports: ports,
-					Resources: k8s.PodResources{
-						Limits: k8s.Resources{
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
 							Cpu:    "4000m",
 							Memory: "3000Mi",
 						},
-						Requests: k8s.Resources{
+						Requests: k8s.ContainerResource{
 							Cpu:    "100m",
 							Memory: "2000Mi",
 						},
@@ -113,7 +113,7 @@ func (c *Confluence) Children() []world.Configuration {
 							Value: c.Domains[0].String(),
 						},
 					},
-					Mounts: []k8s.VolumeMount{
+					Mounts: []k8s.ContainerMount{
 						{
 							Name: "data",
 							Path: "/var/lib/confluence",
