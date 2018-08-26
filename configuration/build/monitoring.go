@@ -1,12 +1,22 @@
 package build
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Monitoring struct {
 	Image docker.Image
+}
+
+func (t *Monitoring) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		t.Image,
+	)
 }
 
 func (i *Monitoring) Children() []world.Configuration {

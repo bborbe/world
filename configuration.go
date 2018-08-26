@@ -18,8 +18,8 @@ func NewConfiguration() *ConfigurationBuilder {
 	return new(ConfigurationBuilder)
 }
 
-func (c *ConfigurationBuilder) WithChildren(children []Configuration) *ConfigurationBuilder {
-	c.children = children
+func (c *ConfigurationBuilder) AddChildConfiguration(configuration Configuration) *ConfigurationBuilder {
+	c.children = append(c.children, configuration)
 	return c
 }
 

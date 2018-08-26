@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type DeploymentApplier struct {
@@ -25,10 +25,11 @@ func (s *DeploymentApplier) Apply(ctx context.Context) error {
 }
 
 func (s *DeploymentApplier) Validate(ctx context.Context) error {
-	if s.Context == "" {
-		return errors.New("context missing")
-	}
-	return s.Deployment.Validate(ctx)
+	return validation.Validate(
+		ctx,
+		s.Context,
+		s.Deployment,
+	)
 }
 
 type Deployment struct {
@@ -42,7 +43,7 @@ func (s Deployment) String() string {
 	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
 }
 
-func (s *Deployment) Validate(ctx context.Context) error {
+func (s Deployment) Validate(ctx context.Context) error {
 	return nil
 }
 
@@ -53,15 +54,13 @@ type DeploymentRevisionHistoryLimit int
 type DeploymentSpec struct {
 	Replicas             DeploymentReplicas             `yaml:"replicas"`
 	RevisionHistoryLimit DeploymentRevisionHistoryLimit `yaml:"revisionHistoryLimit"`
-	Selector             DeploymentSelector             `yaml:"selector"`
+	Selector             Selector                       `yaml:"selector,omitempty"`
 	Strategy             DeploymentStrategy             `yaml:"strategy"`
-	Template             DeploymentTemplate             `yaml:"template"`
+	Template             PodTemplate                    `yaml:"template"`
 }
 
-type DeploymentMatchLabels map[string]string
-
-type DeploymentSelector struct {
-	MatchLabels DeploymentMatchLabels `yaml:"matchLabels,omitempty"`
+type Selector struct {
+	MatchLabels Labels `yaml:"matchLabels,omitempty"`
 }
 
 type DeploymentMaxSurge int
@@ -78,9 +77,4 @@ type DeploymentStrategyRollingUpdate struct {
 type DeploymentStrategy struct {
 	Type          DeploymentStrategyType          `yaml:"type"`
 	RollingUpdate DeploymentStrategyRollingUpdate `yaml:"rollingUpdate"`
-}
-
-type DeploymentTemplate struct {
-	Metadata Metadata `yaml:"metadata"`
-	Spec     PodSpec  `yaml:"spec"`
 }

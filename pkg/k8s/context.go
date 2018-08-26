@@ -12,8 +12,8 @@ func (c Context) String() string {
 	return string(c)
 }
 
-func (w Context) Validate(ctx context.Context) error {
-	if w == "" {
+func (c Context) Validate(ctx context.Context) error {
+	if c == "" {
 		return errors.New("Context missing")
 	}
 	return nil

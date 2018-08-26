@@ -35,13 +35,13 @@ type ContainerPort struct {
 
 type ContainerMountPath string
 
-type ContainerMountName string
+type MountName string
 
 type ContainerMountReadOnly bool
 
 type ContainerMount struct {
 	Path     ContainerMountPath     `yaml:"mountPath"`
-	Name     ContainerMountName     `yaml:"name"`
+	Name     MountName              `yaml:"name"`
 	ReadOnly ContainerMountReadOnly `yaml:"readOnly"`
 }
 
@@ -54,15 +54,20 @@ type Env struct {
 }
 
 type Container struct {
-	Name           ContainerName    `yaml:"name"`
-	Image          Image            `yaml:"image"`
-	Args           []Arg            `yaml:"args,omitempty"`
-	Env            []Env            `yaml:"env,omitempty"`
-	Ports          []ContainerPort  `yaml:"ports,omitempty"`
-	Resources      Resources        `yaml:"resources,omitempty"`
-	VolumeMounts   []ContainerMount `yaml:"volumeMounts,omitempty"`
-	ReadinessProbe Probe            `yaml:"readinessProbe,omitempty"`
-	LivenessProbe  Probe            `yaml:"livenessProbe,omitempty"`
+	Name            ContainerName    `yaml:"name"`
+	Image           Image            `yaml:"image"`
+	Args            []Arg            `yaml:"args,omitempty"`
+	Env             []Env            `yaml:"env,omitempty"`
+	Ports           []ContainerPort  `yaml:"ports,omitempty"`
+	Resources       Resources        `yaml:"resources,omitempty"`
+	VolumeMounts    []ContainerMount `yaml:"volumeMounts,omitempty"`
+	ReadinessProbe  Probe            `yaml:"readinessProbe,omitempty"`
+	LivenessProbe   Probe            `yaml:"livenessProbe,omitempty"`
+	SecurityContext SecurityContext  `yaml:"securityContext,omitempty"`
+}
+
+type SecurityContext struct {
+	Privileged bool `yaml:"privileged,omitempty"`
 }
 
 type Probe struct {

@@ -21,7 +21,6 @@ func main() {
 	defer glog.Flush()
 	glog.CopyStandardLogTo("info")
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -39,19 +38,27 @@ func main() {
 	}
 
 	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
-	b := runner.Builder{
-		Configuration: &configuration.World{
-			TeamvaultSecrets: &secret.Teamvault{
-				TeamvaultConnector: teamvaultconnector.NewCache(
-					&teamvaultconnector.DiskFallback{
-						Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
-					},
-				),
-			},
+	world := &configuration.World{
+		TeamvaultSecrets: &secret.Teamvault{
+			TeamvaultConnector: teamvaultconnector.NewCache(
+				&teamvaultconnector.DiskFallback{
+					Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+				},
+			),
 		},
 	}
+	flag.StringVar(&world.Name, "name", "", "app name")
+	flag.Parse()
 
-	r, err := b.Build(ctx)
+	conf, err := world.Configuration()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "find configuration for %s failed: %v\n", world.Name, err)
+		os.Exit(1)
+	}
+	builder := runner.Builder{
+		Configuration: conf,
+	}
+	r, err := builder.Build(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "create runtime failed: %+v\n", err)
 		os.Exit(1)

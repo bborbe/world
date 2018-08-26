@@ -96,8 +96,8 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 		Spec: k8s.DeploymentSpec{
 			Replicas:             1,
 			RevisionHistoryLimit: 2,
-			Selector: k8s.DeploymentSelector{
-				MatchLabels: k8s.DeploymentMatchLabels{
+			Selector: k8s.Selector{
+				MatchLabels: k8s.Labels{
 					"app": d.Name.String(),
 				},
 			},
@@ -108,7 +108,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 					MaxUnavailable: 1,
 				},
 			},
-			Template: k8s.DeploymentTemplate{
+			Template: k8s.PodTemplate{
 				Metadata: k8s.Metadata{
 					Labels: k8s.Labels{
 						"app": d.Name.String(),
