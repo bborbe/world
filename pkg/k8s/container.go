@@ -1,16 +1,14 @@
 package k8s
 
+import (
+	"context"
+
+	"github.com/pkg/errors"
+)
+
 type Image string
 
 type ContainerName string
-
-type ContainerPortNumer int
-
-type ContainerPortHostPort int
-
-type ContainerPortName string
-
-type ContainerPortProtocol string
 
 type CpuLimit string
 
@@ -27,15 +25,22 @@ type Resources struct {
 }
 
 type ContainerPort struct {
-	ContainerPort ContainerPortNumer    `yaml:"containerPort,omitempty"`
-	HostPort      ContainerPortHostPort `yaml:"hostPort,omitempty"`
-	Name          ContainerPortName     `yaml:"name,omitempty"`
-	Protocol      ContainerPortProtocol `yaml:"protocol,omitempty"`
+	ContainerPort PortNumber   `yaml:"containerPort,omitempty"`
+	HostPort      PortNumber   `yaml:"hostPort,omitempty"`
+	Name          PortName     `yaml:"name,omitempty"`
+	Protocol      PortProtocol `yaml:"protocol,omitempty"`
 }
 
 type ContainerMountPath string
 
 type MountName string
+
+func (m MountName) Validate(ctx context.Context) error {
+	if m == "" {
+		return errors.New("MountName empty")
+	}
+	return nil
+}
 
 type ContainerMountReadOnly bool
 
@@ -71,15 +76,21 @@ type SecurityContext struct {
 }
 
 type Probe struct {
-	HttpGet             HttpGet `yaml:"httpGet,omitempty"`
-	InitialDelaySeconds int     `yaml:"initialDelaySeconds,omitempty"`
-	SuccessThreshold    int     `yaml:"successThreshold,omitempty"`
-	FailureThreshold    int     `yaml:"failureThreshold,omitempty"`
-	TimeoutSeconds      int     `yaml:"timeoutSeconds,omitempty"`
+	HttpGet             HttpGet   `yaml:"httpGet,omitempty"`
+	TcpSocket           TcpSocket `yaml:"tcpSocket,omitempty"`
+	InitialDelaySeconds int       `yaml:"initialDelaySeconds,omitempty"`
+	SuccessThreshold    int       `yaml:"successThreshold,omitempty"`
+	FailureThreshold    int       `yaml:"failureThreshold,omitempty"`
+	TimeoutSeconds      int       `yaml:"timeoutSeconds,omitempty"`
+	PeriodSeconds       int       `yaml:"periodSeconds,omitempty"`
 }
 
 type HttpGet struct {
-	Path   string `yaml:"path,omitempty"`
-	Port   int    `yaml:"port,omitempty"`
-	Scheme string `yaml:"scheme,omitempty"`
+	Path   string     `yaml:"path,omitempty"`
+	Port   PortNumber `yaml:"port,omitempty"`
+	Scheme string     `yaml:"scheme,omitempty"`
+}
+
+type TcpSocket struct {
+	Port PortNumber `yaml:"port,omitempty"`
 }

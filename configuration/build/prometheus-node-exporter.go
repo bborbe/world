@@ -21,13 +21,15 @@ func (t *PrometheusNodeExporter) Validate(ctx context.Context) error {
 
 func (n *PrometheusNodeExporter) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
-			SourceImage: docker.Image{
-				Repository: "quay.io/prometheus/node-exporter",
-				Tag:        n.Image.Tag,
+		&buildConfiguration{
+			&docker.CloneBuilder{
+				SourceImage: docker.Image{
+					Repository: "quay.io/prometheus/node-exporter",
+					Tag:        n.Image.Tag,
+				},
+				TargetImage: n.Image,
 			},
-			TargetImage: n.Image,
-		}),
+		},
 	}
 }
 

@@ -30,24 +30,28 @@ func (t *Traefik) Children() []world.Configuration {
 		Repository: "bborbe/traefik",
 		Tag:        "1.5.3-alpine",
 	}
-	traefikPorts := []deployer.Port{
-		{
-			Port:     80,
-			HostPort: 80,
-			Name:     "http",
-			Protocol: "TCP",
-		},
-		{
-			Port:     443,
-			HostPort: 443,
-			Name:     "https",
-			Protocol: "TCP",
-		},
-		{
-			Port:     8080,
-			Name:     "dashboard",
-			Protocol: "TCP",
-		},
+	httpPort := deployer.Port{
+		Port:     80,
+		HostPort: 80,
+		Name:     "http",
+		Protocol: "TCP",
+	}
+
+	httpsPort := deployer.Port{
+		Port:     443,
+		HostPort: 443,
+		Name:     "https",
+		Protocol: "TCP",
+	}
+	dashboardPort := deployer.Port{
+		Port:     8080,
+		Name:     "dashboard",
+		Protocol: "TCP",
+	}
+	ports := []deployer.Port{
+		httpPort,
+		httpsPort,
+		dashboardPort,
 	}
 	exporterImage := docker.Image{
 		Repository: "bborbe/traefik-certificate-extractor",
@@ -66,14 +70,21 @@ func (t *Traefik) Children() []world.Configuration {
 			Context:   t.Cluster.Context,
 			Namespace: "kube-system",
 			Name:      "traefik",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "traefik",
 					Image: traefikImage,
 					Requirement: &build.Traefik{
 						Image: traefikImage,
 					},
-					Ports: traefikPorts,
+					Ports: ports,
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "200m",
@@ -94,6 +105,26 @@ func (t *Traefik) Children() []world.Configuration {
 							Name: "acme",
 							Path: "/acme",
 						},
+					},
+					LivenessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: httpPort.Port,
+						},
+						FailureThreshold:    3,
+						InitialDelaySeconds: 10,
+						PeriodSeconds:       10,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      2,
+					},
+					ReadinessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: httpPort.Port,
+						},
+						FailureThreshold:    1,
+						InitialDelaySeconds: 10,
+						PeriodSeconds:       10,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      2,
 					},
 				},
 			},
@@ -123,8 +154,15 @@ func (t *Traefik) Children() []world.Configuration {
 			Context:   t.Cluster.Context,
 			Namespace: "kube-system",
 			Name:      "traefik-extract",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "traefik-extract",
 					Image: exporterImage,
 					Requirement: &build.TraefikCertificateExtractor{
@@ -174,7 +212,7 @@ func (t *Traefik) Children() []world.Configuration {
 			Context:   t.Cluster.Context,
 			Namespace: "kube-system",
 			Name:      "traefik",
-			Ports:     traefikPorts,
+			Ports:     ports,
 			Annotations: k8s.Annotations{
 				"prometheus.io/path":   "/metrics",
 				"prometheus.io/port":   "8080",

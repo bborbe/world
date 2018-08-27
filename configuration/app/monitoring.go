@@ -6,6 +6,7 @@ import (
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -16,19 +17,17 @@ import (
 type MonitoringConfig struct {
 	Name       k8s.MetadataName
 	Subject    string
-	GitRepoUrl string
+	GitRepoUrl container.GitRepoUrl
 }
 
 func (m *MonitoringConfig) Validate(ctx context.Context) error {
 	if m.Subject == "" {
 		return errors.New("Subject missing")
 	}
-	if m.GitRepoUrl == "" {
-		return errors.New("GitRepoUrl missing")
-	}
 	return validation.Validate(
 		ctx,
 		m.Name,
+		m.GitRepoUrl,
 	)
 }
 
@@ -36,7 +35,6 @@ type Monitoring struct {
 	Cluster         cluster.Cluster
 	SmtpPassword    deployer.SecretValue
 	GitSyncPassword deployer.SecretValue
-	GitSyncVersion  docker.Tag
 	Configs         []MonitoringConfig
 }
 
@@ -46,7 +44,6 @@ func (w *Monitoring) Validate(ctx context.Context) error {
 		w.Cluster,
 		w.SmtpPassword,
 		w.GitSyncPassword,
-		w.GitSyncVersion,
 	)
 }
 
@@ -68,11 +65,10 @@ func (m *Monitoring) Children() []world.Configuration {
 	}
 	for _, config := range m.Configs {
 		configurations = append(configurations, &MonitoringDeployment{
-			Context:        m.Cluster.Context,
-			Name:           config.Name,
-			Subject:        config.Subject,
-			GitRepoUrl:     config.GitRepoUrl,
-			GitSyncVersion: m.GitSyncVersion,
+			Context:    m.Cluster.Context,
+			Name:       config.Name,
+			Subject:    config.Subject,
+			GitRepoUrl: config.GitRepoUrl,
 		})
 	}
 	return configurations
@@ -83,11 +79,10 @@ func (m *Monitoring) Applier() (world.Applier, error) {
 }
 
 type MonitoringDeployment struct {
-	Context        k8s.Context
-	Name           k8s.MetadataName
-	Subject        string
-	GitRepoUrl     string
-	GitSyncVersion docker.Tag
+	Context    k8s.Context
+	Name       k8s.MetadataName
+	Subject    string
+	GitRepoUrl container.GitRepoUrl
 }
 
 func (m *MonitoringDeployment) Validate(ctx context.Context) error {
@@ -99,17 +94,12 @@ func (m *MonitoringDeployment) Validate(ctx context.Context) error {
 	}
 	return validation.Validate(
 		ctx,
-		m.GitSyncVersion,
 		m.Context,
 		m.Name,
 	)
 }
 
 func (m *MonitoringDeployment) Children() []world.Configuration {
-	gitSyncImage := docker.Image{
-		Repository: "bborbe/git-sync",
-		Tag:        m.GitSyncVersion,
-	}
 	monitoringImage := docker.Image{
 		Repository: "bborbe/monitoring",
 		Tag:        "1.2.0",
@@ -120,8 +110,15 @@ func (m *MonitoringDeployment) Children() []world.Configuration {
 			Context:   m.Context,
 			Namespace: "monitoring",
 			Name:      m.Name,
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "monitoring",
 					Image: monitoringImage,
 					Requirement: &build.Monitoring{
@@ -216,55 +213,12 @@ func (m *MonitoringDeployment) Children() []world.Configuration {
 						},
 					},
 				},
-				{
-					Name:  "git-sync",
-					Image: gitSyncImage,
-					Requirement: &build.GitSync{
-						Image: gitSyncImage,
-					},
-					Resources: k8s.Resources{
-						Limits: k8s.ContainerResource{
-							Cpu:    "50m",
-							Memory: "50Mi",
-						},
-						Requests: k8s.ContainerResource{
-							Cpu:    "10m",
-							Memory: "10Mi",
-						},
-					},
-					Args: []k8s.Arg{
-						"-logtostderr",
-						"-v=2",
-					},
-					Env: []k8s.Env{
-						{
-							Name:  "GIT_SYNC_REPO",
-							Value: m.GitRepoUrl,
-						},
-						{
-							Name:  "GIT_SYNC_DEST",
-							Value: "/data",
-						},
-						{
-							Name:  "GIT_SYNC_USERNAME",
-							Value: "bborbereadonly",
-						},
-						{
-							Name: "GIT_SYNC_PASSWORD",
-							ValueFrom: k8s.ValueFrom{
-								SecretKeyRef: k8s.SecretKeyRef{
-									Key:  "git-sync-password",
-									Name: "monitoring",
-								},
-							},
-						},
-					},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name: mountName,
-							Path: "/data",
-						},
-					},
+				&container.GitSync{
+					MountName:                 mountName,
+					GitRepoUrl:                m.GitRepoUrl,
+					GitSyncUsername:           "bborbereadonly",
+					GitSyncPasswordSecretName: "monitoring",
+					GitSyncPasswordSecretPath: "git-sync-password",
 				},
 			},
 			Volumes: []k8s.PodVolume{

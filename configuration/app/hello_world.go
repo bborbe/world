@@ -36,12 +36,10 @@ func (h *HelloWorld) Children() []world.Configuration {
 		Repository: "bborbe/hello-world",
 		Tag:        h.Tag,
 	}
-	ports := []deployer.Port{
-		{
-			Port:     80,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     80,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -52,8 +50,15 @@ func (h *HelloWorld) Children() []world.Configuration {
 			Context:   h.Cluster.Context,
 			Namespace: "hello-world",
 			Name:      "hello-world",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "hello-world",
 					Image: image,
 					Requirement: &build.HelloWorld{
@@ -69,7 +74,27 @@ func (h *HelloWorld) Children() []world.Configuration {
 							Memory: "10Mi",
 						},
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
+					},
 				},
 			},
 		},
@@ -77,7 +102,7 @@ func (h *HelloWorld) Children() []world.Configuration {
 			Context:   h.Cluster.Context,
 			Namespace: "hello-world",
 			Name:      "hello-world",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   h.Cluster.Context,

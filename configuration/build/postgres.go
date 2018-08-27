@@ -21,13 +21,15 @@ func (t *Postgres) Validate(ctx context.Context) error {
 
 func (n *Postgres) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
-			SourceImage: docker.Image{
-				Repository: "postgres",
-				Tag:        n.Image.Tag,
+		&buildConfiguration{
+			&docker.CloneBuilder{
+				SourceImage: docker.Image{
+					Repository: "postgres",
+					Tag:        n.Image.Tag,
+				},
+				TargetImage: n.Image,
 			},
-			TargetImage: n.Image,
-		}),
+		},
 	}
 }
 

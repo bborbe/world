@@ -72,9 +72,9 @@ func (s *ServiceDeployer) service() k8s.Service {
 	}
 	for _, port := range s.Ports {
 		service.Spec.Ports = append(service.Spec.Ports, k8s.Port{
-			Name:     k8s.PortName(port.Name),
-			Port:     k8s.PortNumber(port.Port),
-			Protocol: k8s.PortProtocol(port.Protocol),
+			Name:     port.Name,
+			Port:     port.Port,
+			Protocol: port.Protocol,
 		})
 	}
 	return service

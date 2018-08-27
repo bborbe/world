@@ -13,16 +13,16 @@ import (
 )
 
 type Ldap struct {
-	Cluster    cluster.Cluster
-	Tag        docker.Tag
-	LdapSecret deployer.SecretValue
+	Cluster      cluster.Cluster
+	Tag          docker.Tag
+	LdapPassword deployer.SecretValue
 }
 
 func (d *Ldap) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		d.Tag,
-		d.LdapSecret,
+		d.LdapPassword,
 	)
 }
 
@@ -35,17 +35,15 @@ func (l *Ldap) Children() []world.Configuration {
 		Repository: "bborbe/openldap",
 		Tag:        l.Tag,
 	}
-	ports := []deployer.Port{
-		{
-			Port:     389,
-			Name:     "ldap",
-			Protocol: "TCP",
-		},
-		{
-			Port:     636,
-			Name:     "ldaps",
-			Protocol: "TCP",
-		},
+	ldapPort := deployer.Port{
+		Port:     389,
+		Name:     "ldap",
+		Protocol: "TCP",
+	}
+	ldapsPort := deployer.Port{
+		Port:     636,
+		Name:     "ldaps",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -57,15 +55,18 @@ func (l *Ldap) Children() []world.Configuration {
 			Namespace: "ldap",
 			Name:      "ldap",
 			Secrets: deployer.Secrets{
-				"secret": l.LdapSecret,
+				"secret": l.LdapPassword,
 			},
 		},
 		&deployer.DeploymentDeployer{
 			Context:   l.Cluster.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "Recreate",
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name: "ldap",
 					Env: []k8s.Env{
 						{
@@ -90,7 +91,7 @@ func (l *Ldap) Children() []world.Configuration {
 					Requirement: &build.Openldap{
 						Image: image,
 					},
-					Ports: ports,
+					Ports: []deployer.Port{ldapPort, ldapsPort},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "500m",
@@ -106,6 +107,24 @@ func (l *Ldap) Children() []world.Configuration {
 							Name: "ldap",
 							Path: "/var/lib/openldap/openldap-data",
 						},
+					},
+					LivenessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: ldapPort.Port,
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
+					ReadinessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: ldapPort.Port,
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
 					},
 				},
 			},
@@ -123,7 +142,7 @@ func (l *Ldap) Children() []world.Configuration {
 			Context:   l.Cluster.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
-			Ports:     ports,
+			Ports:     []deployer.Port{ldapPort, ldapsPort},
 		},
 	}
 }

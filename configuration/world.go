@@ -1,46 +1,92 @@
 package configuration
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
-	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
-	"github.com/pkg/errors"
+	"github.com/bborbe/world/pkg/validation"
 )
 
+type AppName string
+type ClusterName string
+
 type World struct {
-	Name             string
+	App              AppName
+	Cluster          ClusterName
 	TeamvaultSecrets *secret.Teamvault
 }
 
-func (w *World) Configuration() (world.Configuration, error) {
-	if w.Name == "" {
-		configuration := world.NewConfiguration()
-		for _, c := range w.configurations() {
-			configuration.AddChildConfiguration(c)
+func (w *World) Children() []world.Configuration {
+	var result []world.Configuration
+	for clusterName, configurations := range w.configurations() {
+		if clusterName != w.Cluster && w.Cluster != "" {
+			continue
 		}
-		return configuration, nil
+		for appName, configuration := range configurations {
+			if appName != w.App && w.App != "" {
+				continue
+			}
+			result = append(result, configuration)
+		}
 	}
-	configuration, ok := w.configurations()[w.Name]
-	if !ok {
-		return nil, errors.New("Configurations not found")
-	}
-	return configuration, nil
+	return result
 }
 
-func (w *World) configurations() map[string]world.Configuration {
-	netcup := cluster.Cluster{
-		Context:   "netcup",
-		NfsServer: "185.170.112.48",
+func (w *World) Applier() (world.Applier, error) {
+	return nil, nil
+}
+
+func (w *World) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		w.TeamvaultSecrets,
+	)
+}
+
+func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration {
+	return map[ClusterName]map[AppName]world.Configuration{
+		"netcup": w.netcup(),
+		"sun":    w.sun(),
 	}
+}
+
+func (w *World) sun() map[AppName]world.Configuration {
 	sun := cluster.Cluster{
 		Context:   "sun",
 		NfsServer: "172.16.72.1",
 	}
-	var gitSyncVersion docker.Tag = "1.3.0"
-	return map[string]world.Configuration{
+	return map[AppName]world.Configuration{
+		"monitoring": &app.Monitoring{
+			Cluster:         sun,
+			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
+			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
+			Configs: []app.MonitoringConfig{
+				{
+					Name:       "nc",
+					Subject:    "Monitoring Result: Netcup",
+					GitRepoUrl: "https://bborbereadonly@bitbucket.org/bborbe/monitoring_nc.git",
+				},
+			},
+		},
+		//"backupstatus": &app.BackupStatus{
+		//	Cluster: sun,
+		//	Domains: k8s.IngressHosts{
+		//		"backup.sun.pn.benjamin-borbe.de",
+		//	},
+		//},
+	}
+}
+
+func (w *World) netcup() map[AppName]world.Configuration {
+	netcup := cluster.Cluster{
+		Context:   "netcup",
+		NfsServer: "185.170.112.48",
+	}
+	return map[AppName]world.Configuration{
 		"dns": &app.Dns{
 			Cluster: netcup,
 		},
@@ -51,18 +97,21 @@ func (w *World) configurations() map[string]world.Configuration {
 			},
 		},
 		"prometheus": &app.Prometheus{
-			Cluster: netcup,
+			Cluster:            netcup,
+			PrometheusDomain:   "prometheus.benjamin-borbe.de",
+			AlertmanagerDomain: "prometheus-alertmanager.benjamin-borbe.de",
+			Secret:             w.TeamvaultSecrets.Password("aqMr6w"),
+			LdapUsername:       w.TeamvaultSecrets.Username("MOPMLG"),
+			LdapPassword:       w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"ldap": &app.Ldap{
-			Cluster:    netcup,
-			Tag:        "1.1.0",
-			LdapSecret: w.TeamvaultSecrets.Password("MOPMLG"),
+			Cluster:      netcup,
+			Tag:          "1.1.0",
+			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"teamvault": &app.Teamvault{
-			Cluster: netcup,
-			Domains: k8s.IngressHosts{
-				"teamvault.benjamin-borbe.de",
-			},
+			Cluster:          netcup,
+			Domain:           "teamvault.benjamin-borbe.de",
 			DatabasePassword: w.TeamvaultSecrets.Password("VO0W5w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("3OlNaq"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("3OlNaq"),
@@ -71,9 +120,8 @@ func (w *World) configurations() map[string]world.Configuration {
 			FernetKey:        w.TeamvaultSecrets.Password("5wYZ2O"),
 			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
 		},
-		"monitoring-nc": &app.Monitoring{
+		"monitoring": &app.Monitoring{
 			Cluster:         netcup,
-			GitSyncVersion:  gitSyncVersion,
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
 			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
 			Configs: []app.MonitoringConfig{
@@ -89,48 +137,28 @@ func (w *World) configurations() map[string]world.Configuration {
 				},
 			},
 		},
-		"monitoring-sun": &app.Monitoring{
-			Cluster:         sun,
-			GitSyncVersion:  gitSyncVersion,
-			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
-			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
-			Configs: []app.MonitoringConfig{
-				{
-					Name:       "nc",
-					Subject:    "Monitoring Result: Netcup",
-					GitRepoUrl: "https://bborbereadonly@bitbucket.org/bborbe/monitoring_nc.git",
-				},
-			},
-		},
-		"proxy": &app.Proxy{
-			Cluster:  netcup,
-			Password: w.TeamvaultSecrets.Htpasswd("zL89oq"),
-		},
+		//"proxy": &app.Proxy{
+		//	Cluster:  netcup,
+		//	Password: w.TeamvaultSecrets.Htpasswd("zL89oq"),
+		//},
 		"confluence": &app.Confluence{
-			Cluster: netcup,
-			Domains: k8s.IngressHosts{
-				"confluence.benjamin-borbe.de",
-			},
+			Cluster:          netcup,
+			Domain:           "confluence.benjamin-borbe.de",
 			Version:          "6.10.2",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
 		},
 		"jira": &app.Jira{
-			Cluster: netcup,
-			Domains: k8s.IngressHosts{
-				"jira.benjamin-borbe.de",
-			},
+			Cluster:          netcup,
+			Domain:           "jira.benjamin-borbe.de",
 			Version:          "7.11.2",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
 		},
-		"backup": &app.Backup{
+		"backup": &app.BackupClient{
 			Cluster: netcup,
-			Domains: k8s.IngressHosts{
-				"backup.benjamin-borbe.de",
-			},
 		},
 		"poste": &app.Poste{
 			Cluster:      netcup,
@@ -155,7 +183,6 @@ func (w *World) configurations() map[string]world.Configuration {
 				"www.benjaminborbe.de",
 			},
 			OverlayServerVersion: "1.0.0",
-			GitSyncVersion:       gitSyncVersion,
 			GitSyncPassword:      w.TeamvaultSecrets.Password("YLb4wV"),
 		},
 		"webdav": &app.Webdav{
@@ -216,7 +243,6 @@ func (w *World) configurations() map[string]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"slideshow.benjamin-borbe.de",
 			},
-			GitSyncVersion: gitSyncVersion,
 		},
 		"kickstart": &app.Kickstart{
 			Cluster: netcup,
@@ -224,7 +250,6 @@ func (w *World) configurations() map[string]world.Configuration {
 				"kickstart.benjamin-borbe.de",
 				"ks.benjamin-borbe.de",
 			},
-			GitSyncVersion: gitSyncVersion,
 		},
 	}
 

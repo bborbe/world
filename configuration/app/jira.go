@@ -14,12 +14,11 @@ import (
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
-	"github.com/pkg/errors"
 )
 
 type Jira struct {
 	Cluster          cluster.Cluster
-	Domains          k8s.IngressHosts
+	Domain           k8s.IngressHost
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
@@ -27,13 +26,10 @@ type Jira struct {
 }
 
 func (t *Jira) Validate(ctx context.Context) error {
-	if len(t.Domains) != 1 {
-		return errors.New("exact one Domains needed")
-	}
 	return validation.Validate(
 		ctx,
 		t.Cluster,
-		t.Domains,
+		t.Domain,
 		t.Version,
 		t.DatabasePassword,
 		t.SmtpPassword,
@@ -47,12 +43,10 @@ func (j *Jira) Children() []world.Configuration {
 		Repository: "bborbe/atlassian-jira-software",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", j.Version, buildVersion)),
 	}
-	ports := []deployer.Port{
-		{
-			Port:     8080,
-			Protocol: "TCP",
-			Name:     "http",
-		},
+	port := deployer.Port{
+		Port:     8080,
+		Protocol: "TCP",
+		Name:     "http",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -79,8 +73,11 @@ func (j *Jira) Children() []world.Configuration {
 			Namespace:    "jira",
 			Name:         "jira",
 			Requirements: j.smtp().Requirements(),
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "Recreate",
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "jira",
 					Image: image,
 					Requirement: &build.Jira{
@@ -88,7 +85,7 @@ func (j *Jira) Children() []world.Configuration {
 						GitBranch:     buildVersion,
 						Image:         image,
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "4000m",
@@ -110,7 +107,7 @@ func (j *Jira) Children() []world.Configuration {
 						},
 						{
 							Name:  "HOSTNAME",
-							Value: j.Domains[0].String(),
+							Value: j.Domain.String(),
 						},
 					},
 					Mounts: []k8s.ContainerMount{
@@ -118,6 +115,26 @@ func (j *Jira) Children() []world.Configuration {
 							Name: "data",
 							Path: "/var/lib/jira",
 						},
+					},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 300,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						TimeoutSeconds:      5,
 					},
 				},
 				j.smtp().Container(),
@@ -136,21 +153,21 @@ func (j *Jira) Children() []world.Configuration {
 			Context:   j.Cluster.Context,
 			Namespace: "jira",
 			Name:      "jira",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   j.Cluster.Context,
 			Namespace: "jira",
 			Name:      "jira",
 			Port:      "http",
-			Domains:   j.Domains,
+			Domains:   k8s.IngressHosts{j.Domain},
 		},
 	}
 }
 
-func (j *Jira) smtp() *container.SmtpProvider {
-	return &container.SmtpProvider{
-		Hostname:     j.Domains[0].String(),
+func (j *Jira) smtp() *container.Smtp {
+	return &container.Smtp{
+		Hostname:     container.SmtpHostname(j.Domain.String()),
 		Context:      j.Cluster.Context,
 		Namespace:    "jira",
 		SmtpPassword: j.SmtpPassword,

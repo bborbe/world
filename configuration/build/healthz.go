@@ -21,13 +21,15 @@ func (t *Healthz) Validate(ctx context.Context) error {
 
 func (n *Healthz) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
-			SourceImage: docker.Image{
-				Repository: "gcr.io/google_containers/exechealthz-amd64",
-				Tag:        n.Image.Tag,
+		&buildConfiguration{
+			&docker.CloneBuilder{
+				SourceImage: docker.Image{
+					Repository: "gcr.io/google_containers/exechealthz-amd64",
+					Tag:        n.Image.Tag,
+				},
+				TargetImage: n.Image,
 			},
-			TargetImage: n.Image,
-		}),
+		},
 	}
 }
 

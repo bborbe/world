@@ -100,8 +100,11 @@ func (p *Poste) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "poste",
 			Name:      "poste",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "Recreate",
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name: "poste",
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{

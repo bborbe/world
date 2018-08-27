@@ -21,13 +21,15 @@ func (t *Monitoring) Validate(ctx context.Context) error {
 
 func (i *Monitoring) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
-			Name:            "monitoring",
-			GitRepo:         "https://github.com/bborbe/monitoring.git",
-			SourceDirectory: "github.com/bborbe/monitoring",
-			Package:         "github.com/bborbe/monitoring/bin/monitoring_server",
-			Image:           i.Image,
-		}),
+		&buildConfiguration{
+			&docker.GolangBuilder{
+				Name:            "monitoring",
+				GitRepo:         "https://github.com/bborbe/monitoring.git",
+				SourceDirectory: "github.com/bborbe/monitoring",
+				Package:         "github.com/bborbe/monitoring/bin/monitoring_server",
+				Image:           i.Image,
+			},
+		},
 	}
 }
 

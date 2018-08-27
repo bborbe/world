@@ -12,80 +12,77 @@ import (
 	"github.com/bborbe/world/pkg/validation"
 )
 
-type Bind struct {
+type BackupClient struct {
 	Cluster cluster.Cluster
-	Tag     docker.Tag
 }
 
-func (t *Bind) Validate(ctx context.Context) error {
+func (t *BackupClient) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Cluster,
-		t.Tag,
 	)
 }
 
-func (b *Bind) Children() []world.Configuration {
+func (b *BackupClient) Children() []world.Configuration {
 	image := docker.Image{
-		Repository: "bborbe/bind",
-		Tag:        b.Tag,
+		Repository: "bborbe/backup-rsync-server",
+		Tag:        "1.1.0",
 	}
-	udpPort := deployer.Port{
-		Name:     "dns-udp",
-		Port:     53,
-		HostPort: 53,
-		Protocol: "UDP",
-	}
-	tcpPort := deployer.Port{
-		Name:     "dns-tcp",
-		Port:     53,
-		HostPort: 53,
+	port := deployer.Port{
+		Port:     22,
+		HostPort: 2222,
+		Name:     "ssh",
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   b.Cluster.Context,
-			Namespace: "bind",
+			Namespace: "backup",
 		},
 		&deployer.DeploymentDeployer{
-			Context:     b.Cluster.Context,
-			Namespace:   "bind",
-			Name:        "bind",
-			HostNetwork: true,
+			Context:   b.Cluster.Context,
+			Namespace: "backup",
+			Name:      "rsync",
 			Strategy: k8s.DeploymentStrategy{
-				Type: "Recreate",
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
-					Name:  "bind",
+					Name:  "backup",
 					Image: image,
-					Requirement: &build.Bind{
+					Requirement: &build.BackupRsyncServer{
 						Image: image,
 					},
-					Ports: []deployer.Port{tcpPort, udpPort},
+					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
-							Cpu:    "200m",
-							Memory: "100Mi",
+							Cpu:    "1000m",
+							Memory: "200Mi",
 						},
 						Requests: k8s.ContainerResource{
-							Cpu:    "10m",
-							Memory: "25Mi",
+							Cpu:    "250m",
+							Memory: "100Mi",
 						},
 					},
 					Mounts: []k8s.ContainerMount{
 						{
-							Name: "bind",
-							Path: "/etc/bind",
+							Name:     "backup",
+							Path:     "/data",
+							ReadOnly: true,
 						},
 						{
-							Name: "bind",
-							Path: "/var/lib/bind",
+							Name:     "ssh",
+							Path:     "/etc/ssh",
+							ReadOnly: true,
 						},
 					},
 					LivenessProbe: k8s.Probe{
 						TcpSocket: k8s.TcpSocket{
-							Port: tcpPort.Port,
+							Port: port.Port,
 						},
 						InitialDelaySeconds: 60,
 						SuccessThreshold:    1,
@@ -95,7 +92,7 @@ func (b *Bind) Children() []world.Configuration {
 					},
 					ReadinessProbe: k8s.Probe{
 						TcpSocket: k8s.TcpSocket{
-							Port: tcpPort.Port,
+							Port: port.Port,
 						},
 						InitialDelaySeconds: 3,
 						TimeoutSeconds:      5,
@@ -105,10 +102,17 @@ func (b *Bind) Children() []world.Configuration {
 			},
 			Volumes: []k8s.PodVolume{
 				{
-					Name: "bind",
+					Name: "backup",
 					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/bind",
-						Server: k8s.PodNfsServer(b.Cluster.NfsServer),
+						Path:   "/data",
+						Server: b.Cluster.NfsServer,
+					},
+				},
+				{
+					Name: "ssh",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/backup-ssh",
+						Server: b.Cluster.NfsServer,
 					},
 				},
 			},
@@ -116,6 +120,6 @@ func (b *Bind) Children() []world.Configuration {
 	}
 }
 
-func (b *Bind) Applier() (world.Applier, error) {
+func (b *BackupClient) Applier() (world.Applier, error) {
 	return nil, nil
 }

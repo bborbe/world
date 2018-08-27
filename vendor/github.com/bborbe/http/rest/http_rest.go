@@ -70,7 +70,7 @@ func (r *rest) Call(url string, values url.Values, method string, request interf
 		return err
 	}
 	if resp.StatusCode/100 != 2 {
-		glog.V(2).Infof("status %d not 2xx", resp.StatusCode)
+		glog.V(2).Infof("request to %s failed with status: %d", url, resp.StatusCode)
 		return fmt.Errorf("request to %s failed with status: %d", url, resp.StatusCode)
 	}
 	if response != nil {

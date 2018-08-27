@@ -30,13 +30,11 @@ func (m *Mumble) Children() []world.Configuration {
 		Repository: "bborbe/mumble",
 		Tag:        m.Tag,
 	}
-	ports := []deployer.Port{
-		{
-			Name:     "mumble",
-			Port:     64738,
-			HostPort: 64738,
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Name:     "mumble",
+		Port:     64738,
+		HostPort: 64738,
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -47,14 +45,21 @@ func (m *Mumble) Children() []world.Configuration {
 			Context:   m.Cluster.Context,
 			Namespace: "mumble",
 			Name:      "mumble",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "mumble",
 					Image: image,
 					Requirement: &build.Mumble{
 						Image: image,
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "200m",
@@ -65,6 +70,24 @@ func (m *Mumble) Children() []world.Configuration {
 							Memory: "25Mi",
 						},
 					},
+					LivenessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
+					ReadinessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
 				},
 			},
 		},
@@ -72,7 +95,7 @@ func (m *Mumble) Children() []world.Configuration {
 			Context:   m.Cluster.Context,
 			Namespace: "mumble",
 			Name:      "mumble",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 	}
 }

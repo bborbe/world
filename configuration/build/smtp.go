@@ -21,11 +21,13 @@ func (w *Smtp) Validate(ctx context.Context) error {
 
 func (m *Smtp) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo:   "https://github.com/bborbe/smtp.git",
-			Image:     m.Image,
-			GitBranch: docker.GitBranch(m.Image.Tag),
-		}),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo:   "https://github.com/bborbe/smtp.git",
+				Image:     m.Image,
+				GitBranch: docker.GitBranch(m.Image.Tag),
+			},
+		},
 	}
 }
 

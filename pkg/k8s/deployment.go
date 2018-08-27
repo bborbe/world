@@ -70,11 +70,11 @@ type DeploymentMaxUnavailable int
 type DeploymentStrategyType string
 
 type DeploymentStrategyRollingUpdate struct {
-	MaxSurge       DeploymentMaxSurge       `yaml:"maxSurge"`
-	MaxUnavailable DeploymentMaxUnavailable `yaml:"maxUnavailable"`
+	MaxSurge       DeploymentMaxSurge       `yaml:"maxSurge,omitempty"`
+	MaxUnavailable DeploymentMaxUnavailable `yaml:"maxUnavailable,omitempty"`
 }
 
 type DeploymentStrategy struct {
 	Type          DeploymentStrategyType          `yaml:"type"`
-	RollingUpdate DeploymentStrategyRollingUpdate `yaml:"rollingUpdate"`
+	RollingUpdate DeploymentStrategyRollingUpdate `yaml:"rollingUpdate,omitempty"`
 }

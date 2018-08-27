@@ -21,11 +21,13 @@ func (t *Mumble) Validate(ctx context.Context) error {
 
 func (m *Mumble) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo:   "https://github.com/bborbe/mumble.git",
-			Image:     m.Image,
-			GitBranch: docker.GitBranch(m.Image.Tag),
-		}),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo:   "https://github.com/bborbe/mumble.git",
+				Image:     m.Image,
+				GitBranch: docker.GitBranch(m.Image.Tag),
+			},
+		},
 	}
 }
 

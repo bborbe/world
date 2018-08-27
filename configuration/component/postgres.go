@@ -91,8 +91,11 @@ func (p *Postgres) Children() []world.Configuration {
 			Context:   p.Context,
 			Namespace: p.Namespace,
 			Name:      "postgres",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "Recreate",
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "postgres",
 					Image: postgresImage,
 					Requirement: &build.Postgres{
@@ -170,8 +173,15 @@ func (p *Postgres) Children() []world.Configuration {
 			Context:   p.Context,
 			Namespace: p.Namespace,
 			Name:      "postgres-backup",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "backup",
 					Image: postgresBackupImage,
 					Requirement: &build.PostgresBackup{
@@ -243,7 +253,7 @@ func (p *Postgres) Children() []world.Configuration {
 						},
 					},
 				},
-				{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "cleanup",
 					Image: backupCleanUpImage,
 					Requirement: &build.BackupCleanupCron{

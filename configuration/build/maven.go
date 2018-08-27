@@ -21,13 +21,15 @@ func (t *Maven) Validate(ctx context.Context) error {
 
 func (p *Maven) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
-			Name:            "maven",
-			GitRepo:         "https://github.com/bborbe/maven.git",
-			SourceDirectory: "github.com/bborbe/maven",
-			Package:         "github.com/bborbe/maven",
-			Image:           p.Image,
-		}),
+		&buildConfiguration{
+			&docker.GolangBuilder{
+				Name:            "maven",
+				GitRepo:         "https://github.com/bborbe/maven.git",
+				SourceDirectory: "github.com/bborbe/maven",
+				Package:         "github.com/bborbe/maven",
+				Image:           p.Image,
+			},
+		},
 	}
 }
 

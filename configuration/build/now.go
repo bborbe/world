@@ -20,13 +20,15 @@ func (t *Now) Validate(ctx context.Context) error {
 }
 func (p *Now) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
-			Name:            "now",
-			GitRepo:         "https://github.com/bborbe/now.git",
-			SourceDirectory: "github.com/bborbe/now",
-			Package:         "github.com/bborbe/now/cmd/now-server",
-			Image:           p.Image,
-		}),
+		&buildConfiguration{
+			&docker.GolangBuilder{
+				Name:            "now",
+				GitRepo:         "https://github.com/bborbe/now.git",
+				SourceDirectory: "github.com/bborbe/now",
+				Package:         "github.com/bborbe/now/cmd/now-server",
+				Image:           p.Image,
+			},
+		},
 	}
 }
 

@@ -25,14 +25,16 @@ func (t *Poste) Validate(ctx context.Context) error {
 
 func (p *Poste) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo: "https://github.com/bborbe/poste.io.git",
-			Image:   p.Image,
-			BuildArgs: docker.BuildArgs{
-				"VENDOR_VERSION": p.VendorVersion.String(),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo: "https://github.com/bborbe/poste.io.git",
+				Image:   p.Image,
+				BuildArgs: docker.BuildArgs{
+					"VENDOR_VERSION": p.VendorVersion.String(),
+				},
+				GitBranch: p.GitBranch,
 			},
-			GitBranch: p.GitBranch,
-		}),
+		},
 	}
 }
 

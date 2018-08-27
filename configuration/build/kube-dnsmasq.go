@@ -21,13 +21,15 @@ func (t *KubednsMasq) Validate(ctx context.Context) error {
 
 func (n *KubednsMasq) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
-			SourceImage: docker.Image{
-				Repository: "gcr.io/google_containers/kube-dnsmasq-amd64",
-				Tag:        n.Image.Tag,
+		&buildConfiguration{
+			&docker.CloneBuilder{
+				SourceImage: docker.Image{
+					Repository: "gcr.io/google_containers/kube-dnsmasq-amd64",
+					Tag:        n.Image.Tag,
+				},
+				TargetImage: n.Image,
 			},
-			TargetImage: n.Image,
-		}),
+		},
 	}
 }
 

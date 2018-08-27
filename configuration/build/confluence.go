@@ -25,14 +25,16 @@ func (t *Confluence) Validate(ctx context.Context) error {
 
 func (c *Confluence) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo: "https://github.com/bborbe/atlassian-confluence.git",
-			Image:   c.Image,
-			BuildArgs: docker.BuildArgs{
-				"VENDOR_VERSION": c.VendorVersion.String(),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo: "https://github.com/bborbe/atlassian-confluence.git",
+				Image:   c.Image,
+				BuildArgs: docker.BuildArgs{
+					"VENDOR_VERSION": c.VendorVersion.String(),
+				},
+				GitBranch: c.GitBranch,
 			},
-			GitBranch: c.GitBranch,
-		}),
+		},
 	}
 }
 

@@ -21,14 +21,16 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 
 func (p *Teamvault) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo: "https://github.com/bborbe/teamvault.git",
-			Image:   p.Image,
-			BuildArgs: docker.BuildArgs{
-				"VERSION": p.Image.Tag.String(),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo: "https://github.com/bborbe/teamvault.git",
+				Image:   p.Image,
+				BuildArgs: docker.BuildArgs{
+					"VERSION": p.Image.Tag.String(),
+				},
+				GitBranch: "master",
 			},
-			GitBranch: "master",
-		}),
+		},
 	}
 }
 

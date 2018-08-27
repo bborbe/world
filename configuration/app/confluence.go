@@ -14,12 +14,11 @@ import (
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
-	"github.com/pkg/errors"
 )
 
 type Confluence struct {
 	Cluster          cluster.Cluster
-	Domains          k8s.IngressHosts
+	Domain           k8s.IngressHost
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
@@ -27,13 +26,10 @@ type Confluence struct {
 }
 
 func (t *Confluence) Validate(ctx context.Context) error {
-	if len(t.Domains) != 1 {
-		return errors.New("exact one Domains needed")
-	}
 	return validation.Validate(
 		ctx,
 		t.Cluster,
-		t.Domains,
+		t.Domain,
 		t.Version,
 		t.DatabasePassword,
 		t.SmtpPassword,
@@ -47,12 +43,10 @@ func (c *Confluence) Children() []world.Configuration {
 		Repository: "bborbe/atlassian-confluence",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", c.Version, buildVersion)),
 	}
-	ports := []deployer.Port{
-		{
-			Port:     8080,
-			Protocol: "TCP",
-			Name:     "http",
-		},
+	port := deployer.Port{
+		Port:     8080,
+		Protocol: "TCP",
+		Name:     "http",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -79,8 +73,11 @@ func (c *Confluence) Children() []world.Configuration {
 			Namespace:    "confluence",
 			Name:         "confluence",
 			Requirements: c.smtp().Requirements(),
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "Recreate",
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "confluence",
 					Image: image,
 					Requirement: &build.Confluence{
@@ -88,7 +85,7 @@ func (c *Confluence) Children() []world.Configuration {
 						GitBranch:     buildVersion,
 						Image:         image,
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "4000m",
@@ -110,7 +107,7 @@ func (c *Confluence) Children() []world.Configuration {
 						},
 						{
 							Name:  "HOSTNAME",
-							Value: c.Domains[0].String(),
+							Value: c.Domain.String(),
 						},
 					},
 					Mounts: []k8s.ContainerMount{
@@ -118,6 +115,26 @@ func (c *Confluence) Children() []world.Configuration {
 							Name: "data",
 							Path: "/var/lib/confluence",
 						},
+					},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 300,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						TimeoutSeconds:      5,
 					},
 				},
 				c.smtp().Container(),
@@ -136,21 +153,21 @@ func (c *Confluence) Children() []world.Configuration {
 			Context:   c.Cluster.Context,
 			Namespace: "confluence",
 			Name:      "confluence",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   c.Cluster.Context,
 			Namespace: "confluence",
 			Name:      "confluence",
 			Port:      "http",
-			Domains:   c.Domains,
+			Domains:   k8s.IngressHosts{c.Domain},
 		},
 	}
 }
 
-func (c *Confluence) smtp() *container.SmtpProvider {
-	return &container.SmtpProvider{
-		Hostname:     c.Domains[0].String(),
+func (c *Confluence) smtp() *container.Smtp {
+	return &container.Smtp{
+		Hostname:     container.SmtpHostname(c.Domain.String()),
 		Context:      c.Cluster.Context,
 		Namespace:    "confluence",
 		SmtpPassword: c.SmtpPassword,

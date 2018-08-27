@@ -21,11 +21,13 @@ func (w *Bind) Validate(ctx context.Context) error {
 
 func (o *Bind) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo:   "https://github.com/bborbe/bind.git",
-			Image:     o.Image,
-			GitBranch: docker.GitBranch(o.Image.Tag),
-		}),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo:   "https://github.com/bborbe/bind.git",
+				Image:     o.Image,
+				GitBranch: docker.GitBranch(o.Image.Tag),
+			},
+		},
 	}
 }
 

@@ -32,12 +32,10 @@ func (n *Now) Children() []world.Configuration {
 		Repository: "bborbe/now",
 		Tag:        n.Tag,
 	}
-	ports := []deployer.Port{
-		{
-			Port:     8080,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     8080,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -48,8 +46,15 @@ func (n *Now) Children() []world.Configuration {
 			Context:   n.Cluster.Context,
 			Namespace: "now",
 			Name:      "now",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "now",
 					Image: image,
 					Requirement: &build.Now{
@@ -72,7 +77,27 @@ func (n *Now) Children() []world.Configuration {
 							Value: "8080",
 						},
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
+					},
 				},
 			},
 		},
@@ -80,7 +105,7 @@ func (n *Now) Children() []world.Configuration {
 			Context:   n.Cluster.Context,
 			Namespace: "now",
 			Name:      "now",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   n.Cluster.Context,

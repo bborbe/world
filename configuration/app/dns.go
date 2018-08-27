@@ -72,8 +72,15 @@ func (d *Dns) Children() []world.Configuration {
 			Namespace: "kube-system",
 			Name:      "kube-dns",
 			DnsPolicy: "Default",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "kubedns",
 					Image: kubednsImage,
 					Requirement: &build.Kubedns{
@@ -116,7 +123,7 @@ func (d *Dns) Children() []world.Configuration {
 						"--dns-port=10053",
 					},
 				},
-				{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "dnsmasq",
 					Image: kubednsMasqImage,
 					Requirement: &build.KubednsMasq{
@@ -151,7 +158,7 @@ func (d *Dns) Children() []world.Configuration {
 						"--log-facility=-",
 					},
 				},
-				{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "healthz",
 					Image: healthzImage,
 					Requirement: &build.Healthz{

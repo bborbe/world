@@ -1,13 +1,12 @@
 package app
 
 import (
-	"strconv"
-
 	"context"
 
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -18,7 +17,6 @@ type Portfolio struct {
 	Cluster              cluster.Cluster
 	Domains              k8s.IngressHosts
 	OverlayServerVersion docker.Tag
-	GitSyncVersion       docker.Tag
 	GitSyncPassword      deployer.SecretValue
 }
 
@@ -28,27 +26,19 @@ func (t *Portfolio) Validate(ctx context.Context) error {
 		t.Cluster,
 		t.Domains,
 		t.OverlayServerVersion,
-		t.GitSyncVersion,
 		t.GitSyncPassword,
 	)
 }
 
 func (p *Portfolio) Children() []world.Configuration {
-	port := 8080
 	overlayServerImage := docker.Image{
 		Repository: "bborbe/portfolio",
 		Tag:        p.OverlayServerVersion,
 	}
-	gitSyncImage := docker.Image{
-		Repository: "bborbe/git-sync",
-		Tag:        p.GitSyncVersion,
-	}
-	ports := []deployer.Port{
-		{
-			Port:     port,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     8080,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -67,8 +57,15 @@ func (p *Portfolio) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "portfolio",
 					Image: overlayServerImage,
 					Requirement: &build.OverlayWebserver{
@@ -84,12 +81,14 @@ func (p *Portfolio) Children() []world.Configuration {
 							Memory: "10Mi",
 						},
 					},
-					Args:  []k8s.Arg{"-logtostderr", "-v=1"},
-					Ports: ports,
+					Args: []k8s.Arg{"-logtostderr", "-v=1"},
+					Ports: []deployer.Port{
+						port,
+					},
 					Env: []k8s.Env{
 						{
 							Name:  "PORT",
-							Value: strconv.Itoa(port),
+							Value: port.Port.String(),
 						},
 						{
 							Name:  "ROOT",
@@ -112,93 +111,37 @@ func (p *Portfolio) Children() []world.Configuration {
 							ReadOnly: true,
 						},
 					},
-				},
-				{
-					Name:  "git-sync-portfolio",
-					Image: gitSyncImage,
-					Requirement: &build.GitSync{
-						Image: gitSyncImage,
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
 					},
-					Resources: k8s.Resources{
-						Limits: k8s.ContainerResource{
-							Cpu:    "50m",
-							Memory: "50Mi",
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
 						},
-						Requests: k8s.ContainerResource{
-							Cpu:    "10m",
-							Memory: "10Mi",
-						},
-					},
-					Args: []k8s.Arg{
-						"-logtostderr",
-						"-v=1",
-					},
-					Env: []k8s.Env{
-						{
-							Name:  "GIT_SYNC_REPO",
-							Value: "https://github.com/bborbe/portfolio.git",
-						},
-						{
-							Name:  "GIT_SYNC_DEST",
-							Value: "/portfolio",
-						},
-					},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name: "portfolio",
-							Path: "/portfolio",
-						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
 					},
 				},
-				{
-					Name:  "git-sync-overlay",
-					Image: gitSyncImage,
-					Requirement: &build.GitSync{
-						Image: gitSyncImage,
-					},
-					Resources: k8s.Resources{
-						Limits: k8s.ContainerResource{
-							Cpu:    "50m",
-							Memory: "50Mi",
-						},
-						Requests: k8s.ContainerResource{
-							Cpu:    "10m",
-							Memory: "10Mi",
-						},
-					},
-					Args: []k8s.Arg{
-						"-logtostderr",
-						"-v=1",
-					},
-					Env: []k8s.Env{
-						{
-							Name:  "GIT_SYNC_REPO",
-							Value: "https://bborbereadonly@bitbucket.org/bborbe/benjaminborbe_portfolio.git",
-						},
-						{
-							Name:  "GIT_SYNC_DEST",
-							Value: "/overlay",
-						},
-						{
-							Name:  "GIT_SYNC_USERNAME",
-							Value: "bborbereadonly",
-						},
-						{
-							Name: "GIT_SYNC_PASSWORD",
-							ValueFrom: k8s.ValueFrom{
-								SecretKeyRef: k8s.SecretKeyRef{
-									Key:  "git-sync-password",
-									Name: "portfolio",
-								},
-							},
-						},
-					},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name: "overlay",
-							Path: "/overlay",
-						},
-					},
+				&container.GitSync{
+					MountName:  "portfolio",
+					GitRepoUrl: "https://github.com/bborbe/portfolio.git",
+				},
+				&container.GitSync{
+					MountName:                 "overlay",
+					GitRepoUrl:                "https://bborbereadonly@bitbucket.org/bborbe/benjaminborbe_portfolio.git",
+					GitSyncUsername:           "bborbereadonly",
+					GitSyncPasswordSecretPath: "git-sync-password",
+					GitSyncPasswordSecretName: "portfolio",
 				},
 			},
 			Volumes: []k8s.PodVolume{
@@ -216,7 +159,9 @@ func (p *Portfolio) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
-			Ports:     ports,
+			Ports: []deployer.Port{
+				port,
+			},
 		},
 		&deployer.IngressDeployer{
 			Context:   p.Cluster.Context,

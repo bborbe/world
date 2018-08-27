@@ -21,11 +21,13 @@ func (w *TraefikCertificateExtractor) Validate(ctx context.Context) error {
 
 func (i *TraefikCertificateExtractor) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo:   "https://github.com/bborbe/traefik-certificate-extractor.git",
-			GitBranch: "master",
-			Image:     i.Image,
-		}),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo:   "https://github.com/bborbe/traefik-certificate-extractor.git",
+				GitBranch: "master",
+				Image:     i.Image,
+			},
+		},
 	}
 }
 

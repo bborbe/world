@@ -3,6 +3,8 @@ package k8s
 import (
 	"context"
 
+	"strconv"
+
 	"github.com/pkg/errors"
 )
 
@@ -17,7 +19,29 @@ func (p PortName) Validate(ctx context.Context) error {
 
 type PortNumber int
 
+func (a PortNumber) Validate(ctx context.Context) error {
+	if a == 0 {
+		return errors.New("PortNumber missing")
+	}
+	return nil
+}
+
+func (c PortNumber) Int() int {
+	return int(c)
+}
+
+func (c PortNumber) String() string {
+	return strconv.Itoa(c.Int())
+}
+
 type PortProtocol string
+
+func (p PortProtocol) Validate(ctx context.Context) error {
+	if p != "TCP" && p != "UDP" {
+		return errors.New("Protocol missing")
+	}
+	return nil
+}
 
 type PortTarget string
 

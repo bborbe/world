@@ -34,6 +34,17 @@ func (p *Proxy) Children() []world.Configuration {
 		Repository: "bborbe/privoxy",
 		Tag:        "1.2.0",
 	}
+	squidPort := deployer.Port{
+		Port:     3128,
+		HostPort: 3128,
+		Name:     "squid",
+		Protocol: "TCP",
+	}
+	privoxyPort := deployer.Port{
+		Port:     8118,
+		Name:     "privoxy",
+		Protocol: "TCP",
+	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
 			Context:   p.Cluster.Context,
@@ -60,21 +71,21 @@ func (p *Proxy) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "proxy",
 			Name:      "proxy",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "squid",
 					Image: squidImage,
 					Requirement: &build.Squid{
 						Image: squidImage,
 					},
-					Ports: []deployer.Port{
-						{
-							Port:     3128,
-							HostPort: 3128,
-							Name:     "squid",
-							Protocol: "TCP",
-						},
-					},
+					Ports: []deployer.Port{squidPort},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "200m",
@@ -91,20 +102,32 @@ func (p *Proxy) Children() []world.Configuration {
 							Path: "/etc/squid/auth",
 						},
 					},
+					LivenessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: squidPort.Port,
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
+					ReadinessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: squidPort.Port,
+						},
+						InitialDelaySeconds: 15,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
 				},
-				{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "privoxy",
 					Image: privoxyImage,
 					Requirement: &build.Privoxy{
 						Image: privoxyImage,
 					},
-					Ports: []deployer.Port{
-						{
-							Port:     8118,
-							Name:     "privoxy",
-							Protocol: "TCP",
-						},
-					},
+					Ports: []deployer.Port{privoxyPort},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "100m",
@@ -120,6 +143,24 @@ func (p *Proxy) Children() []world.Configuration {
 							Name: "config",
 							Path: "/etc/privoxy/user",
 						},
+					},
+					LivenessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: privoxyPort.Port,
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
+					ReadinessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: privoxyPort.Port,
+						},
+						InitialDelaySeconds: 15,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
 					},
 				},
 			},

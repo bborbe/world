@@ -21,13 +21,15 @@ func (t *BackupStatusClient) Validate(ctx context.Context) error {
 
 func (b *BackupStatusClient) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
-			Name:            "backup-status-client",
-			GitRepo:         "https://github.com/bborbe/backup.git",
-			SourceDirectory: "github.com/bborbe/backup",
-			Package:         "github.com/bborbe/backup/cmd/backup-status-client",
-			Image:           b.Image,
-		}),
+		&buildConfiguration{
+			&docker.GolangBuilder{
+				Name:            "backup-status-client",
+				GitRepo:         "https://github.com/bborbe/backup.git",
+				SourceDirectory: "github.com/bborbe/backup",
+				Package:         "github.com/bborbe/backup/cmd/backup-status-client",
+				Image:           b.Image,
+			},
+		},
 	}
 }
 

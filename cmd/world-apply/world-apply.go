@@ -21,6 +21,9 @@ func main() {
 	defer glog.Flush()
 	glog.CopyStandardLogTo("info")
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	appNamePtr := flag.String("app", "", "app name")
+	clusterNamePtr := flag.String("cluster", "", "cluster name")
+	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -38,25 +41,18 @@ func main() {
 	}
 
 	httpClient := client_builder.New().WithTimeout(5 * time.Second).Build()
-	world := &configuration.World{
-		TeamvaultSecrets: &secret.Teamvault{
-			TeamvaultConnector: teamvaultconnector.NewCache(
-				&teamvaultconnector.DiskFallback{
-					Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
-				},
-			),
-		},
-	}
-	flag.StringVar(&world.Name, "name", "", "app name")
-	flag.Parse()
-
-	conf, err := world.Configuration()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "find configuration for %s failed: %v\n", world.Name, err)
-		os.Exit(1)
-	}
 	builder := runner.Builder{
-		Configuration: conf,
+		Configuration: &configuration.World{
+			App:     configuration.AppName(*appNamePtr),
+			Cluster: configuration.ClusterName(*clusterNamePtr),
+			TeamvaultSecrets: &secret.Teamvault{
+				TeamvaultConnector: teamvaultconnector.NewCache(
+					&teamvaultconnector.DiskFallback{
+						Connector: teamvaultconnector.NewRemote(httpClient.Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
+					},
+				),
+			},
+		},
 	}
 	r, err := builder.Build(ctx)
 	if err != nil {

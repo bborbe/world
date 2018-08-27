@@ -21,13 +21,15 @@ func (t *NginxAutoindex) Validate(ctx context.Context) error {
 
 func (n *NginxAutoindex) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.CloneBuilder{
-			SourceImage: docker.Image{
-				Repository: "jrelva/nginx-autoindex",
-				Tag:        "latest",
+		&buildConfiguration{
+			&docker.CloneBuilder{
+				SourceImage: docker.Image{
+					Repository: "jrelva/nginx-autoindex",
+					Tag:        "latest",
+				},
+				TargetImage: n.Image,
 			},
-			TargetImage: n.Image,
-		}),
+		},
 	}
 }
 

@@ -59,6 +59,12 @@ type DaemonSetSpec struct {
 }
 
 func (c DaemonSetSpec) Validate(ctx context.Context) error {
+	for key, value := range c.Selector.MatchLabels {
+		v, ok := c.Template.Metadata.Labels[key]
+		if !ok || v != value {
+			return fmt.Errorf("label %s not in selector and not in metadata", key)
+		}
+	}
 	return validation.Validate(
 		ctx,
 		c.Template,

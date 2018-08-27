@@ -21,11 +21,13 @@ func (t *Privoxy) Validate(ctx context.Context) error {
 
 func (p *Privoxy) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo:   "https://github.com/bborbe/privoxy.git",
-			Image:     p.Image,
-			GitBranch: docker.GitBranch(p.Image.Tag),
-		}),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo:   "https://github.com/bborbe/privoxy.git",
+				Image:     p.Image,
+				GitBranch: docker.GitBranch(p.Image.Tag),
+			},
+		},
 	}
 }
 

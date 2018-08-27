@@ -21,11 +21,13 @@ func (t *HelloWorld) Validate(ctx context.Context) error {
 
 func (h *HelloWorld) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo:   "https://github.com/bborbe/hello-world.git",
-			Image:     h.Image,
-			GitBranch: docker.GitBranch(h.Image.Tag),
-		}),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo:   "https://github.com/bborbe/hello-world.git",
+				Image:     h.Image,
+				GitBranch: docker.GitBranch(h.Image.Tag),
+			},
+		},
 	}
 }
 

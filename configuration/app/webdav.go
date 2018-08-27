@@ -34,12 +34,10 @@ func (w *Webdav) Children() []world.Configuration {
 		Repository: "bborbe/webdav",
 		Tag:        w.Tag,
 	}
-	ports := []deployer.Port{
-		{
-			Port:     80,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     80,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -58,8 +56,15 @@ func (w *Webdav) Children() []world.Configuration {
 			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "webdav",
 					Image: image,
 					Requirement: &build.Webdav{
@@ -75,7 +80,7 @@ func (w *Webdav) Children() []world.Configuration {
 							Memory: "10Mi",
 						},
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
 					Env: []k8s.Env{
 						{
 							Name:  "WEBDAV_USERNAME",
@@ -97,6 +102,26 @@ func (w *Webdav) Children() []world.Configuration {
 							Path: "/data",
 						},
 					},
+					LivenessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
+						},
+						FailureThreshold:    3,
+						InitialDelaySeconds: 30,
+						PeriodSeconds:       10,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
+						},
+						FailureThreshold:    1,
+						InitialDelaySeconds: 10,
+						PeriodSeconds:       10,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      5,
+					},
 				},
 			},
 			Volumes: []k8s.PodVolume{
@@ -113,7 +138,7 @@ func (w *Webdav) Children() []world.Configuration {
 			Context:   w.Cluster.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   w.Cluster.Context,

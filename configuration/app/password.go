@@ -32,12 +32,10 @@ func (p *Password) Children() []world.Configuration {
 		Repository: "bborbe/password",
 		Tag:        p.Tag,
 	}
-	ports := []deployer.Port{
-		{
-			Port:     8080,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     8080,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -48,8 +46,15 @@ func (p *Password) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "password",
 			Name:      "password",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "password",
 					Image: image,
 					Requirement: &build.Password{
@@ -66,7 +71,27 @@ func (p *Password) Children() []world.Configuration {
 						},
 					},
 					Args:  []k8s.Arg{"-logtostderr", "-v=2"},
-					Ports: ports,
+					Ports: []deployer.Port{port},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
+					},
 				},
 			},
 		},
@@ -74,7 +99,7 @@ func (p *Password) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "password",
 			Name:      "password",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   p.Cluster.Context,

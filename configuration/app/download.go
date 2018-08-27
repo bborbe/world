@@ -34,12 +34,10 @@ func (d *Download) Children() []world.Configuration {
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
 	}
-	ports := []deployer.Port{
-		{
-			Port:     80,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     80,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -50,14 +48,21 @@ func (d *Download) Children() []world.Configuration {
 			Context:   d.Cluster.Context,
 			Namespace: "download",
 			Name:      "download",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "nginx",
 					Image: image,
 					Requirement: &build.NginxAutoindex{
 						Image: image,
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "250m",
@@ -75,6 +80,26 @@ func (d *Download) Children() []world.Configuration {
 							ReadOnly: true,
 						},
 					},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
+					},
 				},
 			},
 			Volumes: []k8s.PodVolume{
@@ -91,7 +116,7 @@ func (d *Download) Children() []world.Configuration {
 			Context:   d.Cluster.Context,
 			Namespace: "download",
 			Name:      "download",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   d.Cluster.Context,

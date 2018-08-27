@@ -11,7 +11,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e47538b0e66e45786699b24782b56010f79f723d928e35590a0fd383c336782e"
+  digest = "1:feeadcb352e56d7891086940a256dac1d9e91d906f550da1052c7a676698c3b5"
   name = "github.com/bborbe/http"
   packages = [
     "client_builder",
@@ -19,7 +19,7 @@
     "rest",
   ]
   pruneopts = "UT"
-  revision = "e287a546ae1a98427e2dc282488eb9f649fc4292"
+  revision = "c98792bb388821d297024c160c4a206b04dc682b"
 
 [[projects]]
   branch = "master"
@@ -160,10 +160,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:69c9160034ef8869921ed316499f7e7e94b9e029338bce6dcb63a7ba9e753397"
+  digest = "1:a02aa415a75c3de7ea637f7cf5551bdb1bf72f7b0eae6a462e835d6fbed4e426"
   name = "golang.org/x/net"
   packages = [
-    "context",
     "html",
     "html/atom",
     "html/charset",
@@ -245,7 +244,6 @@
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
     "github.com/pkg/errors",
-    "golang.org/x/net/context",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

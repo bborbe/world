@@ -40,12 +40,10 @@ func (m *Maven) Children() []world.Configuration {
 }
 
 func (m *Maven) public() []world.Configuration {
-	ports := []deployer.Port{
-		{
-			Port:     80,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     80,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	image := docker.Image{
 		Repository: "bborbe/nginx-autoindex",
@@ -56,14 +54,20 @@ func (m *Maven) public() []world.Configuration {
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
 			Name:      "public",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "nginx",
 					Image: image,
 					Requirement: &build.NginxAutoindex{
 						Image: image,
 					},
-					Ports: ports,
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "250m",
@@ -81,6 +85,27 @@ func (m *Maven) public() []world.Configuration {
 							ReadOnly: true,
 						},
 					},
+					Ports: []deployer.Port{port},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
+					},
 				},
 			},
 			Volumes: []k8s.PodVolume{
@@ -97,7 +122,7 @@ func (m *Maven) public() []world.Configuration {
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
 			Name:      "public",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   m.Cluster.Context,
@@ -114,20 +139,25 @@ func (m *Maven) api() []world.Configuration {
 		Repository: "bborbe/maven-repo",
 		Tag:        m.MavenRepoVersion,
 	}
-	ports := []deployer.Port{
-		{
-			Port:     8080,
-			Name:     "http",
-			Protocol: "TCP",
-		},
+	port := deployer.Port{
+		Port:     8080,
+		Name:     "http",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
 			Name:      "api",
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "maven",
 					Image: image,
 					Requirement: &build.Maven{
@@ -143,8 +173,7 @@ func (m *Maven) api() []world.Configuration {
 							Memory: "10Mi",
 						},
 					},
-					Args:  []k8s.Arg{"-logtostderr", "-v=1"},
-					Ports: ports,
+					Args: []k8s.Arg{"-logtostderr", "-v=1"},
 					Env: []k8s.Env{
 						{
 							Name:  "ROOT",
@@ -156,6 +185,27 @@ func (m *Maven) api() []world.Configuration {
 							Name: "maven",
 							Path: "/data",
 						},
+					},
+					Ports: []deployer.Port{port},
+					LivenessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 60,
+						SuccessThreshold:    1,
+						FailureThreshold:    5,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						HttpGet: k8s.HttpGet{
+							Path:   "/",
+							Port:   port.Port,
+							Scheme: "HTTP",
+						},
+						InitialDelaySeconds: 3,
+						TimeoutSeconds:      5,
 					},
 				},
 			},
@@ -173,7 +223,7 @@ func (m *Maven) api() []world.Configuration {
 			Context:   m.Cluster.Context,
 			Namespace: "maven",
 			Name:      "api",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 	}
 }

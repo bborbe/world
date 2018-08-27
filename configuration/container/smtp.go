@@ -1,27 +1,69 @@
 package container
 
 import (
+	"context"
+
 	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
 
-type SmtpProvider struct {
+type SmtpHostname string
+
+func (s SmtpHostname) String() string {
+	return string(s)
+}
+
+func (a SmtpHostname) Validate(ctx context.Context) error {
+	if a == "" {
+		return errors.New("NamespaceName missing")
+	}
+	return nil
+}
+
+type Smtp struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
-	Hostname     string
+	Hostname     SmtpHostname
 	SmtpPassword deployer.SecretValue
 	SmtpUsername deployer.SecretValue
 }
 
-func (s *SmtpProvider) Container() deployer.DeploymentDeployerContainer {
+func (s *Smtp) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		s.Context,
+		s.Namespace,
+		s.Hostname,
+		s.SmtpUsername,
+		s.SmtpPassword,
+	)
+}
+
+func (s *Smtp) Requirements() []world.Configuration {
+	return []world.Configuration{
+		&deployer.SecretDeployer{
+			Context:   s.Context,
+			Namespace: s.Namespace,
+			Name:      "smtp",
+			Secrets: deployer.Secrets{
+				"username": s.SmtpUsername,
+				"password": s.SmtpPassword,
+			},
+		},
+	}
+}
+
+func (s *Smtp) Container() *deployer.DeploymentDeployerContainer {
 	image := docker.Image{
 		Repository: "bborbe/smtp",
 		Tag:        "1.2.1",
 	}
-	return deployer.DeploymentDeployerContainer{
+	return &deployer.DeploymentDeployerContainer{
 		Name:  "smtp",
 		Image: image,
 		Requirement: &build.Smtp{
@@ -47,7 +89,7 @@ func (s *SmtpProvider) Container() deployer.DeploymentDeployerContainer {
 		Env: []k8s.Env{
 			{
 				Name:  "HOSTNAME",
-				Value: s.Hostname,
+				Value: s.Hostname.String(),
 			},
 			{
 				Name:  "RELAY_SMTP_PORT",
@@ -86,20 +128,6 @@ func (s *SmtpProvider) Container() deployer.DeploymentDeployerContainer {
 						Name: "smtp",
 					},
 				},
-			},
-		},
-	}
-}
-
-func (s *SmtpProvider) Requirements() []world.Configuration {
-	return []world.Configuration{
-		&deployer.SecretDeployer{
-			Context:   s.Context,
-			Namespace: s.Namespace,
-			Name:      "smtp",
-			Secrets: deployer.Secrets{
-				"username": s.SmtpUsername,
-				"password": s.SmtpPassword,
 			},
 		},
 	}

@@ -21,13 +21,15 @@ func (t *OverlayWebserver) Validate(ctx context.Context) error {
 
 func (o *OverlayWebserver) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
-			Name:            "overlay-server",
-			GitRepo:         "https://github.com/bborbe/server.git",
-			SourceDirectory: "github.com/bborbe/server",
-			Package:         "github.com/bborbe/server/cmd/overlay-server",
-			Image:           o.Image,
-		}),
+		&buildConfiguration{
+			&docker.GolangBuilder{
+				Name:            "overlay-server",
+				GitRepo:         "https://github.com/bborbe/server.git",
+				SourceDirectory: "github.com/bborbe/server",
+				Package:         "github.com/bborbe/server/cmd/overlay-server",
+				Image:           o.Image,
+			},
+		},
 	}
 }
 

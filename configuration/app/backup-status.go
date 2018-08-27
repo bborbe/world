@@ -12,44 +12,38 @@ import (
 	"github.com/bborbe/world/pkg/validation"
 )
 
-type Ip struct {
+type BackupStatus struct {
 	Cluster cluster.Cluster
 	Domains k8s.IngressHosts
-	Tag     docker.Tag
 }
 
-func (t *Ip) Validate(ctx context.Context) error {
+func (t *BackupStatus) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Cluster,
 		t.Domains,
-		t.Tag,
 	)
 }
 
-func (i *Ip) Applier() (world.Applier, error) {
-	return nil, nil
-}
-
-func (i *Ip) Children() []world.Configuration {
-	image := docker.Image{
-		Repository: "bborbe/ip",
-		Tag:        i.Tag,
-	}
+func (b *BackupStatus) Children() []world.Configuration {
 	port := deployer.Port{
 		Port:     8080,
 		Name:     "http",
 		Protocol: "TCP",
 	}
+	image := docker.Image{
+		Repository: "bborbe/backup-status-client",
+		Tag:        "2.0.0",
+	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   i.Cluster.Context,
-			Namespace: "ip",
+			Context:   b.Cluster.Context,
+			Namespace: "backup",
 		},
 		&deployer.DeploymentDeployer{
-			Context:   i.Cluster.Context,
-			Namespace: "ip",
-			Name:      "ip",
+			Context:   b.Cluster.Context,
+			Namespace: "backup",
+			Name:      "status",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "RollingUpdate",
 				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
@@ -59,9 +53,9 @@ func (i *Ip) Children() []world.Configuration {
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
-					Name:  "ip",
+					Name:  "backup",
 					Image: image,
-					Requirement: &build.Ip{
+					Requirement: &build.BackupStatusClient{
 						Image: image,
 					},
 					Resources: k8s.Resources{
@@ -74,8 +68,18 @@ func (i *Ip) Children() []world.Configuration {
 							Memory: "10Mi",
 						},
 					},
-					Args:  []k8s.Arg{"-logtostderr", "-v=2"},
+					Args:  []k8s.Arg{"-logtostderr", "-v=1"},
 					Ports: []deployer.Port{port},
+					Env: []k8s.Env{
+						{
+							Name:  "PORT",
+							Value: "8080",
+						},
+						{
+							Name:  "SERVER",
+							Value: "http://backup.pn.benjamin-borbe.de:1080",
+						},
+					},
 					LivenessProbe: k8s.Probe{
 						HttpGet: k8s.HttpGet{
 							Path:   "/",
@@ -100,17 +104,21 @@ func (i *Ip) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   i.Cluster.Context,
-			Namespace: "ip",
-			Name:      "ip",
+			Context:   b.Cluster.Context,
+			Namespace: "backup",
+			Name:      "status",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   i.Cluster.Context,
-			Namespace: "ip",
-			Name:      "ip",
+			Context:   b.Cluster.Context,
+			Namespace: "backup",
+			Name:      "status",
 			Port:      "http",
-			Domains:   i.Domains,
+			Domains:   b.Domains,
 		},
 	}
+}
+
+func (b *BackupStatus) Applier() (world.Applier, error) {
+	return nil, nil
 }

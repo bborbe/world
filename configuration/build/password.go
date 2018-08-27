@@ -21,13 +21,15 @@ func (t *Password) Validate(ctx context.Context) error {
 
 func (p *Password) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.GolangBuilder{
-			Name:            "password",
-			GitRepo:         "https://github.com/bborbe/password.git",
-			SourceDirectory: "github.com/bborbe/password",
-			Package:         "github.com/bborbe/password/cmd/password-server",
-			Image:           p.Image,
-		}),
+		&buildConfiguration{
+			&docker.GolangBuilder{
+				Name:            "password",
+				GitRepo:         "https://github.com/bborbe/password.git",
+				SourceDirectory: "github.com/bborbe/password",
+				Package:         "github.com/bborbe/password/cmd/password-server",
+				Image:           p.Image,
+			},
+		},
 	}
 }
 

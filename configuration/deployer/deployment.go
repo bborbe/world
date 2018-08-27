@@ -11,38 +11,51 @@ import (
 )
 
 type Port struct {
-	Name     string
-	Port     int
-	HostPort int
-	Protocol string
+	Name     k8s.PortName
+	Port     k8s.PortNumber
+	HostPort k8s.PortNumber
+	Protocol k8s.PortProtocol
 }
 
 func (t *Port) Validate(ctx context.Context) error {
-	if t.Name == "" {
-		return errors.New("Name missing")
-	}
-	if t.Port == 0 {
-		return errors.New("Port missing")
-	}
-	if t.Protocol != "TCP" && t.Protocol != "UDP" {
-		return errors.New("Protocol missing")
-	}
-	return nil
+	return validation.Validate(
+		ctx,
+		t.Name,
+		t.Port,
+		t.Protocol,
+	)
+}
+
+type HasContainer interface {
+	Validate(ctx context.Context) error
+	Container() k8s.Container
+	Requirements() []world.Configuration
 }
 
 type DeploymentDeployer struct {
 	Context      k8s.Context
 	Namespace    k8s.NamespaceName
 	Name         k8s.MetadataName
-	Containers   []DeploymentDeployerContainer
+	Containers   []HasContainer
 	Volumes      []k8s.PodVolume
 	HostNetwork  k8s.PodHostNetwork
 	Requirements []world.Configuration
 	DnsPolicy    k8s.PodDnsPolicy
 	Labels       k8s.Labels
+	Strategy     k8s.DeploymentStrategy
 }
 
 func (w *DeploymentDeployer) Validate(ctx context.Context) error {
+	for _, container := range w.Containers {
+		if err := container.Validate(ctx); err != nil {
+			return errors.Wrap(err, "validate container failed")
+		}
+	}
+
+	if w.Strategy.Type == "" {
+		return errors.New("Deployment Strategy missing")
+	}
+
 	return validation.Validate(
 		ctx,
 		w.Context,
@@ -64,6 +77,10 @@ type DeploymentDeployerContainer struct {
 	ReadinessProbe k8s.Probe
 }
 
+func (d *DeploymentDeployerContainer) Validate(ctx context.Context) error {
+	return nil
+}
+
 func (d *DeploymentDeployer) Applier() (world.Applier, error) {
 	return &k8s.DeploymentApplier{
 		Context:    d.Context,
@@ -75,11 +92,27 @@ func (d *DeploymentDeployer) Children() []world.Configuration {
 	var result []world.Configuration
 	result = append(result, d.Requirements...)
 	for _, container := range d.Containers {
-		if container.Requirement != nil {
-			result = append(result, container.Requirement)
-		}
+		result = append(result, container.Requirements()...)
 	}
 	return result
+}
+
+func (d *DeploymentDeployer) WithRollingUpdate() *DeploymentDeployer {
+	d.Strategy = k8s.DeploymentStrategy{
+		Type: "RollingUpdate",
+		RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+			MaxSurge:       1,
+			MaxUnavailable: 1,
+		},
+	}
+	return d
+}
+
+func (d *DeploymentDeployer) WithRecreate() *DeploymentDeployer {
+	d.Strategy = k8s.DeploymentStrategy{
+		Type: "Recreate",
+	}
+	return d
 }
 
 func (d *DeploymentDeployer) deployment() k8s.Deployment {
@@ -101,13 +134,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 					"app": d.Name.String(),
 				},
 			},
-			Strategy: k8s.DeploymentStrategy{
-				Type: "RollingUpdate",
-				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
-					MaxSurge:       1,
-					MaxUnavailable: 1,
-				},
-			},
+			Strategy: d.Strategy,
 			Template: k8s.PodTemplate{
 				Metadata: k8s.Metadata{
 					Labels: k8s.Labels{
@@ -128,31 +155,39 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 func (d *DeploymentDeployer) containers() []k8s.Container {
 	var result []k8s.Container
 	for _, container := range d.Containers {
-		result = append(result, d.container(container))
+		result = append(result, container.Container())
 	}
 	return result
 }
 
-func (d *DeploymentDeployer) container(container DeploymentDeployerContainer) k8s.Container {
-	podContainer := k8s.Container{
-		Image:          k8s.Image(container.Image.String()),
-		Name:           container.Name,
-		Resources:      container.Resources,
-		VolumeMounts:   container.Mounts,
-		LivenessProbe:  container.LivenessProbe,
-		ReadinessProbe: container.ReadinessProbe,
+func (d *DeploymentDeployerContainer) Requirements() []world.Configuration {
+	var result []world.Configuration
+	if d.Requirement != nil {
+		result = append(result, d.Requirement)
 	}
-	for _, port := range container.Ports {
+	return result
+}
+
+func (d *DeploymentDeployerContainer) Container() k8s.Container {
+	podContainer := k8s.Container{
+		Image:          k8s.Image(d.Image.String()),
+		Name:           d.Name,
+		Resources:      d.Resources,
+		VolumeMounts:   d.Mounts,
+		LivenessProbe:  d.LivenessProbe,
+		ReadinessProbe: d.ReadinessProbe,
+	}
+	for _, port := range d.Ports {
 		podContainer.Ports = append(podContainer.Ports, k8s.ContainerPort{
-			Name:          k8s.ContainerPortName(port.Name),
-			ContainerPort: k8s.ContainerPortNumer(port.Port),
-			HostPort:      k8s.ContainerPortHostPort(port.HostPort),
-			Protocol:      k8s.ContainerPortProtocol(port.Protocol),
+			Name:          port.Name,
+			ContainerPort: port.Port,
+			HostPort:      port.HostPort,
+			Protocol:      port.Protocol,
 		})
 	}
-	for _, arg := range container.Args {
+	for _, arg := range d.Args {
 		podContainer.Args = append(podContainer.Args, k8s.Arg(arg))
 	}
-	podContainer.Env = container.Env
+	podContainer.Env = d.Env
 	return podContainer
 }

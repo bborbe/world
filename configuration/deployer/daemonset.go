@@ -9,8 +9,9 @@ import (
 )
 
 type DaemonSetDeployer struct {
-	Context   k8s.Context
-	DaemonSet k8s.DaemonSet
+	Context      k8s.Context
+	DaemonSet    k8s.DaemonSet
+	Requirements []world.Configuration
 }
 
 func (d *DaemonSetDeployer) Validate(ctx context.Context) error {
@@ -29,5 +30,5 @@ func (d *DaemonSetDeployer) Applier() (world.Applier, error) {
 }
 
 func (d *DaemonSetDeployer) Children() []world.Configuration {
-	return nil
+	return d.Requirements
 }

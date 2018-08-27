@@ -15,49 +15,58 @@ import (
 var _ = Describe("DeploymentDeployer", func() {
 	format.TruncatedDiff = false
 	var deploymentDeployer *DeploymentDeployer
+	var deploymentDeployerContainer *DeploymentDeployerContainer
 	BeforeEach(func() {
+		deploymentDeployerContainer = &DeploymentDeployerContainer{
+			Name: "banana",
+			Image: docker.Image{
+				Repository: "bborbe/test",
+				Tag:        "latest",
+			},
+			Ports: []Port{
+				{
+					Name:     "root",
+					Port:     1337,
+					Protocol: "TCP",
+				},
+			},
+			Args: []k8s.Arg{"-v=4"},
+			Env: []k8s.Env{
+				{
+					Name:  "a",
+					Value: "b",
+				},
+			},
+			Resources: k8s.Resources{
+				Limits: k8s.ContainerResource{
+					Cpu:    "250m",
+					Memory: "25Mi",
+				},
+				Requests: k8s.ContainerResource{
+					Cpu:    "10m",
+					Memory: "10Mi",
+				},
+			},
+			Mounts: []k8s.ContainerMount{
+				{
+					Name:     "data",
+					Path:     "/usr/share/nginx/html",
+					ReadOnly: true,
+				},
+			},
+		}
 		deploymentDeployer = &DeploymentDeployer{
 			Namespace: "banana",
 			Name:      "banana",
-			Containers: []DeploymentDeployerContainer{
-				{
-					Name: "banana",
-					Image: docker.Image{
-						Repository: "bborbe/test",
-						Tag:        "latest",
-					},
-					Ports: []Port{
-						{
-							Name:     "root",
-							Port:     1337,
-							Protocol: "TCP",
-						},
-					},
-					Args: []k8s.Arg{"-v=4"},
-					Env: []k8s.Env{
-						{
-							Name:  "a",
-							Value: "b",
-						},
-					},
-					Resources: k8s.Resources{
-						Limits: k8s.ContainerResource{
-							Cpu:    "250m",
-							Memory: "25Mi",
-						},
-						Requests: k8s.ContainerResource{
-							Cpu:    "10m",
-							Memory: "10Mi",
-						},
-					},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name:     "data",
-							Path:     "/usr/share/nginx/html",
-							ReadOnly: true,
-						},
-					},
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
 				},
+			},
+			Containers: []HasContainer{
+				deploymentDeployerContainer,
 			},
 			Volumes: []k8s.PodVolume{
 				{
@@ -72,7 +81,7 @@ var _ = Describe("DeploymentDeployer", func() {
 	})
 	Context("with hostPort", func() {
 		BeforeEach(func() {
-			deploymentDeployer.Containers[0].Ports[0].HostPort = 123
+			deploymentDeployerContainer.Ports[0].HostPort = 123
 		})
 		It("generateDeployment contains hostport", func() {
 			b := &bytes.Buffer{}

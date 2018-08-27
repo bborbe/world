@@ -8,34 +8,3 @@ type Configuration interface {
 	Applier() (Applier, error)
 	Validate(ctx context.Context) error
 }
-
-type ConfigurationBuilder struct {
-	applier  Applier
-	children []Configuration
-}
-
-func NewConfiguration() *ConfigurationBuilder {
-	return new(ConfigurationBuilder)
-}
-
-func (c *ConfigurationBuilder) AddChildConfiguration(configuration Configuration) *ConfigurationBuilder {
-	c.children = append(c.children, configuration)
-	return c
-}
-
-func (c *ConfigurationBuilder) WithApplier(applier Applier) *ConfigurationBuilder {
-	c.applier = applier
-	return c
-}
-
-func (c *ConfigurationBuilder) Children() []Configuration {
-	return c.children
-}
-
-func (c *ConfigurationBuilder) Applier() (Applier, error) {
-	return c.applier, nil
-}
-
-func (c *ConfigurationBuilder) Validate(ctx context.Context) error {
-	return nil
-}

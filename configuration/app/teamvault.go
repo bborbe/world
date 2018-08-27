@@ -14,12 +14,11 @@ import (
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
-	"github.com/pkg/errors"
 )
 
 type Teamvault struct {
 	Cluster          cluster.Cluster
-	Domains          k8s.IngressHosts
+	Domain           k8s.IngressHost
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
 	SmtpUsername     deployer.SecretValue
@@ -30,13 +29,10 @@ type Teamvault struct {
 }
 
 func (t *Teamvault) Validate(ctx context.Context) error {
-	if len(t.Domains) != 1 {
-		return errors.New("need 1 domain")
-	}
 	return validation.Validate(
 		ctx,
 		t.Cluster,
-		t.Domains,
+		t.Domain,
 		t.DatabasePassword,
 		t.SmtpPassword,
 		t.SmtpUsername,
@@ -52,12 +48,10 @@ func (t *Teamvault) Children() []world.Configuration {
 		Repository: "bborbe/teamvault",
 		Tag:        "0.7.3",
 	}
-	ports := []deployer.Port{
-		{
-			Port:     8000,
-			Protocol: "TCP",
-			Name:     "http",
-		},
+	port := deployer.Port{
+		Port:     8000,
+		Protocol: "TCP",
+		Name:     "http",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -96,14 +90,21 @@ func (t *Teamvault) Children() []world.Configuration {
 			Namespace:    "teamvault",
 			Name:         "teamvault",
 			Requirements: t.smtp().Requirements(),
-			Containers: []deployer.DeploymentDeployerContainer{
-				{
+			Strategy: k8s.DeploymentStrategy{
+				Type: "RollingUpdate",
+				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+					MaxSurge:       1,
+					MaxUnavailable: 1,
+				},
+			},
+			Containers: []deployer.HasContainer{
+				&deployer.DeploymentDeployerContainer{
 					Name:  "teamvault",
 					Image: image,
 					Requirement: &build.Teamvault{
 						Image: image,
 					},
-					Ports: ports,
+					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "2000m",
@@ -117,7 +118,7 @@ func (t *Teamvault) Children() []world.Configuration {
 					Env: []k8s.Env{
 						{
 							Name:  "BASE_URL",
-							Value: fmt.Sprintf("https://%s", t.Domains[0]),
+							Value: fmt.Sprintf("https://%s", t.Domain),
 						},
 						{
 							Name:  "DEBUG",
@@ -261,6 +262,26 @@ func (t *Teamvault) Children() []world.Configuration {
 							Value: "sn",
 						},
 					},
+					LivenessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
+						},
+						FailureThreshold:    3,
+						InitialDelaySeconds: 30,
+						PeriodSeconds:       10,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      5,
+					},
+					ReadinessProbe: k8s.Probe{
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
+						},
+						FailureThreshold:    1,
+						InitialDelaySeconds: 10,
+						PeriodSeconds:       10,
+						SuccessThreshold:    1,
+						TimeoutSeconds:      5,
+					},
 				},
 				t.smtp().Container(),
 			},
@@ -269,21 +290,21 @@ func (t *Teamvault) Children() []world.Configuration {
 			Context:   t.Cluster.Context,
 			Namespace: "teamvault",
 			Name:      "teamvault",
-			Ports:     ports,
+			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   t.Cluster.Context,
 			Namespace: "teamvault",
 			Name:      "teamvault",
 			Port:      "http",
-			Domains:   t.Domains,
+			Domains:   k8s.IngressHosts{t.Domain},
 		},
 	}
 }
 
-func (t *Teamvault) smtp() *container.SmtpProvider {
-	return &container.SmtpProvider{
-		Hostname:     t.Domains[0].String(),
+func (t *Teamvault) smtp() *container.Smtp {
+	return &container.Smtp{
+		Hostname:     container.SmtpHostname(t.Domain.String()),
 		Context:      t.Cluster.Context,
 		Namespace:    "teamvault",
 		SmtpPassword: t.SmtpPassword,

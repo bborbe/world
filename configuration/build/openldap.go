@@ -14,11 +14,13 @@ type Openldap struct {
 
 func (o *Openldap) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguration().WithApplier(&docker.Builder{
-			GitRepo:   "https://github.com/bborbe/openldap.git",
-			Image:     o.Image,
-			GitBranch: docker.GitBranch(o.Image.Tag),
-		}),
+		&buildConfiguration{
+			&docker.Builder{
+				GitRepo:   "https://github.com/bborbe/openldap.git",
+				Image:     o.Image,
+				GitBranch: docker.GitBranch(o.Image.Tag),
+			},
+		},
 	}
 }
 
