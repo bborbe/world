@@ -12,28 +12,27 @@ import (
 	"github.com/bborbe/world/pkg/validation"
 )
 
-type BackupStatus struct {
+type BackupServer struct {
 	Cluster cluster.Cluster
-	Domains k8s.IngressHosts
 }
 
-func (t *BackupStatus) Validate(ctx context.Context) error {
+func (t *BackupServer) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Cluster,
-		t.Domains,
 	)
 }
 
-func (b *BackupStatus) Children() []world.Configuration {
-	port := deployer.Port{
-		Port:     8080,
-		Name:     "http",
-		Protocol: "TCP",
-	}
+func (b *BackupServer) Children() []world.Configuration {
 	image := docker.Image{
-		Repository: "bborbe/backup-status-client",
-		Tag:        "2.0.0",
+		Repository: "bborbe/backup-rsync-server",
+		Tag:        "1.1.0",
+	}
+	port := deployer.Port{
+		Port:     22,
+		HostPort: 2222,
+		Name:     "ssh",
+		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
@@ -43,7 +42,7 @@ func (b *BackupStatus) Children() []world.Configuration {
 		&deployer.DeploymentDeployer{
 			Context:   b.Cluster.Context,
 			Namespace: "backup",
-			Name:      "status",
+			Name:      "rsync",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "RollingUpdate",
 				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
@@ -55,70 +54,72 @@ func (b *BackupStatus) Children() []world.Configuration {
 				&deployer.DeploymentDeployerContainer{
 					Name:  "backup",
 					Image: image,
-					Requirement: &build.BackupStatusClient{
+					Requirement: &build.BackupRsyncServer{
 						Image: image,
 					},
+					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
-							Cpu:    "100m",
-							Memory: "50Mi",
+							Cpu:    "1000m",
+							Memory: "200Mi",
 						},
 						Requests: k8s.ContainerResource{
-							Cpu:    "10m",
-							Memory: "10Mi",
+							Cpu:    "250m",
+							Memory: "100Mi",
 						},
 					},
-					Args:  []k8s.Arg{"-logtostderr", "-v=1"},
-					Ports: []deployer.Port{port},
-					Env: []k8s.Env{
+					Mounts: []k8s.ContainerMount{
 						{
-							Name:  "PORT",
-							Value: "8080",
+							Name:     "backup",
+							Path:     "/data",
+							ReadOnly: true,
 						},
 						{
-							Name:  "SERVER",
-							Value: "http://backup.pn.benjamin-borbe.de:1080",
+							Name:     "ssh",
+							Path:     "/etc/ssh",
+							ReadOnly: true,
 						},
 					},
 					LivenessProbe: k8s.Probe{
-						HttpGet: k8s.HttpGet{
-							Path:   "/",
-							Port:   port.Port,
-							Scheme: "HTTP",
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
 						},
 						InitialDelaySeconds: 60,
 						SuccessThreshold:    1,
 						FailureThreshold:    5,
 						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
 					},
 					ReadinessProbe: k8s.Probe{
-						HttpGet: k8s.HttpGet{
-							Path:   "/",
-							Port:   port.Port,
-							Scheme: "HTTP",
+						TcpSocket: k8s.TcpSocket{
+							Port: port.Port,
 						},
 						InitialDelaySeconds: 3,
 						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
+				},
+			},
+			Volumes: []k8s.PodVolume{
+				{
+					Name: "backup",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data",
+						Server: b.Cluster.NfsServer,
+					},
+				},
+				{
+					Name: "ssh",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/backup-ssh",
+						Server: b.Cluster.NfsServer,
 					},
 				},
 			},
 		},
-		&deployer.ServiceDeployer{
-			Context:   b.Cluster.Context,
-			Namespace: "backup",
-			Name:      "status",
-			Ports:     []deployer.Port{port},
-		},
-		&deployer.IngressDeployer{
-			Context:   b.Cluster.Context,
-			Namespace: "backup",
-			Name:      "status",
-			Port:      "http",
-			Domains:   b.Domains,
-		},
 	}
 }
 
-func (b *BackupStatus) Applier() (world.Applier, error) {
+func (b *BackupServer) Applier() (world.Applier, error) {
 	return nil, nil
 }

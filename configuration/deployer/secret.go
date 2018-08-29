@@ -40,6 +40,29 @@ func (s *SecretFromTeamvaultUser) Value() ([]byte, error) {
 	return []byte(teamvaultUsername), nil
 }
 
+type SecretFromTeamvaultFile struct {
+	TeamvaultConnector teamvault.Connector
+	TeamvaultKey       teamvault.Key
+}
+
+func (s SecretFromTeamvaultFile) Validate(ctx context.Context) error {
+	if s.TeamvaultConnector == nil {
+		return errors.New("TeamvaultConnector missing")
+	}
+	if s.TeamvaultKey == "" {
+		return errors.New("TeamvaultKey missing")
+	}
+	return nil
+}
+
+func (s *SecretFromTeamvaultFile) Value() ([]byte, error) {
+	teamvaultFile, err := s.TeamvaultConnector.File(s.TeamvaultKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "get teamvault filename failed")
+	}
+	return teamvaultFile.Content()
+}
+
 type SecretFromTeamvaultHtpasswd struct {
 	TeamvaultConnector teamvault.Connector
 	TeamvaultKey       teamvault.Key

@@ -51,6 +51,62 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 	return map[ClusterName]map[AppName]world.Configuration{
 		"netcup": w.netcup(),
 		"sun":    w.sun(),
+		"fire":   w.fire(),
+		"nuke":   w.nuke(),
+	}
+}
+
+func (w *World) fire() map[AppName]world.Configuration {
+	fire := cluster.Cluster{
+		Context:   "fire",
+		NfsServer: "172.16.22.1",
+	}
+	return map[AppName]world.Configuration{
+		"dns": &app.Dns{
+			Cluster: fire,
+		},
+		"traefik": &app.Traefik{
+			Cluster: fire,
+			Domains: k8s.IngressHosts{
+				"traefik.fire.hm.benjamin-borbe.de",
+			},
+		},
+		"backup": &app.BackupClient{
+			Cluster: fire,
+			Domains: k8s.IngressHosts{
+				"backup.fire.hm.benjamin-borbe.de",
+			},
+			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
+			BackupSshKey:    w.TeamvaultSecrets.File("8q1bJw"),
+			GitRepoUrl:      "https://bborbereadonly@bitbucket.org/bborbe/backup_config_fire.git",
+		},
+	}
+}
+
+func (w *World) nuke() map[AppName]world.Configuration {
+	nuke := cluster.Cluster{
+		Context:   "nuke",
+		NfsServer: "172.16.24.1",
+	}
+	return map[AppName]world.Configuration{
+		"dns": &app.Dns{
+			Cluster: nuke,
+		},
+		"traefik": &app.Traefik{
+			Cluster: nuke,
+			Domains: k8s.IngressHosts{
+				"traefik.nuke.hm.benjamin-borbe.de",
+			},
+		},
+		"backup": &app.BackupClient{
+			Cluster: nuke,
+			Domains: k8s.IngressHosts{
+				"backup.nuke.hm.benjamin-borbe.de",
+			},
+			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
+			BackupSshKey:    w.TeamvaultSecrets.File("8q1bJw"),
+			GitRepoUrl:      "https://bborbereadonly@bitbucket.org/bborbe/backup_config_nuke.git",
+		},
 	}
 }
 
@@ -60,6 +116,9 @@ func (w *World) sun() map[AppName]world.Configuration {
 		NfsServer: "172.16.72.1",
 	}
 	return map[AppName]world.Configuration{
+		"dns": &app.Dns{
+			Cluster: sun,
+		},
 		"monitoring": &app.Monitoring{
 			Cluster:         sun,
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
@@ -70,14 +129,33 @@ func (w *World) sun() map[AppName]world.Configuration {
 					Subject:    "Monitoring Result: Netcup",
 					GitRepoUrl: "https://bborbereadonly@bitbucket.org/bborbe/monitoring_nc.git",
 				},
+				{
+					Name:       "pn-intern",
+					Subject:    "Monitoring Result: PN-Intern",
+					GitRepoUrl: "https://bborbereadonly@bitbucket.org/bborbe/monitoring_pn_intern.git",
+				},
+				{
+					Name:       "hm",
+					Subject:    "Monitoring Result: HM",
+					GitRepoUrl: "https://bborbereadonly@bitbucket.org/bborbe/monitoring_hm.git",
+				},
 			},
 		},
-		//"backupstatus": &app.BackupStatus{
-		//	Cluster: sun,
-		//	Domains: k8s.IngressHosts{
-		//		"backup.sun.pn.benjamin-borbe.de",
-		//	},
-		//},
+		"traefik": &app.Traefik{
+			Cluster: sun,
+			Domains: k8s.IngressHosts{
+				"traefik.sun.pn.benjamin-borbe.de",
+			},
+		},
+		"backup": &app.BackupClient{
+			Cluster: sun,
+			Domains: k8s.IngressHosts{
+				"backup.sun.pn.benjamin-borbe.de",
+			},
+			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
+			BackupSshKey:    w.TeamvaultSecrets.File("8q1bJw"),
+			GitRepoUrl:      "https://bborbereadonly@bitbucket.org/bborbe/backup_config_sun.git",
+		},
 	}
 }
 
@@ -95,6 +173,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"traefik.benjamin-borbe.de",
 			},
+			SSL: true,
 		},
 		"prometheus": &app.Prometheus{
 			Cluster:            netcup,
@@ -157,7 +236,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
 		},
-		"backup": &app.BackupClient{
+		"backup": &app.BackupServer{
 			Cluster: netcup,
 		},
 		"poste": &app.Poste{

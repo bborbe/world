@@ -61,16 +61,21 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
+		&deployer.ConfigMapDeployer{
+			Context:   p.Cluster.Context,
+			Namespace: "kube-system",
+			Name:      "prometheus",
+			ConfigMapData: k8s.ConfigMapData{
+				"prometheus.yaml": prometheusConfig,
+				"alert.rules":     prometheusAlertRulesConfig,
+			},
+		},
 		&deployer.DeploymentDeployer{
 			Context:   p.Cluster.Context,
 			Namespace: "kube-system",
 			Name:      "prometheus",
 			Strategy: k8s.DeploymentStrategy{
-				Type: "RollingUpdate",
-				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
-					MaxSurge:       1,
-					MaxUnavailable: 1,
-				},
+				Type: "Recreate",
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
@@ -143,15 +148,23 @@ func (p *Prometheus) prometheus() []world.Configuration {
 					LdapUsername: p.LdapUsername,
 					LdapPassword: p.LdapPassword,
 				},
-				&container.GitSync{
-					MountName:  "config",
-					GitRepoUrl: "https://github.com/bborbe/prometheus-nc.git",
-				},
 			},
 			Volumes: []k8s.PodVolume{
 				{
-					Name:     "config",
-					EmptyDir: &k8s.PodVolumeEmptyDir{},
+					Name: "config",
+					ConfigMap: k8s.PodVolumeConfigMap{
+						Name: "prometheus",
+						Items: []k8s.PodConfigMapItem{
+							{
+								Key:  "prometheus.yaml",
+								Path: "prometheus.yaml",
+							},
+							{
+								Key:  "alert.rules",
+								Path: "alert.rules",
+							},
+						},
+					},
 				},
 				{
 					Name: "prometheus",
@@ -203,6 +216,14 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
+		&deployer.ConfigMapDeployer{
+			Context:   p.Cluster.Context,
+			Namespace: "kube-system",
+			Name:      "prometheus-alertmanager",
+			ConfigMapData: k8s.ConfigMapData{
+				"alertmanager.yaml": prometheusAlertmanagerConfig,
+			},
+		},
 		&deployer.DeploymentDeployer{
 			Context:   p.Cluster.Context,
 			Namespace: "kube-system",
@@ -278,10 +299,6 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					LdapUsername: p.LdapUsername,
 					LdapPassword: p.LdapPassword,
 				},
-				&container.GitSync{
-					MountName:  "config",
-					GitRepoUrl: "https://github.com/bborbe/prometheus-nc.git",
-				},
 			},
 			Volumes: []k8s.PodVolume{
 				{
@@ -289,8 +306,16 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					EmptyDir: &k8s.PodVolumeEmptyDir{},
 				},
 				{
-					Name:     "config",
-					EmptyDir: &k8s.PodVolumeEmptyDir{},
+					Name: "config",
+					ConfigMap: k8s.PodVolumeConfigMap{
+						Name: "prometheus-alertmanager",
+						Items: []k8s.PodConfigMapItem{
+							{
+								Key:  "alertmanager.yaml",
+								Path: "alertmanager.yaml",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -397,3 +422,329 @@ func (p *Prometheus) nodeExporter() []world.Configuration {
 func (p *Prometheus) Applier() (world.Applier, error) {
 	return nil, nil
 }
+
+const prometheusAlertRulesConfig = `
+# Alert for any instance that is unreachable for >5 minutes.
+ALERT InstanceDown
+	IF up == 0
+	FOR 5m
+	LABELS {
+		severity = "critical",
+	}
+	ANNOTATIONS {
+		summary = "Instance {{ $labels.instance }} down",
+		description = "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.",
+	}
+
+# Alert disk space below 20% free
+ALERT DiskOutOfSpace
+	IF (max(diskstatus_bytesfree / diskstatus_bytestotal) by (app)) < 0.2
+	FOR 1m
+	LABELS {
+		severity = "warning",
+	}
+	ANNOTATIONS {
+		summary = "Disk of {{ $labels.app }} space",
+		description = "{{ $labels.app }} is below 20% free space for more than 1 minutes.",
+	}
+
+# Alert disk space below 10% free
+ALERT DiskOutOfSpace
+	IF (max(diskstatus_bytesfree / diskstatus_bytestotal) by (app)) < 0.1
+	FOR 1m
+	LABELS {
+		severity = "critical",
+	}
+	ANNOTATIONS {
+		summary = "Disk of {{ $labels.app }} space",
+		description = "{{ $labels.app }} is below 10% free space for more than 1 minutes.",
+	}
+
+# Alert disk space below 20% free
+ALERT DiskOutOfInodes
+	IF (max(diskstatus_inodesfree / diskstatus_inodestotal) by (app)) < 0.2
+	FOR 1m
+	LABELS {
+		severity = "warning",
+	}
+	ANNOTATIONS {
+		summary = "Disk of {{ $labels.app }} inodes",
+		description = "{{ $labels.app }} is below 20% free inodes for more than 1 minutes.",
+	}
+
+# Alert disk space below 10% free
+ALERT DiskOutOfInodes
+	IF (max(diskstatus_inodesfree / diskstatus_inodestotal) by (app)) < 0.1
+	FOR 1m
+	LABELS {
+		severity = "critical",
+	}
+	ANNOTATIONS {
+		summary = "Disk of {{ $labels.app }} inodes",
+		description = "{{ $labels.app }} is below 10% free inodes for more than 1 minutes.",
+	}
+`
+
+const prometheusAlertmanagerConfig = `
+global:
+  resolve_timeout: 1m
+  smtp_smarthost: 'mail.benjamin-borbe.de:25'
+  smtp_from: 'alertmanager@rocketnews.de'
+  smtp_require_tls: false
+
+# The directory from which notification templates are read.
+templates:
+- '/etc/alertmanager/template/*.tmpl'
+
+# The root route on which each incoming alert enters.
+route:
+  # The labels by which incoming alerts are grouped together. For example,
+  # multiple alerts coming in for cluster=A and alertname=LatencyHigh would
+  # be batched into a single group.
+  group_by: ['alertname', 'cluster', 'service']
+
+  # When a new group of alerts is created by an incoming alert, wait at
+  # least 'group_wait' to send the initial notification.
+  # This way ensures that you get multiple alerts for the same group that start
+  # firing shortly after another are batched together on the first
+  # notification.
+  group_wait: 30s
+
+  # When the first notification was sent, wait 'group_interval' to send a batch
+  # of new alerts that started firing for that group.
+  group_interval: 5m
+
+  # If an alert has successfully been sent, wait 'repeat_interval' to
+  # resend them.
+  repeat_interval: 3h
+
+  # A default receiver
+  receiver: nc-monitoring
+
+# Inhibition rules allow to mute a set of alerts given that another alert is
+# firing.
+# We use this to mute any warning-level notifications if the same alert is
+# already critical.
+inhibit_rules:
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  # Apply inhibition if the alertname is the same.
+  equal: ['alertname', 'cluster', 'service']
+
+
+receivers:
+- name: 'nc-monitoring'
+  email_configs:
+  - to: 'bborbe@rocketnews.de'
+`
+
+const prometheusConfig = `
+global:
+  # How frequently to scrape targets by default.
+  scrape_interval: 1m
+
+  # How long until a scrape request times out.
+  scrape_timeout: 10s
+
+  # How frequently to evaluate rules.
+  evaluation_interval: 1m
+
+  # The labels to add to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    region: 'nc'
+
+# Rule files specifies a list of globs. Rules and alerts are read from
+# all matching files.
+rule_files:
+- 'alert.rules'
+
+# A scrape configuration for running Prometheus on a Kubernetes cluster.
+# This uses separate scrape configs for cluster components (i.e. API server, node)
+# and services to allow each to use different authentication configs.
+#
+# Kubernetes labels will be added as Prometheus labels on metrics via the
+# 'labelmap' relabeling action.
+
+# Scrape config for API servers.
+scrape_configs:
+- job_name: 'kubernetes-apiservers'
+
+  # Default to scraping over https. If required, just disable this or change to
+  # 'http'.
+  scheme: https
+
+  # This TLS & bearer token file config is used to connect to the actual scrape
+  # endpoints for cluster components. This is separate to discovery auth
+  # configuration ('in_cluster' below) because discovery & scraping are two
+  # separate concerns in Prometheus.
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    # If your node certificates are self-signed or use a different CA to the
+    # master CA, then disable certificate verification below. Note that
+    # certificate verification is an integral part of a secure infrastructure
+    # so this should only be disabled in a controlled environment. You can
+    # disable certificate verification by uncommenting the line below.
+    #
+    insecure_skip_verify: true
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+  # Keep only the default/kubernetes service endpoints for the https port. This
+  # will add targets for each API server which Kubernetes adds an endpoint to
+  # the default/kubernetes service.
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+    action: keep
+    regex: default;kubernetes;https
+
+- job_name: 'kubernetes-nodes'
+
+  # Default to scraping over https. If required, just disable this or change to
+  # 'http'.
+  scheme: https
+
+
+
+  # This TLS & bearer token file config is used to connect to the actual scrape
+  # endpoints for cluster components. This is separate to discovery auth
+  # configuration ('in_cluster' below) because discovery & scraping are two
+  # separate concerns in Prometheus.
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    # If your node certificates are self-signed or use a different CA to the
+    # master CA, then disable certificate verification below. Note that
+    # certificate verification is an integral part of a secure infrastructure
+    # so this should only be disabled in a controlled environment. You can
+    # disable certificate verification by uncommenting the line below.
+    #
+    insecure_skip_verify: true
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+  kubernetes_sd_configs:
+  - role: node
+
+  relabel_configs:
+  - action: labelmap
+    regex: __meta_kubernetes_node_label_(.+)
+  - source_labels: [__address__]
+    action: replace
+    target_label: __address__
+    regex: ([^:;]+):(\d+)
+    replacement: ${1}:10255
+  - source_labels: [__scheme__]
+    action: replace
+    target_label: __scheme__
+    regex: https
+    replacement: http
+
+# Scrape config for service endpoints.
+#
+# The relabeling allows the actual service scrape endpoint to be configured
+# via the following annotations:
+#
+# * 'prometheus.io/scrape': Only scrape services that have a value of 'true'
+# * 'prometheus.io/scheme': If the metrics endpoint is secured then you will need
+# to set this to 'https' & most likely set the 'tls_config' of the scrape config.
+# * 'prometheus.io/path': If the metrics path is not '/metrics' override this.
+# * 'prometheus.io/port': If the metrics are exposed on a different port to the
+# service then set this appropriately.
+- job_name: 'kubernetes-service-endpoints'
+
+  kubernetes_sd_configs:
+  - role: endpoints
+
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+    action: keep
+    regex: true
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+    action: replace
+    target_label: __scheme__
+    regex: (https?)
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+    action: replace
+    target_label: __metrics_path__
+    regex: (.+)
+  - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+    action: replace
+    target_label: __address__
+    regex: (.+)(?::\d+);(\d+)
+    replacement: $1:$2
+  - action: labelmap
+    regex: __meta_kubernetes_service_label_(.+)
+  - source_labels: [__meta_kubernetes_service_namespace]
+    action: replace
+    target_label: kubernetes_namespace
+  - source_labels: [__meta_kubernetes_service_name]
+    action: replace
+    target_label: kubernetes_name
+
+# Example scrape config for probing services via the Blackbox Exporter.
+#
+# The relabeling allows the actual service scrape endpoint to be configured
+# via the following annotations:
+#
+# * 'prometheus.io/probe': Only probe services that have a value of 'true'
+- job_name: 'kubernetes-services'
+
+  metrics_path: /probe
+  params:
+    module: [http_2xx]
+
+  kubernetes_sd_configs:
+  - role: service
+
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probe]
+    action: keep
+    regex: true
+  - source_labels: [__address__]
+    target_label: __param_target
+  - target_label: __address__
+    replacement: blackbox
+  - source_labels: [__param_target]
+    target_label: instance
+  - action: labelmap
+    regex: __meta_kubernetes_service_label_(.+)
+  - source_labels: [__meta_kubernetes_service_namespace]
+    target_label: kubernetes_namespace
+  - source_labels: [__meta_kubernetes_service_name]
+    target_label: kubernetes_name
+
+# Example scrape config for pods
+#
+# The relabeling allows the actual pod scrape endpoint to be configured via the
+# following annotations:
+#
+# * 'prometheus.io/scrape': Only scrape pods that have a value of 'true'
+# * 'prometheus.io/path': If the metrics path is not '/metrics' override this.
+# * 'prometheus.io/port': Scrape the pod on the indicated port instead of the default of '9102'.
+- job_name: 'kubernetes-pods'
+
+  kubernetes_sd_configs:
+  - role: pod
+
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+    action: keep
+    regex: true
+  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+    action: replace
+    target_label: __metrics_path__
+    regex: (.+)
+  - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+    action: replace
+    regex: (.+):(?:\d+);(\d+)
+    replacement: ${1}:${2}
+    target_label: __address__
+  - action: labelmap
+    regex: __meta_kubernetes_pod_label_(.+)
+  - source_labels: [__meta_kubernetes_pod_namespace]
+    action: replace
+    target_label: kubernetes_namespace
+  - source_labels: [__meta_kubernetes_pod_name]
+    action: replace
+    target_label: kubernetes_pod_name
+`

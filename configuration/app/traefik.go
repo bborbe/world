@@ -15,6 +15,7 @@ import (
 type Traefik struct {
 	Cluster cluster.Cluster
 	Domains k8s.IngressHosts
+	SSL     bool
 }
 
 func (t *Traefik) Validate(ctx context.Context) error {
@@ -36,7 +37,6 @@ func (t *Traefik) Children() []world.Configuration {
 		Name:     "http",
 		Protocol: "TCP",
 	}
-
 	httpsPort := deployer.Port{
 		Port:     443,
 		HostPort: 443,
@@ -50,20 +50,37 @@ func (t *Traefik) Children() []world.Configuration {
 	}
 	ports := []deployer.Port{
 		httpPort,
-		httpsPort,
 		dashboardPort,
+	}
+	if t.SSL {
+		ports = append(ports, httpsPort)
 	}
 	exporterImage := docker.Image{
 		Repository: "bborbe/traefik-certificate-extractor",
 		Tag:        "latest",
 	}
-	return []world.Configuration{
+	var acmeVolume k8s.PodVolume
+	if t.SSL {
+		acmeVolume = k8s.PodVolume{
+			Name: "acme",
+			Nfs: k8s.PodVolumeNfs{
+				Path:   "/data/traefik-acme",
+				Server: t.Cluster.NfsServer,
+			},
+		}
+	} else {
+		acmeVolume = k8s.PodVolume{
+			Name:     "acme",
+			EmptyDir: &k8s.PodVolumeEmptyDir{},
+		}
+	}
+	result := []world.Configuration{
 		&deployer.ConfigMapDeployer{
 			Context:   t.Cluster.Context,
 			Namespace: "kube-system",
 			Name:      "traefik",
 			ConfigMapData: k8s.ConfigMapData{
-				"config": traefikConfig,
+				"config": t.traefikConfig(),
 			},
 		},
 		&deployer.DeploymentDeployer{
@@ -141,16 +158,31 @@ func (t *Traefik) Children() []world.Configuration {
 						},
 					},
 				},
-				{
-					Name: "acme",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/traefik-acme",
-						Server: t.Cluster.NfsServer,
-					},
-				},
+				acmeVolume,
 			},
 		},
-		&deployer.DeploymentDeployer{
+		&deployer.ServiceDeployer{
+			Context:   t.Cluster.Context,
+			Namespace: "kube-system",
+			Name:      "traefik",
+			Ports:     ports,
+			Annotations: k8s.Annotations{
+				"prometheus.io/path":   "/metrics",
+				"prometheus.io/port":   "8080",
+				"prometheus.io/scheme": "http",
+				"prometheus.io/scrape": "true",
+			},
+		},
+		&deployer.IngressDeployer{
+			Context:   t.Cluster.Context,
+			Namespace: "kube-system",
+			Name:      "traefik",
+			Port:      "dashboard",
+			Domains:   t.Domains,
+		},
+	}
+	if t.SSL {
+		result = append(result, &deployer.DeploymentDeployer{
 			Context:   t.Cluster.Context,
 			Namespace: "kube-system",
 			Name:      "traefik-extract",
@@ -207,52 +239,41 @@ func (t *Traefik) Children() []world.Configuration {
 					},
 				},
 			},
-		},
-		&deployer.ServiceDeployer{
-			Context:   t.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "traefik",
-			Ports:     ports,
-			Annotations: k8s.Annotations{
-				"prometheus.io/path":   "/metrics",
-				"prometheus.io/port":   "8080",
-				"prometheus.io/scheme": "http",
-				"prometheus.io/scrape": "true",
-			},
-		},
-		&deployer.IngressDeployer{
-			Context:   t.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "traefik",
-			Port:      "dashboard",
-			Domains:   t.Domains,
-		},
+		})
 	}
+	return result
 }
 
 func (t *Traefik) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-const traefikConfig = `graceTimeOut = 10
+func (t *Traefik) traefikConfig() string {
+	if t.SSL {
+		return traefikConfigWithHttps
+	}
+	return traefikConfigWithoutHttps
+}
+
+const traefikConfigWithHttps = `graceTimeOut = 10
 debug = false
 logLevel = "INFO"
 defaultEntryPoints = ["http","https"]
 [entryPoints]
-  [entryPoints.http]
-  address = ":80"
-  compress = false
-    [entryPoints.http.redirect]
-      entryPoint = "https"
-  [entryPoints.https]
-  address = ":443"
-  compress = false
-    [entryPoints.https.tls]
-    cipherSuites = [
-      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-    ]
+[entryPoints.http]
+address = ":80"
+compress = false
+[entryPoints.http.redirect]
+entryPoint = "https"
+[entryPoints.https]
+address = ":443"
+compress = false
+[entryPoints.https.tls]
+cipherSuites = [
+"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+"TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+]
 [kubernetes]
 [web]
 address = ":8080"
@@ -264,5 +285,22 @@ entryPoint = "https"
 onHostRule = true
 acmeLogging = true
 [acme.httpChallenge]
-  entryPoint = "http"
+entryPoint = "http"
+`
+
+const traefikConfigWithoutHttps = `graceTimeOut = 10
+debug = false
+logLevel = "INFO"
+defaultEntryPoints = ["http"]
+[entryPoints]
+[entryPoints.http]
+address = ":80"
+compress = false
+[kubernetes]
+[web]
+address = ":8080"
+[web.metrics.prometheus]
+email = "bborbe@rocketnews.de"
+entryPoint = "http"
+onHostRule = true
 `

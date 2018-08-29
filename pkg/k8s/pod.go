@@ -65,13 +65,16 @@ type PodVolumeSecret struct {
 type PodSecretName string
 
 type PodSecretItem struct {
-	Key  PodSecretItemKey  `yaml:"key"`
-	Path PodSecretItemPath `yaml:"path"`
+	Key  PodSecretItemKey  `yaml:"key,omitempty"`
+	Mode PodSecretItemMode `yaml:"mode,omitempty"`
+	Path PodSecretItemPath `yaml:"path,omitempty"`
 }
 
 type PodSecretItemKey string
 
 type PodSecretItemPath string
+
+type PodSecretItemMode int
 
 type PodVolumeConfigMap struct {
 	Name  PodConfigMapName   `yaml:"name"`
