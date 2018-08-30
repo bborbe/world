@@ -26,7 +26,7 @@ func (i *Monitoring) Children() []world.Configuration {
 				Name:            "monitoring",
 				GitRepo:         "https://github.com/bborbe/monitoring.git",
 				SourceDirectory: "github.com/bborbe/monitoring",
-				Package:         "github.com/bborbe/monitoring/bin/monitoring_server",
+				Package:         "github.com/bborbe/monitoring/cmd/monitoring-server",
 				Image:           i.Image,
 			},
 		},

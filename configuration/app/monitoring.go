@@ -102,7 +102,7 @@ func (m *MonitoringDeployment) Validate(ctx context.Context) error {
 func (m *MonitoringDeployment) Children() []world.Configuration {
 	monitoringImage := docker.Image{
 		Repository: "bborbe/monitoring",
-		Tag:        "1.2.0",
+		Tag:        "2.0.0",
 	}
 	mountName := k8s.MountName("data")
 	return []world.Configuration{
