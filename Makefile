@@ -2,8 +2,7 @@
 all: test install
 
 install:
-	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-apply/*.go
-	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install cmd/world-validate/*.go
+	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install .
 
 test:
 	go test -cover -race $(shell go list ./... | grep -v /vendor/)

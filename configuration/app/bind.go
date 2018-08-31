@@ -3,7 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/world"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"

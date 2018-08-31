@@ -3,12 +3,12 @@ package configuration
 import (
 	"context"
 
-	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
 )
 
 type AppName string
@@ -302,7 +302,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"now": &app.Now{
 			Cluster: netcup,
-			Tag:     "1.0.1",
+			Tag:     "1.1.0",
 			Domains: k8s.IngressHosts{
 				"now.benjamin-borbe.de",
 			},

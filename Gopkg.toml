@@ -27,10 +27,6 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/bborbe/flagenv"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/bborbe/http"
 
 [[constraint]]
@@ -39,7 +35,7 @@
 
 [[constraint]]
   name = "github.com/bborbe/teamvault-utils"
-  version = "3.1.1"
+  version = "3.3.0"
 
 [[constraint]]
   name = "github.com/go-yaml/yaml"
@@ -61,10 +57,10 @@
   name = "github.com/pkg/errors"
   version = "0.8.0"
 
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.3"
+
 [prune]
   go-tests = true
   unused-packages = true
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/foomo/htpasswd"

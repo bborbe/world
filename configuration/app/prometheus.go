@@ -5,7 +5,6 @@ import (
 
 	"fmt"
 
-	"github.com/bborbe/world"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/container"
@@ -13,6 +12,7 @@ import (
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
 )
 
 type Prometheus struct {

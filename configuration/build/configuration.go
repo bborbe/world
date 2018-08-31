@@ -3,7 +3,7 @@ package build
 import (
 	"context"
 
-	"github.com/bborbe/world"
+	"github.com/bborbe/world/pkg/world"
 )
 
 type buildConfiguration struct {

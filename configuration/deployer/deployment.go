@@ -3,10 +3,10 @@ package deployer
 import (
 	"context"
 
-	"github.com/bborbe/world"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
 	"github.com/pkg/errors"
 )
 
