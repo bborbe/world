@@ -2,6 +2,8 @@ package k8s
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 
 	"strconv"
 
@@ -14,24 +16,32 @@ func (p PortName) Validate(ctx context.Context) error {
 	if p == "" {
 		return errors.New("portName empty")
 	}
+	portNameRe := regexp.MustCompile("^[a-z0-9-]+$")
+	if !portNameRe.MatchString(p.String()) {
+		return fmt.Errorf("portName %s invalid", p.String())
+	}
 	return nil
+}
+
+func (p PortName) String() string {
+	return string(p)
 }
 
 type PortNumber int
 
-func (a PortNumber) Validate(ctx context.Context) error {
-	if a == 0 {
+func (p PortNumber) Validate(ctx context.Context) error {
+	if p == 0 {
 		return errors.New("PortNumber missing")
 	}
 	return nil
 }
 
-func (c PortNumber) Int() int {
-	return int(c)
+func (p PortNumber) Int() int {
+	return int(p)
 }
 
-func (c PortNumber) String() string {
-	return strconv.Itoa(c.Int())
+func (p PortNumber) String() string {
+	return strconv.Itoa(p.Int())
 }
 
 type PortProtocol string

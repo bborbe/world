@@ -66,6 +66,7 @@ func (w *DeploymentDeployer) Validate(ctx context.Context) error {
 
 type DeploymentDeployerContainer struct {
 	Name           k8s.ContainerName
+	Command        []k8s.Command
 	Args           []k8s.Arg
 	Ports          []Port
 	Env            []k8s.Env
@@ -176,6 +177,9 @@ func (d *DeploymentDeployerContainer) Container() k8s.Container {
 		VolumeMounts:   d.Mounts,
 		LivenessProbe:  d.LivenessProbe,
 		ReadinessProbe: d.ReadinessProbe,
+		Args:           d.Args,
+		Command:        d.Command,
+		Env:            d.Env,
 	}
 	for _, port := range d.Ports {
 		podContainer.Ports = append(podContainer.Ports, k8s.ContainerPort{
@@ -185,9 +189,5 @@ func (d *DeploymentDeployerContainer) Container() k8s.Container {
 			Protocol:      port.Protocol,
 		})
 	}
-	for _, arg := range d.Args {
-		podContainer.Args = append(podContainer.Args, k8s.Arg(arg))
-	}
-	podContainer.Env = d.Env
 	return podContainer
 }

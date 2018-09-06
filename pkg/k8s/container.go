@@ -52,6 +52,8 @@ type ContainerMount struct {
 
 type Arg string
 
+type Command string
+
 type Env struct {
 	Name      string    `yaml:"name"`
 	Value     string    `yaml:"value,omitempty"`
@@ -61,6 +63,7 @@ type Env struct {
 type Container struct {
 	Name            ContainerName    `yaml:"name"`
 	Image           Image            `yaml:"image"`
+	Command         []Command        `yaml:"command,omitempty"`
 	Args            []Arg            `yaml:"args,omitempty"`
 	Env             []Env            `yaml:"env,omitempty"`
 	Ports           []ContainerPort  `yaml:"ports,omitempty"`

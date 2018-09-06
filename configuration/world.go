@@ -165,6 +165,11 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		NfsServer: "185.170.112.48",
 	}
 	return map[AppName]world.Configuration{
+		"erpnext": &app.ErpNext{
+			Cluster:           netcup,
+			Domain:            "erpnext.benjamin-borbe.de",
+			MysqlRootPassword: w.TeamvaultSecrets.Password("dqDzmO"),
+		},
 		"dns": &app.Dns{
 			Cluster: netcup,
 		},
