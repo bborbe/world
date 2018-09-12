@@ -531,7 +531,7 @@ func (e *ErpNext) frappe() []world.Configuration {
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "1000m",
-							Memory: "1500Mi",
+							Memory: "2000Mi",
 						},
 						Requests: k8s.ContainerResource{
 							Cpu:    "100m",
