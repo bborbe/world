@@ -3,6 +3,8 @@ package configuration
 import (
 	"context"
 
+	"github.com/bborbe/world/configuration/foo"
+
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/pkg/k8s"
@@ -89,6 +91,7 @@ func (w *World) nuke() map[AppName]world.Configuration {
 		NfsServer: "172.16.24.1",
 	}
 	return map[AppName]world.Configuration{
+		"host": &foo.Readme{},
 		"dns": &app.Dns{
 			Cluster: nuke,
 		},
