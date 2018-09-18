@@ -100,7 +100,7 @@ func (s *SSH) Client(ctx context.Context) (*ssh.Client, error) {
 	return client, nil
 }
 
-func (s *SSH) createSession(ctx context.Context) (*ssh.Session, error) {
+func (s *SSH) CreateSession(ctx context.Context) (*ssh.Session, error) {
 	client, err := s.Client(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get client failed")
@@ -113,7 +113,7 @@ func (s *SSH) createSession(ctx context.Context) (*ssh.Session, error) {
 }
 
 func (s *SSH) Exists(ctx context.Context, path string) (bool, error) {
-	session, err := s.createSession(ctx)
+	session, err := s.CreateSession(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "create ssh session failed")
 	}
@@ -122,7 +122,7 @@ func (s *SSH) Exists(ctx context.Context, path string) (bool, error) {
 }
 
 func (s *SSH) CreateFile(ctx context.Context, path string, content []byte) error {
-	session, err := s.createSession(ctx)
+	session, err := s.CreateSession(ctx)
 	if err != nil {
 		return errors.Wrap(err, "create ssh session failed")
 	}
@@ -145,64 +145,18 @@ func (s *SSH) CreateFile(ctx context.Context, path string, content []byte) error
 	)
 }
 
-func runWithout(session *ssh.Session, cmd string) error {
-	command := fmt.Sprintf("sudo sh -c 'export LANG=C; %s'", cmd)
-	if err := session.Run(command); err != nil {
-		return fmt.Errorf("run command '%s' failed", command)
-	}
-	return nil
-}
-
 func (s *SSH) ReadFile(ctx context.Context, path string) ([]byte, error) {
-	session, err := s.createSession(ctx)
+	session, err := s.CreateSession(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "create ssh session failed")
 	}
 	defer session.Close()
-	return runOutput(ctx, session, fmt.Sprintf("cat %s", path))
-}
 
-func (s *SSH) Delete(ctx context.Context, path string) error {
-	session, err := s.createSession(ctx)
-	if err != nil {
-		return errors.Wrap(err, "create ssh session failed")
-	}
-	defer session.Close()
-	return runWithout(session, fmt.Sprintf("rm -rf %s", path))
-}
-
-func (s *SSH) CreateDir(ctx context.Context, path string) error {
-	session, err := s.createSession(ctx)
-	if err != nil {
-		return errors.Wrap(err, "create ssh session failed")
-	}
-	defer session.Close()
-	return runWithout(session, fmt.Sprintf("mkdir -p %s", path))
-}
-
-func (s *SSH) StartService(ctx context.Context, application string) error {
-	session, err := s.createSession(ctx)
-	if err != nil {
-		return errors.Wrap(err, "create ssh session failed")
-	}
-	defer session.Close()
-	return runWithout(session, fmt.Sprintf("systemctl start %s", application))
-}
-
-func (s *SSH) ServiceRunning(ctx context.Context, application string) (bool, error) {
-	session, err := s.createSession(ctx)
-	if err != nil {
-		return false, errors.Wrap(err, "create ssh session failed")
-	}
-	defer session.Close()
-	return session.Run(fmt.Sprintf("systemctl status %s", application)) == nil, nil
-}
-func runOutput(ctx context.Context, session *ssh.Session, cmd string) ([]byte, error) {
 	b := &bytes.Buffer{}
-	err := run.CancelOnFirstError(
+	err = run.CancelOnFirstError(
 		ctx,
 		func(ctx context.Context) error {
-			return runWithout(session, cmd)
+			return runWithout(session, fmt.Sprintf("cat %s", path))
 		},
 		func(ctx context.Context) error {
 			stdin, err := session.StdoutPipe()
@@ -217,4 +171,29 @@ func runOutput(ctx context.Context, session *ssh.Session, cmd string) ([]byte, e
 		return nil, err
 	}
 	return b.Bytes(), nil
+}
+
+func (s *SSH) Delete(ctx context.Context, path string) error {
+	return s.RunCommand(ctx, fmt.Sprintf("rm -rf %s", path))
+}
+
+func (s *SSH) CreateDir(ctx context.Context, path string) error {
+	return s.RunCommand(ctx, fmt.Sprintf("mkdir -p %s", path))
+}
+
+func (s *SSH) RunCommand(ctx context.Context, cmd string) error {
+	session, err := s.CreateSession(ctx)
+	if err != nil {
+		return errors.Wrap(err, "create ssh session failed")
+	}
+	defer session.Close()
+	return runWithout(session, cmd)
+}
+
+func runWithout(session *ssh.Session, cmd string) error {
+	command := fmt.Sprintf("sudo sh -c 'export LANG=C; %s'", cmd)
+	if err := session.Run(command); err != nil {
+		return fmt.Errorf("run command '%s' failed", command)
+	}
+	return nil
 }

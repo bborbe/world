@@ -18,7 +18,7 @@ type File struct {
 }
 
 func (f *File) Satisfied(ctx context.Context) (bool, error) {
-	return f.SSH.Exists(ctx, f.Path)
+	return false, nil
 }
 
 func (f *File) Apply(ctx context.Context) error {

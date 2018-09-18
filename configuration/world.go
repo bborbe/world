@@ -3,10 +3,9 @@ package configuration
 import (
 	"context"
 
-	"github.com/bborbe/world/configuration/foo"
-
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/configuration/server"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/validation"
@@ -64,6 +63,7 @@ func (w *World) fire() map[AppName]world.Configuration {
 		NfsServer: "172.16.22.1",
 	}
 	return map[AppName]world.Configuration{
+		"server": &server.Fire{},
 		"dns": &app.Dns{
 			Cluster: fire,
 		},
@@ -91,7 +91,7 @@ func (w *World) nuke() map[AppName]world.Configuration {
 		NfsServer: "172.16.24.1",
 	}
 	return map[AppName]world.Configuration{
-		"host": &foo.Readme{},
+		"server": &server.Nuke{},
 		"dns": &app.Dns{
 			Cluster: nuke,
 		},
@@ -119,6 +119,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 		NfsServer: "172.16.72.1",
 	}
 	return map[AppName]world.Configuration{
+		"server": &server.Sun{},
 		"dns": &app.Dns{
 			Cluster: sun,
 		},
@@ -168,6 +169,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		NfsServer: "185.170.112.48",
 	}
 	return map[AppName]world.Configuration{
+		"server": &server.Netcup{},
 		"erpnext": &app.ErpNext{
 			Cluster:           netcup,
 			Domain:            "erpnext.benjamin-borbe.de",
