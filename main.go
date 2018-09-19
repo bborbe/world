@@ -69,7 +69,11 @@ func main() {
 	})
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		if glog.V(2) {
+			fmt.Fprintf(os.Stderr, "%+v", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "%v", err)
+		}
 		os.Exit(1)
 	}
 }

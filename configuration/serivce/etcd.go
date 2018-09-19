@@ -23,11 +23,19 @@ func (e *Etcd) Children() []world.Configuration {
 		&build.Etcd{
 			Image: image,
 		},
+		&Directory{
+			SSH:   e.SSH,
+			Path:  "/var/lib/etcd",
+			User:  "root",
+			Group: "root",
+			Perm:  0755,
+		},
 		&Docker{
 			SSH:     e.SSH,
 			Name:    "etcd",
+			Memory:  512,
 			Ports:   []int{2379, 2380},
-			Volumes: []string{"/var/lib/etcd"},
+			Volumes: []string{"/var/lib/etcd:/var/lib/etcd"},
 			Image:   image,
 			Command: "/usr/local/bin/etcd",
 			Args: []string{

@@ -12,8 +12,9 @@ var _ = Describe("Docker", func() {
 	It("generate systemd service", func() {
 		service := service.Docker{
 			Name:    "etcd",
+			Memory:  1024,
 			Ports:   []int{2379, 2380},
-			Volumes: []string{"/var/lib/etcd"},
+			Volumes: []string{"/var/lib/etcd:/var/lib/etcd"},
 			Image: docker.Image{
 				Repository: "quay.io/coreos/etcd",
 				Tag:        "v3.3.1",
@@ -31,7 +32,9 @@ var _ = Describe("Docker", func() {
 				"--name kubernetes",
 			},
 		}
-		Expect(service.SystemdServiceContent()).To(Equal(`[Unit]
+		bytes, err := service.SystemdServiceContent().Content()
+		Expect(err).To(BeNil())
+		Expect(string(bytes)).To(Equal(`[Unit]
 Description=etcd
 Requires=docker.service
 After=docker.service
@@ -44,6 +47,7 @@ TimeoutStartSec=0
 ExecStartPre=-/usr/bin/docker kill etcd
 ExecStartPre=-/usr/bin/docker rm etcd
 ExecStart=/usr/bin/docker run \
+--memory=1024m \
 -p 2379:2379 \
 -p 2380:2380 \
 --volume=/var/lib/etcd:/var/lib/etcd \

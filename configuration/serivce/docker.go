@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/docker"
 
 	"github.com/bborbe/world/pkg/remote"
@@ -14,14 +16,27 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
+type Memory int
+
+func (m Memory) Validate(ctx context.Context) error {
+	if m <= 0 {
+		return errors.New("Memory empty")
+	}
+	return nil
+}
+
 type Docker struct {
-	SSH     ssh.SSH
-	Name    remote.ServiceName
-	Ports   []int
-	Volumes []string
-	Image   docker.Image
-	Command string
-	Args    []string
+	SSH        ssh.SSH
+	Name       remote.ServiceName
+	Ports      []int
+	Volumes    []string
+	Image      docker.Image
+	Command    string
+	Args       []string
+	Memory     Memory
+	HostNet    bool
+	Privileged bool
+	HostPid    bool
 }
 
 func (d *Docker) Children() []world.Configuration {
@@ -32,7 +47,7 @@ func (d *Docker) Children() []world.Configuration {
 		&Service{
 			SSH:     d.SSH,
 			Name:    d.Name,
-			Content: remote.ServiceContent(d.SystemdServiceContent()),
+			Content: d.SystemdServiceContent(),
 		},
 	}
 }
@@ -45,10 +60,13 @@ func (d *Docker) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		d.SSH,
+		d.Name,
+		d.Memory,
+		d.Image,
 	)
 }
 
-func (d Docker) SystemdServiceContent() string {
+func (d Docker) SystemdServiceContent() remote.HasContent {
 	b := &bytes.Buffer{}
 	fmt.Fprintf(b, "[Unit]\n")
 	fmt.Fprintf(b, "Description=%s\n", d.Name)
@@ -63,11 +81,21 @@ func (d Docker) SystemdServiceContent() string {
 	fmt.Fprintf(b, "ExecStartPre=-/usr/bin/docker kill %s\n", d.Name)
 	fmt.Fprintf(b, "ExecStartPre=-/usr/bin/docker rm %s\n", d.Name)
 	fmt.Fprintf(b, "ExecStart=/usr/bin/docker run \\\n")
+	fmt.Fprintf(b, "--memory=%dm \\\n", d.Memory)
+	if d.Privileged {
+		fmt.Fprintf(b, "--privileged=true \\\n")
+	}
+	if d.HostNet {
+		fmt.Fprintf(b, "--net=host \\\n")
+	}
+	if d.HostPid {
+		fmt.Fprintf(b, "--pid=host \\\n")
+	}
 	for _, port := range d.Ports {
 		fmt.Fprintf(b, "-p %d:%d \\\n", port, port)
 	}
 	for _, volume := range d.Volumes {
-		fmt.Fprintf(b, "--volume=%s:%s \\\n", volume, volume)
+		fmt.Fprintf(b, "--volume=%s \\\n", volume)
 	}
 	fmt.Fprintf(b, "--name %s \\\n", d.Name)
 	fmt.Fprintf(b, "%s \\\n", d.Image.String())
@@ -78,5 +106,5 @@ func (d Docker) SystemdServiceContent() string {
 	fmt.Fprintf(b, "\n")
 	fmt.Fprintf(b, "[Install]\n")
 	fmt.Fprintf(b, "WantedBy=multi-user.target\n")
-	return b.String()
+	return remote.StaticContent(b.Bytes())
 }

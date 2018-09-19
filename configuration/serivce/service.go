@@ -14,19 +14,19 @@ import (
 type Service struct {
 	SSH     ssh.SSH
 	Name    remote.ServiceName
-	Content remote.ServiceContent
+	Content remote.HasContent
 }
 
 func (s *Service) Children() []world.Configuration {
 	return []world.Configuration{
-		configuration.New().WithApplier(&remote.File{
+		&File{
 			SSH:     s.SSH,
-			Path:    fmt.Sprintf("/etc/systemd/system/%s.service", s.Name),
+			Path:    remote.Path(fmt.Sprintf("/etc/systemd/system/%s.service", s.Name)),
 			Content: s.Content,
 			User:    "root",
 			Group:   "root",
 			Perm:    0664,
-		}),
+		},
 		configuration.New().WithApplier(&remote.Command{
 			SSH:     s.SSH,
 			Command: "systemctl daemon-reload",
@@ -47,6 +47,5 @@ func (s *Service) Validate(ctx context.Context) error {
 		ctx,
 		s.SSH,
 		s.Name,
-		s.Content,
 	)
 }

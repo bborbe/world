@@ -18,15 +18,6 @@ func (h ServiceName) Validate(ctx context.Context) error {
 	return nil
 }
 
-type ServiceContent []byte
-
-func (h ServiceContent) Validate(ctx context.Context) error {
-	if len(h) == 0 {
-		return errors.New("ServiceContent missing")
-	}
-	return nil
-}
-
 type Service struct {
 	SSH ssh.SSH
 

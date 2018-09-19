@@ -19,7 +19,7 @@ func (r *Sun) Children() []world.Configuration {
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
 	return []world.Configuration{
-		&service.Etcd{
+		&service.Kubernetes{
 			SSH: ssh,
 		},
 	}

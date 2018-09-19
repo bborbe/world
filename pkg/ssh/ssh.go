@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/golang/glog"
+
 	"github.com/bborbe/run"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -82,7 +84,7 @@ func (s SSH) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (s *SSH) Client(ctx context.Context) (*ssh.Client, error) {
+func (s *SSH) client(ctx context.Context) (*ssh.Client, error) {
 	signer, err := s.PrivateKeyPath.Signer()
 	if err != nil {
 		return nil, errors.Wrap(err, "get signer failed")
@@ -100,8 +102,8 @@ func (s *SSH) Client(ctx context.Context) (*ssh.Client, error) {
 	return client, nil
 }
 
-func (s *SSH) CreateSession(ctx context.Context) (*ssh.Session, error) {
-	client, err := s.Client(ctx)
+func (s *SSH) createSession(ctx context.Context) (*ssh.Session, error) {
+	client, err := s.client(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get client failed")
 	}
@@ -112,17 +114,8 @@ func (s *SSH) CreateSession(ctx context.Context) (*ssh.Session, error) {
 	return session, nil
 }
 
-func (s *SSH) Exists(ctx context.Context, path string) (bool, error) {
-	session, err := s.CreateSession(ctx)
-	if err != nil {
-		return false, errors.Wrap(err, "create ssh session failed")
-	}
-	defer session.Close()
-	return session.Run(fmt.Sprintf("stat %s", path)) == nil, nil
-}
-
-func (s *SSH) CreateFile(ctx context.Context, path string, content []byte) error {
-	session, err := s.CreateSession(ctx)
+func (s *SSH) RunCommandStdin(ctx context.Context, command string, content []byte) error {
+	session, err := s.createSession(ctx)
 	if err != nil {
 		return errors.Wrap(err, "create ssh session failed")
 	}
@@ -133,20 +126,21 @@ func (s *SSH) CreateFile(ctx context.Context, path string, content []byte) error
 		func(ctx context.Context) error {
 			stdin, err := session.StdinPipe()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "open stdinpipe failed")
 			}
+			defer stdin.Close()
 			stdin.Write(content)
-			stdin.Close()
+			glog.V(2).Infof("write content to stdin complete")
 			return nil
 		},
 		func(ctx context.Context) error {
-			return runWithout(session, fmt.Sprintf("cat > %s", path))
+			return runWithout(ctx, session, command)
 		},
 	)
 }
 
-func (s *SSH) ReadFile(ctx context.Context, path string) ([]byte, error) {
-	session, err := s.CreateSession(ctx)
+func (s *SSH) RunCommandStdout(ctx context.Context, command string) ([]byte, error) {
+	session, err := s.createSession(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "create ssh session failed")
 	}
@@ -156,7 +150,7 @@ func (s *SSH) ReadFile(ctx context.Context, path string) ([]byte, error) {
 	err = run.CancelOnFirstError(
 		ctx,
 		func(ctx context.Context) error {
-			return runWithout(session, fmt.Sprintf("cat %s", path))
+			return runWithout(ctx, session, command)
 		},
 		func(ctx context.Context) error {
 			stdin, err := session.StdoutPipe()
@@ -173,27 +167,23 @@ func (s *SSH) ReadFile(ctx context.Context, path string) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (s *SSH) Delete(ctx context.Context, path string) error {
-	return s.RunCommand(ctx, fmt.Sprintf("rm -rf %s", path))
-}
-
-func (s *SSH) CreateDir(ctx context.Context, path string) error {
-	return s.RunCommand(ctx, fmt.Sprintf("mkdir -p %s", path))
-}
-
 func (s *SSH) RunCommand(ctx context.Context, cmd string) error {
-	session, err := s.CreateSession(ctx)
+	session, err := s.createSession(ctx)
 	if err != nil {
 		return errors.Wrap(err, "create ssh session failed")
 	}
 	defer session.Close()
-	return runWithout(session, cmd)
+	return runWithout(ctx, session, cmd)
 }
 
-func runWithout(session *ssh.Session, cmd string) error {
+func runWithout(ctx context.Context, session *ssh.Session, cmd string) error {
 	command := fmt.Sprintf("sudo sh -c 'export LANG=C; %s'", cmd)
-	if err := session.Run(command); err != nil {
-		return fmt.Errorf("run command '%s' failed", command)
+	glog.V(1).Infof("run remote command: %s", command)
+	select {
+	case <-ctx.Done():
+		glog.V(1).Infof("context done => send kill")
+		return session.Signal(ssh.SIGKILL)
+	default:
+		return errors.Wrapf(session.Run(command), "run command failed: %s", command)
 	}
-	return nil
 }
