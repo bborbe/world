@@ -81,6 +81,8 @@ func (d Docker) SystemdServiceContent() remote.HasContent {
 	fmt.Fprintf(b, "ExecStartPre=-/usr/bin/docker kill %s\n", d.Name)
 	fmt.Fprintf(b, "ExecStartPre=-/usr/bin/docker rm %s\n", d.Name)
 	fmt.Fprintf(b, "ExecStart=/usr/bin/docker run \\\n")
+	fmt.Fprintf(b, "--memory-swap=0 \\\n")
+	fmt.Fprintf(b, "--memory-swappiness=0 \\\n")
 	fmt.Fprintf(b, "--memory=%dm \\\n", d.Memory)
 	if d.Privileged {
 		fmt.Fprintf(b, "--privileged=true \\\n")

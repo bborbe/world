@@ -67,8 +67,8 @@ func (s *Server) Validate(ctx context.Context) error {
 		if entry.Host == "" {
 			return errors.New("host missing")
 		}
-		if len(entry.IP) != net.IPv4len {
-			return errors.New("not a ipv4 addr")
+		if !entry.IP.To4().Equal(entry.IP) {
+			return fmt.Errorf("ip '%s' is not a ipv4 addr", entry.IP)
 		}
 	}
 	return nil

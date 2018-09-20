@@ -47,6 +47,8 @@ TimeoutStartSec=0
 ExecStartPre=-/usr/bin/docker kill etcd
 ExecStartPre=-/usr/bin/docker rm etcd
 ExecStart=/usr/bin/docker run \
+--memory-swap=0 \
+--memory-swappiness=0 \
 --memory=1024m \
 -p 2379:2379 \
 -p 2380:2380 \

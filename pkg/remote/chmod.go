@@ -3,6 +3,7 @@ package remote
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -21,7 +22,7 @@ func (f *Chmod) Satisfied(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, errors.Wrapf(err, "check stat of %s failed", f.Path)
 	}
-	return string(stdout) == fmt.Sprintf("%d", f.Perm), nil
+	return strings.TrimSpace(string(stdout)) == fmt.Sprintf("%o", f.Perm), nil
 }
 
 func (f *Chmod) Apply(ctx context.Context) error {

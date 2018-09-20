@@ -30,8 +30,8 @@ func (p PortName) String() string {
 type PortNumber int
 
 func (p PortNumber) Validate(ctx context.Context) error {
-	if p == 0 {
-		return errors.New("PortNumber missing")
+	if p <= 0 || p >= 65535 {
+		return errors.New("PortNumber invalid")
 	}
 	return nil
 }

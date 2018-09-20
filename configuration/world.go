@@ -119,7 +119,10 @@ func (w *World) sun() map[AppName]world.Configuration {
 		NfsServer: "172.16.72.1",
 	}
 	return map[AppName]world.Configuration{
-		"server": &server.Sun{},
+		"server": &server.Sun{
+			Context:   sun.Context,
+			ClusterIP: "192.168.2.3",
+		},
 		"dns": &app.Dns{
 			Cluster: sun,
 		},

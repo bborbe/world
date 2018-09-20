@@ -50,6 +50,26 @@ type ServiceSelector map[string]string
 
 type ClusterIP string
 
+func (s ClusterIP) String() string {
+	return string(s)
+}
+
+func (s ClusterIP) Validate(ctx context.Context) error {
+	if s == "" {
+		return errors.New("ClusterIP missing")
+	}
+	return nil
+}
+
+type ClusterName string
+
+func (s ClusterName) Validate(ctx context.Context) error {
+	if s == "" {
+		return errors.New("ClusterName missing")
+	}
+	return nil
+}
+
 type ServiceSpec struct {
 	Ports     []Port          `yaml:"ports"`
 	Selector  ServiceSelector `yaml:"selector"`

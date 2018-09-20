@@ -3,7 +3,20 @@ package service
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"html/template"
+	"io/ioutil"
+	"os"
+	"os/user"
+	"path"
+
+	"github.com/bborbe/world/pkg/configuration"
+	"github.com/bborbe/world/pkg/local"
+
+	"github.com/bborbe/world/pkg/k8s"
+	"github.com/pkg/errors"
+	"k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/cert/triple"
 
 	"github.com/bborbe/world/pkg/remote"
 
@@ -14,22 +27,52 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
+const caKey = "ca-key.pem"
+const caCert = "ca-cert.pem"
+const serverKey = "server-key.pem"
+const serverCert = "server-cert.pem"
+const clientKey = "client-key.pem"
+const clientCert = "client-cert.pem"
+
 type Kubelet struct {
-	SSH     ssh.SSH
-	Version docker.Tag
+	SSH       ssh.SSH
+	Version   docker.Tag
+	Context   k8s.Context
+	ClusterIP k8s.ClusterIP
 }
 
 func (k *Kubelet) Children() []world.Configuration {
 	return []world.Configuration{
+		configuration.New().WithApplier(&remote.Iptables{
+			SSH:  k.SSH,
+			Port: 6443,
+		}),
 		&build.Hyperkube{
 			Image: k.hyperkubeImage(),
 		},
 		&build.Podmaster{
 			Image: k.podmasterImage(),
 		},
+		&build.Pause{
+			Image: k.pauseImage(),
+		},
 		&Directory{
 			SSH:   k.SSH,
 			Path:  "/etc/kubernetes",
+			User:  "root",
+			Group: "root",
+			Perm:  0755,
+		},
+		&Directory{
+			SSH:   k.SSH,
+			Path:  "/etc/kubernetes/ssl",
+			User:  "root",
+			Group: "root",
+			Perm:  0755,
+		},
+		&Directory{
+			SSH:   k.SSH,
+			Path:  "/etc/kubernetes/manifests",
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
@@ -63,8 +106,38 @@ func (k *Kubelet) Children() []world.Configuration {
 			Perm:  0755,
 		},
 		&File{
+			SSH:   k.SSH,
+			Path:  "/etc/kubernetes/ssl/ca.pem",
+			User:  "root",
+			Group: "root",
+			Perm:  0644,
+			Content: remote.ContentFunc(func() ([]byte, error) {
+				return k.readPem(caCert)
+			}),
+		},
+		&File{
+			SSH:   k.SSH,
+			Path:  "/etc/kubernetes/ssl/node-key.pem",
+			User:  "root",
+			Group: "root",
+			Perm:  0644,
+			Content: remote.ContentFunc(func() ([]byte, error) {
+				return k.readPem(serverKey)
+			}),
+		},
+		&File{
+			SSH:   k.SSH,
+			Path:  "/etc/kubernetes/ssl/node.pem",
+			User:  "root",
+			Group: "root",
+			Perm:  0644,
+			Content: remote.ContentFunc(func() ([]byte, error) {
+				return k.readPem(serverCert)
+			}),
+		},
+		&File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/kube-apiserver.yaml",
+			Path:    "/etc/kubernetes/manifests/kube-apiserver.yaml",
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
@@ -72,7 +145,7 @@ func (k *Kubelet) Children() []world.Configuration {
 		},
 		&File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/kube-podmaster.yaml",
+			Path:    "/etc/kubernetes/manifests/kube-podmaster.yaml",
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
@@ -80,7 +153,7 @@ func (k *Kubelet) Children() []world.Configuration {
 		},
 		&File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/node-kubeconfig.yaml",
+			Path:    "/etc/kubernetes/kubeconfig.yaml",
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
@@ -88,7 +161,7 @@ func (k *Kubelet) Children() []world.Configuration {
 		},
 		&File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/kube-proxy.yaml",
+			Path:    "/etc/kubernetes/manifests/kube-proxy.yaml",
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
@@ -132,20 +205,57 @@ func (k *Kubelet) Children() []world.Configuration {
 			Command: "/hyperkube",
 			Args: []string{
 				"kubelet",
+				"--fail-swap-on=false",
+				fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
 				"--containerized",
 				"--register-node=true",
 				"--allow-privileged=true",
 				"--pod-manifest-path=/etc/kubernetes/manifests",
-				"--hostname-override=172.16.72.10",
+				fmt.Sprintf("--hostname-override=%s", k.ClusterIP),
 				"--cluster-dns=10.103.0.10",
 				"--cluster-domain=cluster.local",
-				"--kubeconfig=/etc/kubernetes/node-kubeconfig.yaml",
+				"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
 				"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
 				"--v=0",
 			},
 		},
+		configuration.New().WithApplier(&local.Command{
+			Command: "kubectl",
+			Args: []string{
+				"config",
+				"set-cluster",
+				fmt.Sprintf("%s-cluster", k.Context),
+				fmt.Sprintf("--server=https://%s:6443", k.ClusterIP),
+				fmt.Sprintf("--certificate-authority=/Users/bborbe/.kube/%s/%s", k.Context, caCert),
+			},
+		}),
+		configuration.New().WithApplier(&local.Command{
+			Command: "kubectl",
+			Args: []string{
+				"config",
+				"set-credentials",
+				fmt.Sprintf("%s-admin", k.Context),
+				fmt.Sprintf("--certificate-authority=/Users/bborbe/.kube/%s/%s", k.Context, caCert),
+				fmt.Sprintf("--client-key=/Users/bborbe/.kube/%s/%s", k.Context, clientKey),
+				fmt.Sprintf("--client-certificate=/Users/bborbe/.kube/%s/%s", k.Context, clientCert),
+			},
+		}),
+		configuration.New().WithApplier(&local.Command{
+			Command: "kubectl",
+			Args: []string{
+				"config",
+				"set-context",
+				k.Context.String(),
+				fmt.Sprintf("--cluster=%s-cluster", k.Context),
+				fmt.Sprintf("--user=%s-admin", k.Context),
+			},
+		}),
 	}
 }
+
+//
+//
+//
 
 func (k *Kubelet) Applier() (world.Applier, error) {
 	return nil, nil
@@ -156,6 +266,8 @@ func (k *Kubelet) Validate(ctx context.Context) error {
 		ctx,
 		k.SSH,
 		k.Version,
+		k.Context,
+		k.ClusterIP,
 	)
 }
 
@@ -175,12 +287,12 @@ spec:
     - /hyperkube
     - apiserver
     - --bind-address=0.0.0.0
-    - --etcd-servers=http://172.16.72.10:2379
+    - --etcd-servers=http://{{.ClusterIP}}:2379
     - --storage-backend=etcd3
     - --allow-privileged=true
     - --service-cluster-ip-range=10.103.0.0/16
-    - --secure-port=443
-    - --advertise-address=172.16.72.10
+    - --secure-port=6443
+    - --advertise-address={{.ClusterIP}}
     - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,DefaultStorageClass,ResourceQuota
     - --tls-cert-file=/etc/kubernetes/ssl/node.pem
     - --tls-private-key-file=/etc/kubernetes/ssl/node-key.pem
@@ -196,8 +308,8 @@ spec:
       initialDelaySeconds: 15
       timeoutSeconds: 15
     ports:
-    - containerPort: 443
-      hostPort: 443
+    - containerPort: 6443
+      hostPort: 6443
       name: https
     - containerPort: 8080
       hostPort: 8080
@@ -217,9 +329,11 @@ spec:
       path: /usr/share/ca-certificates
     name: ssl-certs-host
 `, struct {
-		Image string
+		Image     string
+		ClusterIP string
 	}{
-		Image: k.hyperkubeImage().String(),
+		Image:     k.hyperkubeImage().String(),
+		ClusterIP: k.ClusterIP.String(),
 	})
 }
 
@@ -237,9 +351,9 @@ spec:
     image: {{.Image}}
     command:
     - /podmaster
-    - --etcd-servers=http://172.16.72.10:2379
+    - --etcd-servers=http://{{.ClusterIP}}:2379
     - --key=controller
-    - --whoami=172.16.72.10
+    - --whoami={{.ClusterIP}}
     - --source-file=/src/manifests/kube-controller-manager.yaml
     - --dest-file=/dst/manifests/kube-controller-manager.yaml
     terminationMessagePath: /dev/termination-log
@@ -253,9 +367,9 @@ spec:
     image: {{.Image}}
     command:
     - /podmaster
-    - --etcd-servers=http://172.16.72.10:2379
+    - --etcd-servers=http://{{.ClusterIP}}:2379
     - --key=scheduler
-    - --whoami=172.16.72.10
+    - --whoami={{.ClusterIP}}
     - --source-file=/src/manifests/kube-scheduler.yaml
     - --dest-file=/dst/manifests/kube-scheduler.yaml
     volumeMounts:
@@ -272,9 +386,11 @@ spec:
       path: /etc/kubernetes/manifests
     name: manifest-dst
 `, struct {
-		Image string
+		Image     string
+		ClusterIP string
 	}{
-		Image: k.podmasterImage().String(),
+		Image:     k.podmasterImage().String(),
+		ClusterIP: k.ClusterIP.String(),
 	})
 }
 
@@ -425,6 +541,13 @@ func (k *Kubelet) podmasterImage() docker.Image {
 	}
 }
 
+func (k *Kubelet) pauseImage() docker.Image {
+	return docker.Image{
+		Repository: "bborbe/pause",
+		Tag:        "3.1",
+	}
+}
+
 func render(content string, data interface{}) ([]byte, error) {
 	tpl, err := template.New("template").Parse(content)
 	if err != nil {
@@ -435,4 +558,82 @@ func render(content string, data interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return b.Bytes(), nil
+}
+
+func (k *Kubelet) certDirectory() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", errors.Wrap(err, "get homedir failed")
+	}
+	return fmt.Sprintf("%s/.kube/%s", usr.HomeDir, k.Context), nil
+}
+
+func (k *Kubelet) generateKeys() error {
+	certDir, err := k.certDirectory()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(certDir, 0700); err != nil {
+		return err
+	}
+
+	ca, err := triple.NewCA(fmt.Sprintf("%s-certificate-authority", k.Context))
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(certDir, caKey), cert.EncodePrivateKeyPEM(ca.Key), 0600); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(certDir, caCert), cert.EncodeCertPEM(ca.Cert), 0600); err != nil {
+		return err
+	}
+
+	const name = "kubernetes"
+	const namespace = "default"
+	server, err := triple.NewServerKeyPair(
+		ca,
+		fmt.Sprintf("%s.%s.svc", name, namespace),
+		name,
+		namespace,
+		"cluster.local",
+		[]string{"10.103.0.1", k.ClusterIP.String()},
+		[]string{},
+	)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(certDir, serverKey), cert.EncodePrivateKeyPEM(server.Key), 0600); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(certDir, serverCert), cert.EncodeCertPEM(server.Cert), 0600); err != nil {
+		return err
+	}
+
+	client, err := triple.NewClientKeyPair(ca, fmt.Sprintf("%s-admin", k.Context), nil)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(certDir, clientKey), cert.EncodePrivateKeyPEM(client.Key), 0600); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(certDir, clientCert), cert.EncodeCertPEM(client.Cert), 0600); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (k *Kubelet) readPem(name string) ([]byte, error) {
+	certDir, err := k.certDirectory()
+	if err != nil {
+		return nil, err
+	}
+	filepath := path.Join(certDir, name)
+	_, err = os.Stat(filepath)
+	if os.IsNotExist(err) {
+		if err := k.generateKeys(); err != nil {
+			return nil, err
+		}
+	}
+	return ioutil.ReadFile(filepath)
 }
