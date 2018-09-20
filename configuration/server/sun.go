@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/bborbe/world/pkg/remote"
@@ -24,7 +25,7 @@ type Sun struct {
 
 func (s *Sun) Children() []world.Configuration {
 	ssh := ssh.SSH{
-		Host:           "pn.benjamin-borbe.de:22",
+		Host:           ssh.Host(fmt.Sprintf("%s:22", s.ClusterIP)),
 		User:           "bborbe",
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
@@ -36,7 +37,7 @@ func (s *Sun) Children() []world.Configuration {
 				List: []dns.Entry{
 					{
 						Host: "backup.sun.pn.benjamin-borbe.de",
-						IP:   net.ParseIP("192.168.2.3"),
+						IP:   net.ParseIP(s.ClusterIP.String()),
 					},
 				},
 			},
@@ -61,5 +62,6 @@ func (s *Sun) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		s.Context,
+		s.ClusterIP,
 	)
 }

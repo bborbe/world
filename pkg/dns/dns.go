@@ -43,6 +43,7 @@ func (s *Server) Apply(ctx context.Context) error {
 		fmt.Fprintf(b, "update delete %s 60 A\n", entry.Host.String())
 		fmt.Fprintf(b, "update add %s 60 A %s\n", entry.Host.String(), entry.IP.String())
 		fmt.Fprintf(b, "send\n")
+		glog.V(1).Infof("set dns for %s to %s", entry.Host.String(), entry.IP.String())
 
 		cmd := exec.CommandContext(ctx, "nsupdate", "-k", s.KeyPath.String())
 		cmd.Stdin = b

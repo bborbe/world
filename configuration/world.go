@@ -63,7 +63,10 @@ func (w *World) fire() map[AppName]world.Configuration {
 		NfsServer: "172.16.22.1",
 	}
 	return map[AppName]world.Configuration{
-		"server": &server.Fire{},
+		"server": &server.Fire{
+			Context:   fire.Context,
+			ClusterIP: "192.168.178.3",
+		},
 		"dns": &app.Dns{
 			Cluster: fire,
 		},
@@ -91,7 +94,10 @@ func (w *World) nuke() map[AppName]world.Configuration {
 		NfsServer: "172.16.24.1",
 	}
 	return map[AppName]world.Configuration{
-		"server": &server.Nuke{},
+		"server": &server.Nuke{
+			Context:   nuke.Context,
+			ClusterIP: "192.168.178.5",
+		},
 		"dns": &app.Dns{
 			Cluster: nuke,
 		},
