@@ -303,7 +303,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"mumble": &app.Mumble{
 			Cluster: netcup,
-			Tag:     "1.0.2",
+			Tag:     "1.1.1",
 		},
 		"ip": &app.Ip{
 			Cluster: netcup,
