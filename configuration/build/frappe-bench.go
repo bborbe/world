@@ -8,18 +8,18 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type Frappe struct {
+type FrappeBench struct {
 	Image docker.Image
 }
 
-func (t *Frappe) Validate(ctx context.Context) error {
+func (t *FrappeBench) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Image,
 	)
 }
 
-func (m *Frappe) Children() []world.Configuration {
+func (m *FrappeBench) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.Builder{
@@ -31,7 +31,7 @@ func (m *Frappe) Children() []world.Configuration {
 	}
 }
 
-func (m *Frappe) Applier() (world.Applier, error) {
+func (m *FrappeBench) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: m.Image,
 	}, nil

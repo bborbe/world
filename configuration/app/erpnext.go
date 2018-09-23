@@ -13,9 +13,12 @@ import (
 )
 
 type ErpNext struct {
-	Cluster           cluster.Cluster
-	Domain            k8s.IngressHost
-	MysqlRootPassword deployer.SecretValue
+	Cluster              cluster.Cluster
+	Domain               k8s.IngressHost
+	DatabaseRootPassword deployer.SecretValue
+	DatabaseName         deployer.SecretValue
+	DatabasePassword     deployer.SecretValue
+	AdminPassword        deployer.SecretValue
 }
 
 func (e *ErpNext) Validate(ctx context.Context) error {
@@ -23,7 +26,10 @@ func (e *ErpNext) Validate(ctx context.Context) error {
 		ctx,
 		e.Cluster,
 		e.Domain,
-		e.MysqlRootPassword,
+		e.DatabaseRootPassword,
+		e.DatabaseName,
+		e.DatabasePassword,
+		e.AdminPassword,
 	)
 }
 
@@ -42,7 +48,7 @@ func (e *ErpNext) Children() []world.Configuration {
 	configurations = append(configurations, e.redisQueue()...)
 	configurations = append(configurations, e.redisSocketio()...)
 	configurations = append(configurations, e.mariadb()...)
-	configurations = append(configurations, e.frappe()...)
+	configurations = append(configurations, e.erpnext()...)
 	return configurations
 }
 
@@ -364,7 +370,9 @@ func (e *ErpNext) mariadb() []world.Configuration {
 			Namespace: "erpnext",
 			Name:      "mariadb",
 			Secrets: deployer.Secrets{
-				"mysql-root-password": e.MysqlRootPassword,
+				"root-password": e.DatabaseRootPassword,
+				"db-name":       e.DatabaseName,
+				"db-password":   e.DatabasePassword,
 			},
 		},
 		&deployer.DeploymentDeployer{
@@ -380,18 +388,41 @@ func (e *ErpNext) mariadb() []world.Configuration {
 					Image: image,
 					Env: []k8s.Env{
 						{
-							Name:  "MYSQL_USER",
-							Value: "root",
-						},
-						{
-							Name:  "MYSQL_DATABASE",
-							Value: "erpnext",
+							Name:  "MYSQL_ROOT_HOST",
+							Value: "%",
 						},
 						{
 							Name: "MYSQL_ROOT_PASSWORD",
 							ValueFrom: k8s.ValueFrom{
 								SecretKeyRef: k8s.SecretKeyRef{
-									Key:  "mysql-root-password",
+									Key:  "root-password",
+									Name: "mariadb",
+								},
+							},
+						},
+						{
+							Name: "MYSQL_USER",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "db-name",
+									Name: "mariadb",
+								},
+							},
+						},
+						{
+							Name: "MYSQL_DATABASE",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "db-name",
+									Name: "mariadb",
+								},
+							},
+						},
+						{
+							Name: "MYSQL_PASSWORD",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "db-password",
 									Name: "mariadb",
 								},
 							},
@@ -486,9 +517,13 @@ func (e *ErpNext) mariadb() []world.Configuration {
 	}
 }
 
-func (e *ErpNext) frappe() []world.Configuration {
-	image := docker.Image{
-		Repository: "bborbe/frappe",
+func (e *ErpNext) erpnext() []world.Configuration {
+	benchImage := docker.Image{
+		Repository: "bborbe/frappe-bench",
+		Tag:        "master",
+	}
+	erpnextImage := docker.Image{
+		Repository: "bborbe/frappe-erpnext",
 		Tag:        "master",
 	}
 	webserverPort := deployer.Port{
@@ -512,20 +547,66 @@ func (e *ErpNext) frappe() []world.Configuration {
 		fileWatcherPort,
 	}
 	return []world.Configuration{
+		&build.FrappeBench{
+			Image: benchImage,
+		},
+		&deployer.SecretDeployer{
+			Context:   e.Cluster.Context,
+			Namespace: "erpnext",
+			Name:      "erpnext",
+			Secrets: deployer.Secrets{
+				"db-name":        e.DatabaseName,
+				"db-password":    e.DatabasePassword,
+				"admin-password": e.AdminPassword,
+			},
+		},
 		&deployer.DeploymentDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",
-			Name:      "frappe",
+			Name:      "erpnext",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "Recreate",
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
-					Name:    "frappe",
-					Image:   image,
-					Command: []k8s.Command{"bench", "start"},
-					Requirement: &build.Frappe{
-						Image: image,
+					Name:  "erpnext",
+					Image: erpnextImage,
+					Requirement: &build.FrappeErpnext{
+						Image:        erpnextImage,
+						BenchVersion: benchImage.Tag,
+					},
+					Env: []k8s.Env{
+						{
+							Name:  "DB_HOST",
+							Value: "mariadb",
+						},
+						{
+							Name: "DB_NAME",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "db-name",
+									Name: "erpnext",
+								},
+							},
+						},
+						{
+							Name: "DB_PASSWORD",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "db-password",
+									Name: "erpnext",
+								},
+							},
+						},
+						{
+							Name: "ADMIN_PASSWORD",
+							ValueFrom: k8s.ValueFrom{
+								SecretKeyRef: k8s.SecretKeyRef{
+									Key:  "admin-password",
+									Name: "erpnext",
+								},
+							},
+						},
 					},
 					Ports: ports,
 					Resources: k8s.Resources{
@@ -558,34 +639,19 @@ func (e *ErpNext) frappe() []world.Configuration {
 						InitialDelaySeconds: 15,
 						TimeoutSeconds:      5,
 					},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name: "data",
-							Path: "/home/frappe/frappe-bench",
-						},
-					},
-				},
-			},
-			Volumes: []k8s.PodVolume{
-				{
-					Name: "data",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/erpnext-frappe",
-						Server: k8s.PodNfsServer(e.Cluster.NfsServer),
-					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",
-			Name:      "frappe",
+			Name:      "erpnext",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",
-			Name:      "frappe",
+			Name:      "erpnext",
 			Port:      webserverPort.Name,
 			Domains:   k8s.IngressHosts{e.Domain},
 		},

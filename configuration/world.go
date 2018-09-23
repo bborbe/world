@@ -180,9 +180,12 @@ func (w *World) netcup() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"server": &server.Netcup{},
 		"erpnext": &app.ErpNext{
-			Cluster:           netcup,
-			Domain:            "erpnext.benjamin-borbe.de",
-			MysqlRootPassword: w.TeamvaultSecrets.Password("dqDzmO"),
+			Cluster:              netcup,
+			Domain:               "erpnext.benjamin-borbe.de",
+			DatabaseRootPassword: w.TeamvaultSecrets.Password("dqDzmO"),
+			DatabaseName:         w.TeamvaultSecrets.Username("MOPGMw"),
+			DatabasePassword:     w.TeamvaultSecrets.Password("MOPGMw"),
+			AdminPassword:        w.TeamvaultSecrets.Password("AwJndw"),
 		},
 		"dns": &app.Dns{
 			Cluster: netcup,
