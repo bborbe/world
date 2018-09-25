@@ -60,6 +60,8 @@ type Env struct {
 	ValueFrom ValueFrom `yaml:"valueFrom,omitempty"`
 }
 
+type ImagePullPolicy string
+
 type Container struct {
 	Name            ContainerName    `yaml:"name"`
 	Image           Image            `yaml:"image"`
@@ -72,13 +74,22 @@ type Container struct {
 	ReadinessProbe  Probe            `yaml:"readinessProbe,omitempty"`
 	LivenessProbe   Probe            `yaml:"livenessProbe,omitempty"`
 	SecurityContext SecurityContext  `yaml:"securityContext,omitempty"`
+	ImagePullPolicy ImagePullPolicy  `yaml:"imagePullPolicy,omitempty"`
 }
 
 type SecurityContext struct {
-	Privileged bool `yaml:"privileged,omitempty"`
+	AllowPrivilegeEscalation bool                        `yaml:"allowPrivilegeEscalation,omitempty"`
+	ReadOnlyRootFilesystem   bool                        `yaml:"readOnlyRootFilesystem,omitempty"`
+	Privileged               bool                        `yaml:"privileged,omitempty"`
+	RunAsUser                int                         `yaml:"runAsUser,omitempty"`
+	FsGroup                  int                         `yaml:"fsGroup,omitempty"`
+	Capabilities             SecurityContextCapabilities `yaml:"capabilities,omitempty"`
 }
 
+type SecurityContextCapabilities map[string][]string
+
 type Probe struct {
+	Exec                Exec      `yaml:"exec,omitempty"`
 	HttpGet             HttpGet   `yaml:"httpGet,omitempty"`
 	TcpSocket           TcpSocket `yaml:"tcpSocket,omitempty"`
 	InitialDelaySeconds int       `yaml:"initialDelaySeconds,omitempty"`
@@ -96,4 +107,8 @@ type HttpGet struct {
 
 type TcpSocket struct {
 	Port PortNumber `yaml:"port,omitempty"`
+}
+
+type Exec struct {
+	Command []Command `yaml:"command,omitempty"`
 }

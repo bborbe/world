@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/bborbe/http/client_builder"
@@ -26,6 +28,16 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	go func() {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+		select {
+		case <-ch:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
 
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Set("logtostderr", "true")
@@ -70,7 +82,7 @@ func main() {
 	})
 
 	if err := rootCmd.Execute(); err != nil {
-		if glog.V(2) {
+		if glog.V(4) {
 			fmt.Fprintf(os.Stderr, "%+v", err)
 		} else {
 			fmt.Fprintf(os.Stderr, "%v", err)

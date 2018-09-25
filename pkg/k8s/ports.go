@@ -55,7 +55,7 @@ func (p PortProtocol) Validate(ctx context.Context) error {
 
 type PortTarget string
 
-type Port struct {
+type ServicePort struct {
 	Name       PortName     `yaml:"name,omitempty"`
 	Port       PortNumber   `yaml:"port"`
 	Protocol   PortProtocol `yaml:"protocol,omitempty"`

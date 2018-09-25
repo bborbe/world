@@ -344,7 +344,7 @@ func (p *Prometheus) nodeExporter() []world.Configuration {
 		Tag:        "v0.14.0",
 	}
 	return []world.Configuration{
-		&deployer.DaemonSetDeployer{
+		&k8s.DaemonSetConfiguration{
 			Requirements: []world.Configuration{
 				&build.PrometheusNodeExporter{
 					Image: image,

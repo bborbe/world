@@ -4,8 +4,36 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
+
 	"github.com/pkg/errors"
 )
+
+type ServiceConfiguration struct {
+	Context      Context
+	Service      Service
+	Requirements []world.Configuration
+}
+
+func (d *ServiceConfiguration) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Context,
+		d.Service,
+	)
+}
+
+func (d *ServiceConfiguration) Applier() (world.Applier, error) {
+	return &ServiceApplier{
+		Context: d.Context,
+		Service: d.Service,
+	}, nil
+}
+
+func (d *ServiceConfiguration) Children() []world.Configuration {
+	return d.Requirements
+}
 
 type ServiceApplier struct {
 	Context Context
@@ -42,7 +70,7 @@ func (s Service) String() string {
 	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
 }
 
-func (c *Service) Validate(ctx context.Context) error {
+func (c Service) Validate(ctx context.Context) error {
 	return nil
 }
 
@@ -71,7 +99,7 @@ func (s ClusterName) Validate(ctx context.Context) error {
 }
 
 type ServiceSpec struct {
-	Ports     []Port          `yaml:"ports"`
+	Ports     []ServicePort   `yaml:"ports"`
 	Selector  ServiceSelector `yaml:"selector"`
 	ClusterIP ClusterIP       `yaml:"clusterIP,omitempty"`
 }

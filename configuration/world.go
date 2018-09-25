@@ -67,7 +67,7 @@ func (w *World) fire() map[AppName]world.Configuration {
 			Context:   fire.Context,
 			ClusterIP: "192.168.178.3",
 		},
-		"dns": &app.Dns{
+		"dns": &app.KubeDns{
 			Cluster: fire,
 		},
 		"traefik": &app.Traefik{
@@ -98,7 +98,7 @@ func (w *World) nuke() map[AppName]world.Configuration {
 			Context:   nuke.Context,
 			ClusterIP: "192.168.178.5",
 		},
-		"dns": &app.Dns{
+		"dns": &app.KubeDns{
 			Cluster: nuke,
 		},
 		"traefik": &app.Traefik{
@@ -129,7 +129,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 			Context:   sun.Context,
 			ClusterIP: "192.168.2.3",
 		},
-		"dns": &app.Dns{
+		"dns": &app.KubeDns{
 			Cluster: sun,
 		},
 		"monitoring": &app.Monitoring{
@@ -179,6 +179,9 @@ func (w *World) netcup() map[AppName]world.Configuration {
 	}
 	return map[AppName]world.Configuration{
 		"server": &server.Netcup{},
+		"kafka": &app.Kafka{
+			Cluster: netcup,
+		},
 		"erpnext": &app.ErpNext{
 			Cluster:              netcup,
 			Domain:               "erpnext.benjamin-borbe.de",
@@ -187,7 +190,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			DatabasePassword:     w.TeamvaultSecrets.Password("MOPGMw"),
 			AdminPassword:        w.TeamvaultSecrets.Password("AwJndw"),
 		},
-		"dns": &app.Dns{
+		"dns": &app.CoreDns{
 			Cluster: netcup,
 		},
 		"traefik": &app.Traefik{

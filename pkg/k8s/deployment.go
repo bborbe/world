@@ -3,9 +3,37 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strconv"
+
+	"github.com/bborbe/world/pkg/world"
 
 	"github.com/bborbe/world/pkg/validation"
 )
+
+type DeploymentConfiguration struct {
+	Context      Context
+	Deployment   Deployment
+	Requirements []world.Configuration
+}
+
+func (d *DeploymentConfiguration) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Context,
+		d.Deployment,
+	)
+}
+
+func (d *DeploymentConfiguration) Applier() (world.Applier, error) {
+	return &DeploymentApplier{
+		Context:    d.Context,
+		Deployment: d.Deployment,
+	}, nil
+}
+
+func (d *DeploymentConfiguration) Children() []world.Configuration {
+	return d.Requirements
+}
 
 type DeploymentApplier struct {
 	Context    Context
@@ -47,12 +75,24 @@ func (s Deployment) Validate(ctx context.Context) error {
 	return nil
 }
 
-type DeploymentReplicas int
+type Replicas int
+
+func (r Replicas) Int() int {
+	return int(r)
+}
+
+func (r Replicas) String() string {
+	return strconv.Itoa(r.Int())
+}
+
+func (s Replicas) Validate(ctx context.Context) error {
+	return nil
+}
 
 type DeploymentRevisionHistoryLimit int
 
 type DeploymentSpec struct {
-	Replicas             DeploymentReplicas             `yaml:"replicas"`
+	Replicas             Replicas                       `yaml:"replicas"`
 	RevisionHistoryLimit DeploymentRevisionHistoryLimit `yaml:"revisionHistoryLimit"`
 	Selector             Selector                       `yaml:"selector,omitempty"`
 	Strategy             DeploymentStrategy             `yaml:"strategy"`

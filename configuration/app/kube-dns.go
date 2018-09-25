@@ -12,21 +12,21 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type Dns struct {
+type KubeDns struct {
 	Cluster cluster.Cluster
 }
 
-func (d *Dns) Validate(ctx context.Context) error {
+func (d *KubeDns) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		d.Cluster,
 	)
 }
 
-func (d *Dns) Children() []world.Configuration {
+func (d *KubeDns) Children() []world.Configuration {
 	kubednsImage := docker.Image{
 		Repository: "bborbe/kubedns",
-		Tag:        "1.8",
+		Tag:        "1.9",
 	}
 	kubednsPorts := []deployer.Port{
 		{
@@ -42,7 +42,7 @@ func (d *Dns) Children() []world.Configuration {
 	}
 	kubednsMasqImage := docker.Image{
 		Repository: "bborbe/kube-dnsmasq",
-		Tag:        "1.4",
+		Tag:        "1.4.1",
 	}
 	kubednsMasqPorts := []deployer.Port{
 		{
@@ -58,7 +58,7 @@ func (d *Dns) Children() []world.Configuration {
 	}
 	healthzImage := docker.Image{
 		Repository: "bborbe/exechealthz",
-		Tag:        "1.2",
+		Tag:        "v1.3.0",
 	}
 	healthzPorts := []deployer.Port{
 		{
@@ -201,6 +201,6 @@ func (d *Dns) Children() []world.Configuration {
 	}
 }
 
-func (d *Dns) Applier() (world.Applier, error) {
+func (d *KubeDns) Applier() (world.Applier, error) {
 	return nil, nil
 }

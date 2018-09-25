@@ -4,8 +4,35 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/pkg/world"
+
 	"github.com/bborbe/world/pkg/validation"
 )
+
+type DaemonSetConfiguration struct {
+	Context      Context
+	DaemonSet    DaemonSet
+	Requirements []world.Configuration
+}
+
+func (d *DaemonSetConfiguration) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Context,
+		d.DaemonSet,
+	)
+}
+
+func (d *DaemonSetConfiguration) Applier() (world.Applier, error) {
+	return &DaemonSetApplier{
+		Context:   d.Context,
+		DaemonSet: d.DaemonSet,
+	}, nil
+}
+
+func (d *DaemonSetConfiguration) Children() []world.Configuration {
+	return d.Requirements
+}
 
 type DaemonSetApplier struct {
 	Context   Context

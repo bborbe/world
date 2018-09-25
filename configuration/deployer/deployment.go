@@ -17,13 +17,30 @@ type Port struct {
 	Protocol k8s.PortProtocol
 }
 
-func (t *Port) Validate(ctx context.Context) error {
+func (p *Port) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Name,
-		t.Port,
-		t.Protocol,
+		p.Name,
+		p.Port,
+		p.Protocol,
 	)
+}
+
+func (p Port) ContainerPort() k8s.ContainerPort {
+	return k8s.ContainerPort{
+		Name:          p.Name,
+		ContainerPort: p.Port,
+		HostPort:      p.HostPort,
+		Protocol:      p.Protocol,
+	}
+}
+
+func (p Port) ServicePort() k8s.ServicePort {
+	return k8s.ServicePort{
+		Name:     p.Name,
+		Port:     p.Port,
+		Protocol: p.Protocol,
+	}
 }
 
 type HasContainer interface {
@@ -182,12 +199,7 @@ func (d *DeploymentDeployerContainer) Container() k8s.Container {
 		Env:            d.Env,
 	}
 	for _, port := range d.Ports {
-		podContainer.Ports = append(podContainer.Ports, k8s.ContainerPort{
-			Name:          port.Name,
-			ContainerPort: port.Port,
-			HostPort:      port.HostPort,
-			Protocol:      port.Protocol,
-		})
+		podContainer.Ports = append(podContainer.Ports, port.ContainerPort())
 	}
 	return podContainer
 }

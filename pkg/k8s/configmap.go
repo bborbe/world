@@ -4,8 +4,36 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
+
 	"github.com/pkg/errors"
 )
+
+type ConfigMapConfiguration struct {
+	Context      Context
+	ConfigMap    ConfigMap
+	Requirements []world.Configuration
+}
+
+func (d *ConfigMapConfiguration) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Context,
+		d.ConfigMap,
+	)
+}
+
+func (d *ConfigMapConfiguration) Applier() (world.Applier, error) {
+	return &ConfigMapApplier{
+		Context:   d.Context,
+		ConfigMap: d.ConfigMap,
+	}, nil
+}
+
+func (d *ConfigMapConfiguration) Children() []world.Configuration {
+	return d.Requirements
+}
 
 type ConfigMapApplier struct {
 	Context   Context
@@ -38,7 +66,7 @@ type ConfigMap struct {
 	Data       ConfigMapData `yaml:"data"`
 }
 
-func (c *ConfigMap) Validate(ctx context.Context) error {
+func (c ConfigMap) Validate(ctx context.Context) error {
 	return nil
 }
 

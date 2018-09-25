@@ -6,16 +6,18 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 type Builder struct {
-	Image     Image
-	GitRepo   GitRepo
-	GitBranch GitBranch
-	BuildArgs BuildArgs
+	Image           Image
+	GitRepo         GitRepo
+	GitBranch       GitBranch
+	BuildArgs       BuildArgs
+	SourceDirectory SourceDirectory
 }
 
 func (b *Builder) Apply(ctx context.Context) error {
@@ -51,7 +53,7 @@ func (b *Builder) Apply(ctx context.Context) error {
 		args = append(args, "-t", b.Image.String(), ".")
 		glog.V(4).Infof("docker build %s ...", b.Image.String())
 		cmd := exec.CommandContext(ctx, "docker", args...)
-		cmd.Dir = dir
+		cmd.Dir = path.Join(dir, b.SourceDirectory.String())
 		if glog.V(4) {
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr

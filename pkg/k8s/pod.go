@@ -19,12 +19,20 @@ func (c PodTemplate) Validate(ctx context.Context) error {
 	)
 }
 
+type Toleration struct {
+	Key      string `yaml:"key,omitempty"`
+	Effect   string `yaml:"effect,omitempty"`
+	Operator string `yaml:"operator,omitempty"`
+}
+
 type PodSpec struct {
-	Containers  []Container    `yaml:"containers"`
-	Volumes     []PodVolume    `yaml:"volumes,omitempty"`
-	HostNetwork PodHostNetwork `yaml:"hostNetwork,omitempty"`
-	HostPid     PodHostPID     `yaml:"hostPID,omitempty"`
-	DnsPolicy   PodDnsPolicy   `yaml:"dnsPolicy,omitempty"`
+	Tolerations     []Toleration    `yaml:"tolerations,omitempty"`
+	Containers      []Container     `yaml:"containers"`
+	Volumes         []PodVolume     `yaml:"volumes,omitempty"`
+	HostNetwork     PodHostNetwork  `yaml:"hostNetwork,omitempty"`
+	HostPid         PodHostPID      `yaml:"hostPID,omitempty"`
+	DnsPolicy       PodDnsPolicy    `yaml:"dnsPolicy,omitempty"`
+	SecurityContext SecurityContext `yaml:"securityContext,omitempty"`
 }
 
 func (c PodSpec) Validate(ctx context.Context) error {
