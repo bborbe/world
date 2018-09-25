@@ -6,6 +6,7 @@ import (
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
@@ -518,13 +519,9 @@ func (e *ErpNext) mariadb() []world.Configuration {
 }
 
 func (e *ErpNext) erpnext() []world.Configuration {
-	benchImage := docker.Image{
-		Repository: "bborbe/frappe-bench",
-		Tag:        "master",
-	}
 	erpnextImage := docker.Image{
-		Repository: "bborbe/frappe-erpnext",
-		Tag:        "master",
+		Repository: "bborbe/erpnext",
+		Tag:        "1.0.1",
 	}
 	webserverPort := deployer.Port{
 		Port:     8000,
@@ -547,9 +544,6 @@ func (e *ErpNext) erpnext() []world.Configuration {
 		fileWatcherPort,
 	}
 	return []world.Configuration{
-		&build.FrappeBench{
-			Image: benchImage,
-		},
 		&deployer.SecretDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",
@@ -571,9 +565,8 @@ func (e *ErpNext) erpnext() []world.Configuration {
 				&deployer.DeploymentDeployerContainer{
 					Name:  "erpnext",
 					Image: erpnextImage,
-					Requirement: &build.FrappeErpnext{
-						Image:        erpnextImage,
-						BenchVersion: benchImage.Tag,
+					Requirement: &build.Erpnext{
+						Image: erpnextImage,
 					},
 					Env: []k8s.Env{
 						{
@@ -625,7 +618,7 @@ func (e *ErpNext) erpnext() []world.Configuration {
 							Port:   webserverPort.Port,
 							Scheme: "HTTP",
 						},
-						InitialDelaySeconds: 60,
+						InitialDelaySeconds: 120,
 						SuccessThreshold:    1,
 						FailureThreshold:    5,
 						TimeoutSeconds:      5,
@@ -636,8 +629,34 @@ func (e *ErpNext) erpnext() []world.Configuration {
 							Port:   webserverPort.Port,
 							Scheme: "HTTP",
 						},
-						InitialDelaySeconds: 15,
+						InitialDelaySeconds: 60,
 						TimeoutSeconds:      5,
+					},
+					Mounts: []k8s.ContainerMount{
+						{
+							Name: "erpnext-frappe-public",
+							Path: "/home/frappe/branch-repo/sites/site1.local/public",
+						},
+						{
+							Name: "erpnext-frappe-private",
+							Path: "/home/frappe/branch-repo/sites/site1.local/private",
+						},
+					},
+				},
+			},
+			Volumes: []k8s.PodVolume{
+				{
+					Name: "erpnext-frappe-public",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/erpnext-frappe/public",
+						Server: k8s.PodNfsServer(e.Cluster.NfsServer),
+					},
+				},
+				{
+					Name: "erpnext-frappe-private",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/erpnext-frappe/private",
+						Server: k8s.PodNfsServer(e.Cluster.NfsServer),
 					},
 				},
 			},
@@ -648,13 +667,54 @@ func (e *ErpNext) erpnext() []world.Configuration {
 			Name:      "erpnext",
 			Ports:     ports,
 		},
-		&deployer.IngressDeployer{
-			Context:   e.Cluster.Context,
-			Namespace: "erpnext",
-			Name:      "erpnext",
-			Port:      webserverPort.Name,
-			Domains:   k8s.IngressHosts{e.Domain},
-		},
+		configuration.New().WithApplier(
+			&k8s.IngressApplier{
+				Context: e.Cluster.Context,
+				Ingress: k8s.Ingress{
+					ApiVersion: "extensions/v1beta1",
+					Kind:       "Ingress",
+					Metadata: k8s.Metadata{
+						Namespace: "erpnext",
+						Name:      "erpnext",
+						Annotations: k8s.Annotations{
+							"kubernetes.io/ingress.class": "traefik",
+						},
+					},
+					Spec: k8s.IngressSpec{
+						Rules: []k8s.IngressRule{
+							{
+								Host: e.Domain,
+								Http: k8s.IngressHttp{
+									Paths: []k8s.IngressPath{
+										{
+											Path: "/",
+											Backends: k8s.IngressBackend{
+												ServiceName: k8s.IngressBackendServiceName("erpnext"),
+												ServicePort: k8s.IngressBackendServicePort(webserverPort.Name),
+											},
+										},
+									},
+								},
+							},
+							{
+								Host: e.Domain,
+								Http: k8s.IngressHttp{
+									Paths: []k8s.IngressPath{
+										{
+											Path: "/socket.io/",
+											Backends: k8s.IngressBackend{
+												ServiceName: k8s.IngressBackendServiceName("erpnext"),
+												ServicePort: k8s.IngressBackendServicePort(socketioPort.Name),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		),
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/bborbe/world/pkg/world"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func main() {
@@ -23,12 +24,11 @@ func main() {
 	glog.CopyStandardLogTo("info")
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	flag.Set("v", "2")
-	flag.Set("logtostderr", "true")
-	flag.Parse()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Set("logtostderr", "true")
 
 	rootCmd := &cobra.Command{
 		Use:   "world",
@@ -40,6 +40,7 @@ func main() {
 		Use:   "apply",
 		Short: "Apply the configuration to the world",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			flag.Parse()
 			runner, err := createRunner(ctx, cmd)
 			if err != nil {
 				return err
