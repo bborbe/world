@@ -82,17 +82,18 @@ func (w *DeploymentDeployer) Validate(ctx context.Context) error {
 }
 
 type DeploymentDeployerContainer struct {
-	Name           k8s.ContainerName
-	Command        []k8s.Command
-	Args           []k8s.Arg
-	Ports          []Port
-	Env            []k8s.Env
-	Resources      k8s.Resources
-	Mounts         []k8s.ContainerMount
-	Image          docker.Image
-	Requirement    world.Configuration
-	LivenessProbe  k8s.Probe
-	ReadinessProbe k8s.Probe
+	Name            k8s.ContainerName
+	Command         []k8s.Command
+	Args            []k8s.Arg
+	Ports           []Port
+	Env             []k8s.Env
+	Resources       k8s.Resources
+	Mounts          []k8s.ContainerMount
+	Image           docker.Image
+	Requirement     world.Configuration
+	LivenessProbe   k8s.Probe
+	ReadinessProbe  k8s.Probe
+	SecurityContext k8s.SecurityContext
 }
 
 func (d *DeploymentDeployerContainer) Validate(ctx context.Context) error {
@@ -135,7 +136,7 @@ func (d *DeploymentDeployer) WithRecreate() *DeploymentDeployer {
 
 func (d *DeploymentDeployer) deployment() k8s.Deployment {
 	return k8s.Deployment{
-		ApiVersion: "extensions/v1beta1",
+		ApiVersion: "apps/v1",
 		Kind:       "Deployment",
 		Metadata: k8s.Metadata{
 			Namespace: d.Namespace,
@@ -188,15 +189,16 @@ func (d *DeploymentDeployerContainer) Requirements() []world.Configuration {
 
 func (d *DeploymentDeployerContainer) Container() k8s.Container {
 	podContainer := k8s.Container{
-		Image:          k8s.Image(d.Image.String()),
-		Name:           d.Name,
-		Resources:      d.Resources,
-		VolumeMounts:   d.Mounts,
-		LivenessProbe:  d.LivenessProbe,
-		ReadinessProbe: d.ReadinessProbe,
-		Args:           d.Args,
-		Command:        d.Command,
-		Env:            d.Env,
+		Image:           k8s.Image(d.Image.String()),
+		Name:            d.Name,
+		Resources:       d.Resources,
+		VolumeMounts:    d.Mounts,
+		LivenessProbe:   d.LivenessProbe,
+		ReadinessProbe:  d.ReadinessProbe,
+		Args:            d.Args,
+		Command:         d.Command,
+		Env:             d.Env,
+		SecurityContext: d.SecurityContext,
 	}
 	for _, port := range d.Ports {
 		podContainer.Ports = append(podContainer.Ports, port.ContainerPort())

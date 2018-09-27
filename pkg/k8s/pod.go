@@ -60,6 +60,19 @@ func (d PodNfsServer) Validate(ctx context.Context) error {
 	return nil
 }
 
+type PodHostPath string
+
+func (p PodHostPath) Validate(ctx context.Context) error {
+	if p == "" {
+		return errors.New("PodHostPath missing")
+	}
+	return nil
+}
+
+type PodVolumeHost struct {
+	Path PodHostPath `yaml:"path"`
+}
+
 type PodVolumeNfs struct {
 	Path   PodNfsPath   `yaml:"path"`
 	Server PodNfsServer `yaml:"server"`
@@ -105,6 +118,7 @@ type PodVolumeEmptyDir struct{}
 type PodVolume struct {
 	Name      MountName          `yaml:"name"`
 	Nfs       PodVolumeNfs       `yaml:"nfs,omitempty"`
+	Host      PodVolumeHost      `yaml:"hostPath,omitempty"`
 	ConfigMap PodVolumeConfigMap `yaml:"configMap,omitempty"`
 	Secret    PodVolumeSecret    `yaml:"secret,omitempty"`
 	EmptyDir  *PodVolumeEmptyDir `yaml:"emptyDir,omitempty"`
@@ -116,8 +130,13 @@ type PodHostNetwork bool
 
 type PodHostPID bool
 
+type FieldRef struct {
+	FieldPath string `yaml:"fieldPath"`
+}
+
 type ValueFrom struct {
-	SecretKeyRef SecretKeyRef `yaml:"secretKeyRef"`
+	SecretKeyRef SecretKeyRef `yaml:"secretKeyRef,omitempty"`
+	FieldRef     FieldRef     `yaml:"fieldRef,omitempty"`
 }
 
 type SecretKeyRef struct {

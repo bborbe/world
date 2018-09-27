@@ -4,9 +4,36 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/pkg/world"
+
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
 )
+
+type NamespaceConfiguration struct {
+	Context      Context
+	Namespace    Namespace
+	Requirements []world.Configuration
+}
+
+func (d *NamespaceConfiguration) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Context,
+		d.Namespace,
+	)
+}
+
+func (d *NamespaceConfiguration) Applier() (world.Applier, error) {
+	return &NamespaceApplier{
+		Context:   d.Context,
+		Namespace: d.Namespace,
+	}, nil
+}
+
+func (d *NamespaceConfiguration) Children() []world.Configuration {
+	return d.Requirements
+}
 
 type NamespaceName string
 
@@ -51,7 +78,7 @@ type Namespace struct {
 	Metadata   Metadata   `yaml:"metadata"`
 }
 
-func (s *Namespace) Validate(ctx context.Context) error {
+func (s Namespace) Validate(ctx context.Context) error {
 	return validation.Validate(ctx,
 		s.ApiVersion,
 		s.Kind,

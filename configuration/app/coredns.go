@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/docker"
 
@@ -58,7 +59,7 @@ func (c *CoreDns) Children() []world.Configuration {
 		&k8s.DeploymentConfiguration{
 			Context: c.Cluster.Context,
 			Deployment: k8s.Deployment{
-				ApiVersion: "extensions/v1beta1",
+				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
 				Metadata: k8s.Metadata{
 					Namespace: "kube-system",

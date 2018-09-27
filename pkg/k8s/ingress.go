@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -43,6 +44,12 @@ func (s Ingress) String() string {
 }
 
 func (s *Ingress) Validate(ctx context.Context) error {
+	if s.ApiVersion != "extensions/v1beta1" {
+		return errors.New("invalid ApiVersion")
+	}
+	if s.Kind != "Ingress" {
+		return errors.New("invalid Kind")
+	}
 	return nil
 }
 
@@ -73,6 +80,9 @@ func (i IngressHost) String() string {
 func (i IngressHost) Validate(ctx context.Context) error {
 	if i == "" {
 		return errors.New("ingressHost empty")
+	}
+	if strings.ContainsRune(i.String(), '_') {
+		return errors.New("invalid char in ingressHost")
 	}
 	return nil
 }

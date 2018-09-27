@@ -67,6 +67,12 @@ type ConfigMap struct {
 }
 
 func (c ConfigMap) Validate(ctx context.Context) error {
+	if c.ApiVersion != "v1" {
+		return errors.New("invalid ApiVersion")
+	}
+	if c.Kind != "ConfigMap" {
+		return errors.New("invalid Kind")
+	}
 	return nil
 }
 

@@ -10,6 +10,7 @@ import (
 type Cluster struct {
 	Context   k8s.Context
 	NfsServer k8s.PodNfsServer
+	IP        k8s.ClusterIP
 }
 
 func (w Cluster) Validate(ctx context.Context) error {

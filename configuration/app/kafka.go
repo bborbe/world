@@ -14,13 +14,17 @@ import (
 )
 
 type Kafka struct {
-	Cluster cluster.Cluster
+	Cluster      cluster.Cluster
+	StorageClass k8s.StorageClassName
+	AccessMode   k8s.AccessMode
 }
 
 func (k *Kafka) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		k.Cluster,
+		k.StorageClass,
+		k.AccessMode,
 	)
 }
 
@@ -69,6 +73,7 @@ func (k *Kafka) zookeeper() []world.Configuration {
 					Name:      "zookeeper",
 				},
 				Spec: k8s.ServiceSpec{
+					ClusterIP: "None",
 					Ports: []k8s.ServicePort{
 						serverPort.ServicePort(),
 						leaderElectionPort.ServicePort(),
@@ -94,6 +99,25 @@ func (k *Kafka) zookeeper() []world.Configuration {
 					Name:      "zookeeper",
 				},
 				Spec: k8s.StatefulSetSpec{
+					VolumeClaimTemplates: []k8s.VolumeClaimTemplate{
+						{
+							Metadata: k8s.Metadata{
+								Name: "datadir",
+								Annotations: map[string]string{
+									"volume.alpha.kubernetes.io/storage-class": k.StorageClass.String(),
+									"volume.beta.kubernetes.io/storage-class":  k.StorageClass.String(),
+								},
+							},
+							Spec: k8s.VolumeClaimTemplatesSpec{
+								AccessModes: []k8s.AccessMode{k.AccessMode},
+								Resources: k8s.VolumeClaimTemplatesSpecResources{
+									Requests: k8s.VolumeClaimTemplatesSpecResourcesRequests{
+										Storage: "10Gi",
+									},
+								},
+							},
+						},
+					},
 					Selector: k8s.Selector{
 						MatchLabels: k8s.Labels{
 							"app": "zookeeper",
@@ -120,7 +144,7 @@ func (k *Kafka) zookeeper() []world.Configuration {
 										},
 										Requests: k8s.ContainerResource{
 											Cpu:    "100m",
-											Memory: "500Mi",
+											Memory: "350Mi",
 										},
 									},
 									Ports: []k8s.ContainerPort{
@@ -193,6 +217,12 @@ func (k *Kafka) zookeeper() []world.Configuration {
 										InitialDelaySeconds: 10,
 										TimeoutSeconds:      5,
 									},
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Name: "datadir",
+											Path: "/var/lib/zookeeper",
+										},
+									},
 								},
 							},
 						},
@@ -229,6 +259,25 @@ func (k *Kafka) kafka() []world.Configuration {
 					Name:      "kafka",
 				},
 				Spec: k8s.StatefulSetSpec{
+					VolumeClaimTemplates: []k8s.VolumeClaimTemplate{
+						{
+							Metadata: k8s.Metadata{
+								Name: "datadir",
+								Annotations: map[string]string{
+									"volume.alpha.kubernetes.io/storage-class": k.StorageClass.String(),
+									"volume.beta.kubernetes.io/storage-class":  k.StorageClass.String(),
+								},
+							},
+							Spec: k8s.VolumeClaimTemplatesSpec{
+								AccessModes: []k8s.AccessMode{k.AccessMode},
+								Resources: k8s.VolumeClaimTemplatesSpecResources{
+									Requests: k8s.VolumeClaimTemplatesSpecResourcesRequests{
+										Storage: "10Gi",
+									},
+								},
+							},
+						},
+					},
 					Selector: k8s.Selector{
 						MatchLabels: k8s.Labels{
 							"app": "kafka",
@@ -259,7 +308,7 @@ func (k *Kafka) kafka() []world.Configuration {
 										},
 										Requests: k8s.ContainerResource{
 											Cpu:    "100m",
-											Memory: "500Mi",
+											Memory: "400Mi",
 										},
 									},
 									Ports: []k8s.ContainerPort{
@@ -280,12 +329,12 @@ func (k *Kafka) kafka() []world.Configuration {
 											Value: "-Dlogging.level=INFO",
 										},
 									},
-									//VolumeMounts: []k8s.ContainerMount{
-									//	{
-									//		Name: "data",
-									//		Path: "/var/lib/kafka",
-									//	},
-									//},
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Name: "datadir",
+											Path: "/var/lib/kafka",
+										},
+									},
 									ReadinessProbe: k8s.Probe{
 										Exec: k8s.Exec{
 											Command: []k8s.Command{
@@ -302,11 +351,25 @@ func (k *Kafka) kafka() []world.Configuration {
 				},
 			},
 		},
-		&deployer.ServiceDeployer{
-			Context:   k.Cluster.Context,
-			Namespace: "kafka",
-			Name:      "kafka",
-			Ports:     []deployer.Port{port},
+		&k8s.ServiceConfiguration{
+			Context: k.Cluster.Context,
+			Service: k8s.Service{
+				ApiVersion: "v1",
+				Kind:       "Service",
+				Metadata: k8s.Metadata{
+					Namespace: "kafka",
+					Name:      "kafka",
+				},
+				Spec: k8s.ServiceSpec{
+					ClusterIP: "None",
+					Ports: []k8s.ServicePort{
+						port.ServicePort(),
+					},
+					Selector: k8s.ServiceSelector{
+						"app": "kafka",
+					},
+				},
+			},
 		},
 	}
 }
@@ -350,7 +413,7 @@ const kafkaCommand = `exec kafka-server-start.sh /opt/kafka/config/server.proper
 --override offsets.retention.minutes=1440 \
 --override offsets.topic.compression.codec=0 \
 --override offsets.topic.num.partitions=50 \
---override offsets.topic.replication.factor=3 \
+--override offsets.topic.replication.factor=1 \
 --override offsets.topic.segment.bytes=104857600 \
 --override queued.max.requests=500 \
 --override quota.consumer.default=9223372036854775807 \

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/world"
 
 	"github.com/bborbe/world/pkg/validation"
@@ -72,6 +74,12 @@ func (s Deployment) String() string {
 }
 
 func (s Deployment) Validate(ctx context.Context) error {
+	if s.ApiVersion != "apps/v1" {
+		return errors.New("invalid ApiVersion")
+	}
+	if s.Kind != "Deployment" {
+		return errors.New("invalid Kind")
+	}
 	return nil
 }
 

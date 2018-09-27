@@ -40,6 +40,12 @@ type Secret struct {
 }
 
 func (s *Secret) Validate(ctx context.Context) error {
+	if s.ApiVersion != "v1" {
+		return errors.New("invalid ApiVersion")
+	}
+	if s.Kind != "Secret" {
+		return errors.New("invalid Kind")
+	}
 	return nil
 }
 

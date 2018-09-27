@@ -94,7 +94,7 @@ var _ = Describe("DeploymentDeployer", func() {
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(deploymentDeployer.deployment())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(b.String()).To(Equal(`apiVersion: extensions/v1beta1
+		Expect(b.String()).To(Equal(`apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: banana

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/world"
 
 	"github.com/bborbe/world/pkg/validation"
@@ -67,6 +69,12 @@ type DaemonSet struct {
 }
 
 func (c DaemonSet) Validate(ctx context.Context) error {
+	if c.ApiVersion != "apps/v1" {
+		return errors.New("invalid ApiVersion")
+	}
+	if c.Kind != "DaemonSet" {
+		return errors.New("invalid Kind")
+	}
 	return validation.Validate(
 		ctx,
 		c.ApiVersion,

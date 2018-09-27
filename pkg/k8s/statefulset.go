@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/world"
 
 	"github.com/bborbe/world/pkg/validation"
@@ -66,6 +68,12 @@ type StatefulSet struct {
 }
 
 func (s StatefulSet) Validate(ctx context.Context) error {
+	if s.ApiVersion != "apps/v1beta1" {
+		return errors.New("invalid ApiVersion")
+	}
+	if s.Kind != "StatefulSet" {
+		return errors.New("invalid Kind")
+	}
 	return validation.Validate(
 		ctx,
 		s.ApiVersion,
@@ -79,16 +87,43 @@ func (s StatefulSet) String() string {
 	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
 }
 
-type VolumeClaimTemplates struct {
-	Metadata Metadata `yaml:"metadata,omitempty"`
+type VolumeClaimTemplatesSpecResourcesRequests struct {
+	Storage string `yaml:"storage,omitempty"`
+}
+
+type VolumeClaimTemplatesSpecResources struct {
+	Requests VolumeClaimTemplatesSpecResourcesRequests `yaml:"requests,omitempty"`
+}
+
+type AccessMode string
+
+func (a AccessMode) String() string {
+	return string(a)
+}
+
+func (a AccessMode) Validate(ctx context.Context) error {
+	if a == "" {
+		return errors.New("invalid AccessMode")
+	}
+	return nil
+}
+
+type VolumeClaimTemplatesSpec struct {
+	AccessModes []AccessMode                      `yaml:"accessModes,omitempty"`
+	Resources   VolumeClaimTemplatesSpecResources `yaml:"resources,omitempty"`
+}
+
+type VolumeClaimTemplate struct {
+	Metadata Metadata                 `yaml:"metadata,omitempty"`
+	Spec     VolumeClaimTemplatesSpec `yaml:"spec,omitempty"`
 }
 
 type StatefulSetSpec struct {
-	ServiceName          MetadataName         `yaml:"serviceName"`
-	Replicas             Replicas             `yaml:"replicas"`
-	Selector             Selector             `yaml:"selector,omitempty"`
-	Template             PodTemplate          `yaml:"template"`
-	VolumeClaimTemplates VolumeClaimTemplates `yaml:"volumeClaimTemplates,omitempty"`
+	ServiceName          MetadataName          `yaml:"serviceName"`
+	Replicas             Replicas              `yaml:"replicas"`
+	Selector             Selector              `yaml:"selector,omitempty"`
+	Template             PodTemplate           `yaml:"template"`
+	VolumeClaimTemplates []VolumeClaimTemplate `yaml:"volumeClaimTemplates,omitempty"`
 }
 
 func (s StatefulSetSpec) Validate(ctx context.Context) error {
