@@ -23,10 +23,10 @@ func (i *KafkaSample) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.GolangBuilder{
-				Name:            "server",
+				Name:            "http_server",
 				GitRepo:         "https://github.com/bborbe/sample_kafka.git",
 				SourceDirectory: "github.com/bborbe/sample_kafka",
-				Package:         "github.com/bborbe/sample_kafka",
+				Package:         "github.com/bborbe/sample_kafka/http_server",
 				Image:           i.Image,
 			},
 		},

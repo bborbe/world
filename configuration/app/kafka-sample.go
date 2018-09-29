@@ -68,7 +68,7 @@ func (k *KafkaSample) sampleApp() []world.Configuration {
 					Name: "server",
 					Env: []k8s.Env{
 						{
-							Name:  "KAFKA_PEERS",
+							Name:  "BROKERS",
 							Value: "kafka-0.kafka.kafka.svc.cluster.local:9093",
 						},
 					},

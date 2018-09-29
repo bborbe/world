@@ -37,7 +37,78 @@ func (k *Kafka) Children() []world.Configuration {
 	}
 	result = append(result, k.zookeeper()...)
 	result = append(result, k.kafka()...)
+	result = append(result, k.metrics()...)
 	return result
+}
+
+func (k *Kafka) metrics() []world.Configuration {
+	port := deployer.Port{
+		Port:     9308,
+		Protocol: "TCP",
+		Name:     "http",
+	}
+	image := docker.Image{
+		Repository: "bborbe/kafka-exporter",
+		Tag:        "v1.2.0",
+	}
+	return []world.Configuration{
+		&build.KafkaExporter{
+			Image: image,
+		},
+		&k8s.DeploymentConfiguration{
+			Context: k.Cluster.Context,
+			Deployment: k8s.Deployment{
+				ApiVersion: "apps/v1",
+				Kind:       "Deployment",
+				Metadata: k8s.Metadata{
+					Namespace: "kafka",
+					Name:      "kafka-exporter",
+				},
+				Spec: k8s.DeploymentSpec{
+					Replicas: 1,
+					Strategy: k8s.DeploymentStrategy{
+						Type: "RollingUpdate",
+						RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+							MaxUnavailable: 1,
+						},
+					},
+					Selector: k8s.Selector{
+						MatchLabels: k8s.Labels{
+							"app": "kafka-exporter",
+						},
+					},
+					Template: k8s.PodTemplate{
+						Metadata: k8s.Metadata{
+							Labels: k8s.Labels{
+								"app": "kafka-exporter",
+							},
+							Annotations: k8s.Annotations{
+								"prometheus.io/path":   "/metrics",
+								"prometheus.io/port":   port.Port.String(),
+								"prometheus.io/scheme": "http",
+								"prometheus.io/scrape": "true",
+							},
+						},
+						Spec: k8s.PodSpec{
+							Containers: []k8s.Container{
+								{
+									Name:  "exporter",
+									Image: k8s.Image(image.String()),
+									Args: []k8s.Arg{
+										"--kafka.server=kafka-0.kafka.kafka.svc.cluster.local:9093",
+									},
+									ImagePullPolicy: "IfNotPresent",
+									Ports: []k8s.ContainerPort{
+										port.ContainerPort(),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func (k *Kafka) zookeeper() []world.Configuration {
@@ -56,7 +127,6 @@ func (k *Kafka) zookeeper() []world.Configuration {
 		Protocol: "TCP",
 		Name:     "leader-election",
 	}
-
 	image := docker.Image{
 		Repository: "bborbe/zookeeper",
 		Tag:        "master",
