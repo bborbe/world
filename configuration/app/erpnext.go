@@ -64,14 +64,19 @@ func (e *ErpNext) redisCache() []world.Configuration {
 		Name:     "redis",
 	}
 	return []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   e.Cluster.Context,
-			Namespace: "erpnext",
-			Name:      "redis-cache",
-			ConfigMapData: k8s.ConfigMapData{
-				"redis.conf": redisCacheConf,
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   e.Cluster.Context,
+				Namespace: "erpnext",
+				Name:      "redis-cache",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "redis.conf",
+						Value: redisCacheConf,
+					},
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",
@@ -161,14 +166,19 @@ func (e *ErpNext) redisQueue() []world.Configuration {
 		Name:     "redis",
 	}
 	return []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   e.Cluster.Context,
-			Namespace: "erpnext",
-			Name:      "redis-queue",
-			ConfigMapData: k8s.ConfigMapData{
-				"redis.conf": redisQueueConf,
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   e.Cluster.Context,
+				Namespace: "erpnext",
+				Name:      "redis-queue",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "redis.conf",
+						Value: redisQueueConf,
+					},
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",
@@ -258,14 +268,19 @@ func (e *ErpNext) redisSocketio() []world.Configuration {
 		Name:     "redis",
 	}
 	return []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   e.Cluster.Context,
-			Namespace: "erpnext",
-			Name:      "redis-socketio",
-			ConfigMapData: k8s.ConfigMapData{
-				"redis.conf": redisSocketioConf,
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   e.Cluster.Context,
+				Namespace: "erpnext",
+				Name:      "redis-socketio",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "redis.conf",
+						Value: redisSocketioConf,
+					},
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",
@@ -355,17 +370,31 @@ func (e *ErpNext) mariadb() []world.Configuration {
 		Name:     "mariadb",
 	}
 	return []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   e.Cluster.Context,
-			Namespace: "erpnext",
-			Name:      "mariadb",
-			ConfigMapData: k8s.ConfigMapData{
-				"my.cnf":                 mariadbMyCnf,
-				"mysql.cnf":              mariadbMysqlCnf,
-				"mysqld_safe_syslog.cnf": mariadbMysqldSafeSyslogCnf,
-				"mysqldump.cnf":          mariadbMysqldumpCnf,
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   e.Cluster.Context,
+				Namespace: "erpnext",
+				Name:      "mariadb",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "my.cnf",
+						Value: mariadbMyCnf,
+					},
+					deployer.ConfigEntry{
+						Key:   "mysql.cnf",
+						Value: mariadbMysqlCnf,
+					},
+					deployer.ConfigEntry{
+						Key:   "mysqld_safe_syslog.cnf",
+						Value: mariadbMysqldSafeSyslogCnf,
+					},
+					deployer.ConfigEntry{
+						Key:   "mysqldump.cnf",
+						Value: mariadbMysqldumpCnf,
+					},
+				},
 			},
-		},
+		),
 		&deployer.SecretDeployer{
 			Context:   e.Cluster.Context,
 			Namespace: "erpnext",

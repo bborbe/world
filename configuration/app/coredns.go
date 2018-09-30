@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/configuration"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/docker"
 
@@ -45,14 +47,19 @@ func (c *CoreDns) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   c.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "coredns",
-			ConfigMapData: k8s.ConfigMapData{
-				"Corefile": corefileConfig,
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   c.Cluster.Context,
+				Namespace: "kube-system",
+				Name:      "coredns",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "Corefile",
+						Value: corefileConfig,
+					},
+				},
 			},
-		},
+		),
 		&build.CoreDns{
 			Image: image,
 		},

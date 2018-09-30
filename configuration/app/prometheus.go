@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/configuration"
+
 	"fmt"
 
 	"github.com/bborbe/world/configuration/build"
@@ -61,15 +63,23 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "prometheus",
-			ConfigMapData: k8s.ConfigMapData{
-				"prometheus.yaml": prometheusConfig,
-				"alert.rules":     prometheusAlertRulesConfig,
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   p.Cluster.Context,
+				Namespace: "kube-system",
+				Name:      "prometheus",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "prometheus.yaml",
+						Value: prometheusConfig,
+					},
+					deployer.ConfigEntry{
+						Key:   "alert.rules",
+						Value: prometheusAlertRulesConfig,
+					},
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   p.Cluster.Context,
 			Namespace: "kube-system",
@@ -216,14 +226,19 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "prometheus-alertmanager",
-			ConfigMapData: k8s.ConfigMapData{
-				"alertmanager.yaml": prometheusAlertmanagerConfig,
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   p.Cluster.Context,
+				Namespace: "kube-system",
+				Name:      "prometheus-alertmanager",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "alertmanager.yaml",
+						Value: prometheusAlertmanagerConfig,
+					},
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   p.Cluster.Context,
 			Namespace: "kube-system",

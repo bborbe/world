@@ -85,7 +85,7 @@ type ConfigMapType string
 type ConfigMapData map[string]string
 
 func (d ConfigMapData) Validate(ctx context.Context) error {
-	for k, _ := range d {
+	for k := range d {
 		if k == "" {
 			return errors.New("Config has no name")
 		}

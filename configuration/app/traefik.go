@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/configuration"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
@@ -75,14 +77,19 @@ func (t *Traefik) Children() []world.Configuration {
 		}
 	}
 	result := []world.Configuration{
-		&deployer.ConfigMapDeployer{
-			Context:   t.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "traefik",
-			ConfigMapData: k8s.ConfigMapData{
-				"config": t.traefikConfig(),
+		configuration.New().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:   t.Cluster.Context,
+				Namespace: "kube-system",
+				Name:      "traefik",
+				ConfigEntryList: deployer.ConfigEntryList{
+					deployer.ConfigEntry{
+						Key:   "config",
+						Value: t.traefikConfig(),
+					},
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   t.Cluster.Context,
 			Namespace: "kube-system",

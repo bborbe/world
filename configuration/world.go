@@ -203,6 +203,26 @@ func (w *World) netcup() map[AppName]world.Configuration {
 	}
 	return map[AppName]world.Configuration{
 		"server": &server.Netcup{},
+		"grafana": &app.Grafana{
+			Cluster:      c,
+			Domain:       "grafana.benjamin-borbe.de",
+			LdapUsername: w.TeamvaultSecrets.Username("MOPMLG"),
+			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
+			Requirements: []world.Configuration{
+				configuration.New().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: dns.Host("grafana.benjamin-borbe.de"),
+								IP:   net.ParseIP(c.IP.String()),
+							},
+						},
+					},
+				),
+			},
+		},
 		"nfs-provisioner": &app.NfsProvisioner{
 			Context:  c.Context,
 			HostPath: "/data/nfs-provisioner",
