@@ -13,7 +13,9 @@ import (
 
 type Deployer struct {
 	Context Context
-	Data    interface{}
+	Data    interface {
+		String() string
+	}
 }
 
 func (d *Deployer) Apply(ctx context.Context) error {
@@ -25,6 +27,7 @@ func (d *Deployer) Apply(ctx context.Context) error {
 	if glog.V(4) {
 		glog.Infof("yaml: %s", buf.String())
 	}
+	glog.V(1).Infof("kubectl apply %s", d.Data.String())
 	cmd := exec.CommandContext(ctx, "kubectl", "--context", d.Context.String(), "apply", "-f", "-")
 	cmd.Stdin = buf
 	if glog.V(4) {

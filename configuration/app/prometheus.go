@@ -41,16 +41,21 @@ func (t *Prometheus) Validate(ctx context.Context) error {
 
 func (p *Prometheus) Children() []world.Configuration {
 	var result []world.Configuration
-	result = append(result, p.nodeExporter()...)
+	result = append(result, &deployer.NamespaceDeployer{
+		Context:   p.Cluster.Context,
+		Namespace: "prometheus",
+	})
 	result = append(result, p.prometheus()...)
 	result = append(result, p.alertmanager()...)
+	result = append(result, p.nodeExporter()...)
+	result = append(result, p.kubeStateMetrics()...)
 	return result
 }
 
 func (p *Prometheus) prometheus() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/prometheus",
-		Tag:        "v1.8.2",
+		Tag:        "v2.4.2",
 	}
 	prometheusPort := deployer.Port{
 		Port:     9090,
@@ -66,7 +71,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		configuration.New().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   p.Cluster.Context,
-				Namespace: "kube-system",
+				Namespace: "prometheus",
 				Name:      "prometheus",
 				ConfigEntryList: deployer.ConfigEntryList{
 					deployer.ConfigEntry{
@@ -74,7 +79,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 						Value: prometheusConfig,
 					},
 					deployer.ConfigEntry{
-						Key:   "alert.rules",
+						Key:   "alert.rules.yaml",
 						Value: prometheusAlertRulesConfig,
 					},
 				},
@@ -82,7 +87,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		),
 		&deployer.DeploymentDeployer{
 			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
+			Namespace: "prometheus",
 			Name:      "prometheus",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "Recreate",
@@ -92,15 +97,14 @@ func (p *Prometheus) prometheus() []world.Configuration {
 					Name:  "prometheus",
 					Image: image,
 					Args: []k8s.Arg{
-						"-config.file=/config/prometheus.yaml",
-						"-storage.local.retention=48h",
-						"-storage.local.path=/prometheus",
-						"-storage.local.target-heap-size=500000000",
-						"-web.console.libraries=/etc/prometheus/console_libraries",
-						"-web.console.templates=/etc/prometheus/consoles",
-						k8s.Arg(fmt.Sprintf("-web.external-url=https://%s", p.PrometheusDomain)),
-						"-alertmanager.url=http://prometheus-alertmanager:9093",
-						"-log.level=info",
+						"--config.file=/config/prometheus.yaml",
+						"--storage.tsdb.retention=48h",
+						"--storage.tsdb.path=/prometheus",
+						"--web.console.libraries=/etc/prometheus/console_libraries",
+						"--web.console.templates=/etc/prometheus/consoles",
+						k8s.Arg(fmt.Sprintf("--web.external-url=https://%s", p.PrometheusDomain)),
+						"--web.enable-lifecycle",
+						"--log.level=info",
 					},
 					Requirement: &build.Prometheus{
 						Image: image,
@@ -151,7 +155,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 				},
 				&container.Auth{
 					Context:      p.Cluster.Context,
-					Namespace:    "kube-system",
+					Namespace:    "prometheus",
 					Port:         authPort.Port,
 					TargetPort:   prometheusPort.Port,
 					Secret:       p.Secret,
@@ -170,8 +174,8 @@ func (p *Prometheus) prometheus() []world.Configuration {
 								Path: "prometheus.yaml",
 							},
 							{
-								Key:  "alert.rules",
-								Path: "alert.rules",
+								Key:  "alert.rules.yaml",
+								Path: "alert.rules.yaml",
 							},
 						},
 					},
@@ -187,7 +191,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		},
 		&deployer.ServiceDeployer{
 			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
+			Namespace: "prometheus",
 			Name:      "prometheus",
 			Ports: []deployer.Port{
 				prometheusPort,
@@ -202,7 +206,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		},
 		&deployer.IngressDeployer{
 			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
+			Namespace: "prometheus",
 			Name:      "prometheus",
 			Port:      "http-auth",
 			Domains:   k8s.IngressHosts{p.PrometheusDomain},
@@ -213,7 +217,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 func (p *Prometheus) alertmanager() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/prometheus-alertmanager",
-		Tag:        "v0.14.0",
+		Tag:        "v0.15.2",
 	}
 	alertmanagerPort := deployer.Port{
 		Port:     9093,
@@ -221,7 +225,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		Protocol: "TCP",
 	}
 	authPort := deployer.Port{
-		Port:     9094,
+		Port:     9095,
 		Name:     "http-auth",
 		Protocol: "TCP",
 	}
@@ -229,8 +233,8 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		configuration.New().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   p.Cluster.Context,
-				Namespace: "kube-system",
-				Name:      "prometheus-alertmanager",
+				Namespace: "prometheus",
+				Name:      "alertmanager",
 				ConfigEntryList: deployer.ConfigEntryList{
 					deployer.ConfigEntry{
 						Key:   "alertmanager.yaml",
@@ -241,8 +245,8 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		),
 		&deployer.DeploymentDeployer{
 			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "prometheus-alertmanager",
+			Namespace: "prometheus",
+			Name:      "alertmanager",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "RollingUpdate",
 				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
@@ -307,7 +311,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 				},
 				&container.Auth{
 					Context:      p.Cluster.Context,
-					Namespace:    "kube-system",
+					Namespace:    "prometheus",
 					Port:         authPort.Port,
 					TargetPort:   alertmanagerPort.Port,
 					Secret:       p.Secret,
@@ -323,7 +327,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 				{
 					Name: "config",
 					ConfigMap: k8s.PodVolumeConfigMap{
-						Name: "prometheus-alertmanager",
+						Name: "alertmanager",
 						Items: []k8s.PodConfigMapItem{
 							{
 								Key:  "alertmanager.yaml",
@@ -336,8 +340,8 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		},
 		&deployer.ServiceDeployer{
 			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "prometheus-alertmanager",
+			Namespace: "prometheus",
+			Name:      "alertmanager",
 			Ports: []deployer.Port{
 				alertmanagerPort,
 				authPort,
@@ -345,8 +349,8 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		},
 		&deployer.IngressDeployer{
 			Context:   p.Cluster.Context,
-			Namespace: "kube-system",
-			Name:      "prometheus-alertmanager",
+			Namespace: "prometheus",
+			Name:      "alertmanager",
 			Port:      "http-auth",
 			Domains:   k8s.IngressHosts{p.AlertmanagerDomain},
 		},
@@ -356,7 +360,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 func (p *Prometheus) nodeExporter() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/prometheus-node-exporter",
-		Tag:        "v0.14.0",
+		Tag:        "v0.16.0",
 	}
 	return []world.Configuration{
 		&k8s.DaemonSetConfiguration{
@@ -370,16 +374,16 @@ func (p *Prometheus) nodeExporter() []world.Configuration {
 				ApiVersion: "apps/v1",
 				Kind:       "DaemonSet",
 				Metadata: k8s.Metadata{
-					Name:      "prometheus-node-exporter",
-					Namespace: "kube-system",
+					Name:      "node-exporter",
+					Namespace: "prometheus",
 					Labels: k8s.Labels{
-						"app": "prometheus-node-exporter",
+						"app": "node-exporter",
 					},
 				},
 				Spec: k8s.DaemonSetSpec{
 					Selector: k8s.Selector{
 						MatchLabels: k8s.Labels{
-							"app": "prometheus-node-exporter",
+							"app": "node-exporter",
 						},
 					},
 					Template: k8s.PodTemplate{
@@ -391,17 +395,17 @@ func (p *Prometheus) nodeExporter() []world.Configuration {
 								"prometheus.io/scrape": "true",
 							},
 							Labels: k8s.Labels{
-								"app": "prometheus-node-exporter",
+								"app": "node-exporter",
 							},
 						},
 						Spec: k8s.PodSpec{
-							HostPid: true,
+							HostPid:   true,
+							DnsPolicy: "ClusterFirst",
 							Containers: []k8s.Container{
 								{
 									Args: []k8s.Arg{
-										"-collector.procfs=/host/proc",
-										"-collector.sysfs=/host/sys",
-										"-collector.filesystem.ignored-mount-points='^/(sys|proc|dev|host|etc)($|/)'",
+										"--path.procfs=/proc_host",
+										"--path.sysfs=/host_sys",
 									},
 									Image: k8s.Image(image.String()),
 									Name:  "node-exporter",
@@ -421,8 +425,118 @@ func (p *Prometheus) nodeExporter() []world.Configuration {
 											Memory: "10Mi",
 										},
 									},
-									SecurityContext: k8s.SecurityContext{
-										Privileged: true,
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Name:     "proc",
+											Path:     "/proc_host",
+											ReadOnly: true,
+										},
+										{
+											Name:     "sys",
+											Path:     "/host_sys",
+											ReadOnly: true,
+										},
+									},
+								},
+							},
+							Volumes: []k8s.PodVolume{
+								{
+									Name: "proc",
+									Host: k8s.PodVolumeHost{
+										Path: "/proc",
+									},
+								},
+								{
+									Name: "sys",
+									Host: k8s.PodVolumeHost{
+										Path: "/sys",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (p *Prometheus) kubeStateMetrics() []world.Configuration {
+	port := deployer.Port{
+		Port:     8080,
+		Protocol: "TCP",
+		Name:     "http",
+	}
+	image := docker.Image{
+		Repository: "bborbe/kube-state-metrics",
+		Tag:        "v1.4.0",
+	}
+	return []world.Configuration{
+		&build.KubeStateMetrics{
+			Image: image,
+		},
+		&k8s.DeploymentConfiguration{
+			Context: p.Cluster.Context,
+			Deployment: k8s.Deployment{
+				ApiVersion: "apps/v1",
+				Kind:       "Deployment",
+				Metadata: k8s.Metadata{
+					Namespace: "prometheus",
+					Name:      "kube-state-metrics",
+				},
+				Spec: k8s.DeploymentSpec{
+					Replicas: 1,
+					Strategy: k8s.DeploymentStrategy{
+						Type: "RollingUpdate",
+						RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+							MaxUnavailable: 1,
+						},
+					},
+					Selector: k8s.Selector{
+						MatchLabels: k8s.Labels{
+							"app": "kube-state-metrics",
+						},
+					},
+					Template: k8s.PodTemplate{
+						Metadata: k8s.Metadata{
+							Labels: k8s.Labels{
+								"app": "kube-state-metrics",
+							},
+							Annotations: k8s.Annotations{
+								"prometheus.io/path":   "/metrics",
+								"prometheus.io/port":   port.Port.String(),
+								"prometheus.io/scheme": "http",
+								"prometheus.io/scrape": "true",
+							},
+						},
+						Spec: k8s.PodSpec{
+							Containers: []k8s.Container{
+								{
+									Name:            "kube-state-metrics",
+									Image:           k8s.Image(image.String()),
+									ImagePullPolicy: "IfNotPresent",
+									Ports: []k8s.ContainerPort{
+										port.ContainerPort(),
+									},
+									LivenessProbe: k8s.Probe{
+										HttpGet: k8s.HttpGet{
+											Path:   "/",
+											Port:   port.Port,
+											Scheme: "HTTP",
+										},
+										InitialDelaySeconds: 20,
+										SuccessThreshold:    1,
+										FailureThreshold:    5,
+										TimeoutSeconds:      5,
+									},
+									ReadinessProbe: k8s.Probe{
+										HttpGet: k8s.HttpGet{
+											Path:   "/",
+											Port:   port.Port,
+											Scheme: "HTTP",
+										},
+										InitialDelaySeconds: 3,
+										TimeoutSeconds:      5,
 									},
 								},
 							},
@@ -439,65 +553,50 @@ func (p *Prometheus) Applier() (world.Applier, error) {
 }
 
 const prometheusAlertRulesConfig = `
-# Alert for any instance that is unreachable for >5 minutes.
-ALERT InstanceDown
-	IF up == 0
-	FOR 5m
-	LABELS {
-		severity = "critical",
-	}
-	ANNOTATIONS {
-		summary = "Instance {{ $labels.instance }} down",
-		description = "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.",
-	}
-
-# Alert disk space below 20% free
-ALERT DiskOutOfSpace
-	IF (max(diskstatus_bytesfree / diskstatus_bytestotal) by (app)) < 0.2
-	FOR 1m
-	LABELS {
-		severity = "warning",
-	}
-	ANNOTATIONS {
-		summary = "Disk of {{ $labels.app }} space",
-		description = "{{ $labels.app }} is below 20% free space for more than 1 minutes.",
-	}
-
-# Alert disk space below 10% free
-ALERT DiskOutOfSpace
-	IF (max(diskstatus_bytesfree / diskstatus_bytestotal) by (app)) < 0.1
-	FOR 1m
-	LABELS {
-		severity = "critical",
-	}
-	ANNOTATIONS {
-		summary = "Disk of {{ $labels.app }} space",
-		description = "{{ $labels.app }} is below 10% free space for more than 1 minutes.",
-	}
-
-# Alert disk space below 20% free
-ALERT DiskOutOfInodes
-	IF (max(diskstatus_inodesfree / diskstatus_inodestotal) by (app)) < 0.2
-	FOR 1m
-	LABELS {
-		severity = "warning",
-	}
-	ANNOTATIONS {
-		summary = "Disk of {{ $labels.app }} inodes",
-		description = "{{ $labels.app }} is below 20% free inodes for more than 1 minutes.",
-	}
-
-# Alert disk space below 10% free
-ALERT DiskOutOfInodes
-	IF (max(diskstatus_inodesfree / diskstatus_inodestotal) by (app)) < 0.1
-	FOR 1m
-	LABELS {
-		severity = "critical",
-	}
-	ANNOTATIONS {
-		summary = "Disk of {{ $labels.app }} inodes",
-		description = "{{ $labels.app }} is below 10% free inodes for more than 1 minutes.",
-	}
+groups:
+- name: alert.rules
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{ $labels.instance }} of job {{ $labels.job }} has been down
+        for more than 5 minutes.'
+      summary: Instance {{ $labels.instance }} down
+  - alert: DiskOutOfSpace
+    expr: (max by(app) (diskstatus_bytesfree / diskstatus_bytestotal)) < 0.2
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description: '{{ $labels.app }} is below 20% free space for more than 1 minutes.'
+      summary: Disk of {{ $labels.app }} space
+  - alert: DiskOutOfSpace
+    expr: (max by(app) (diskstatus_bytesfree / diskstatus_bytestotal)) < 0.1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{ $labels.app }} is below 10% free space for more than 1 minutes.'
+      summary: Disk of {{ $labels.app }} space
+  - alert: DiskOutOfInodes
+    expr: (max by(app) (diskstatus_inodesfree / diskstatus_inodestotal)) < 0.2
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description: '{{ $labels.app }} is below 20% free inodes for more than 1 minutes.'
+      summary: Disk of {{ $labels.app }} inodes
+  - alert: DiskOutOfInodes
+    expr: (max by(app) (diskstatus_inodesfree / diskstatus_inodestotal)) < 0.1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{ $labels.app }} is below 10% free inodes for more than 1 minutes.'
+      summary: Disk of {{ $labels.app }} inodes
 `
 
 const prometheusAlertmanagerConfig = `
@@ -571,10 +670,18 @@ global:
   external_labels:
     region: 'nc'
 
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - alertmanager:9093
+    scheme: http
+    timeout: 10s
+
 # Rule files specifies a list of globs. Rules and alerts are read from
 # all matching files.
 rule_files:
-- 'alert.rules'
+- 'alert.rules.yaml'
 
 # A scrape configuration for running Prometheus on a Kubernetes cluster.
 # This uses separate scrape configs for cluster components (i.e. API server, node)
@@ -621,6 +728,46 @@ scrape_configs:
   scheme: https
 
 
+
+  # This TLS & bearer token file config is used to connect to the actual scrape
+  # endpoints for cluster components. This is separate to discovery auth
+  # configuration ('in_cluster' below) because discovery & scraping are two
+  # separate concerns in Prometheus.
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    # If your node certificates are self-signed or use a different CA to the
+    # master CA, then disable certificate verification below. Note that
+    # certificate verification is an integral part of a secure infrastructure
+    # so this should only be disabled in a controlled environment. You can
+    # disable certificate verification by uncommenting the line below.
+    #
+    insecure_skip_verify: true
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+  kubernetes_sd_configs:
+  - role: node
+
+  relabel_configs:
+  - action: labelmap
+    regex: __meta_kubernetes_node_label_(.+)
+  - source_labels: [__address__]
+    action: replace
+    target_label: __address__
+    regex: ([^:;]+):(\d+)
+    replacement: ${1}:10255
+  - source_labels: [__scheme__]
+    action: replace
+    target_label: __scheme__
+    regex: https
+    replacement: http
+
+
+- job_name: 'kubernetes-cadvisor'
+
+  # Default to scraping over https. If required, just disable this or change to
+  # 'http'.
+  scheme: https
+  metrics_path: /metrics/cadvisor
 
   # This TLS & bearer token file config is used to connect to the actual scrape
   # endpoints for cluster components. This is separate to discovery auth
@@ -728,6 +875,76 @@ scrape_configs:
   - source_labels: [__meta_kubernetes_service_name]
     target_label: kubernetes_name
 
+
+# Scrape config for probing services via the Blackbox Exporter.
+#
+# The relabeling allows the actual service scrape endpoint to be configured
+# via the following annotations:
+#
+# * 'prometheus.io/probehttp': Only probe services that have a value of 'true'
+# * 'prometheus.io/fqdn': The external address to check
+- job_name: 'kubernetes-services-http'
+
+  metrics_path: /probe
+  params:
+    module: [http_2xx]
+
+  kubernetes_sd_configs:
+  - role: service
+
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probehttp]
+    action: keep
+    regex: true
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_target]
+    target_label: __param_target
+  - source_labels: [__meta_kubernetes_service_name]
+    target_label: __address__
+  - source_labels: [__param_target]
+    target_label: instance
+  - action: labelmap
+    regex: __meta_kubernetes_service_label_(.+)
+  - source_labels: [__meta_kubernetes_service_namespace]
+    target_label: kubernetes_namespace
+  - source_labels: [__meta_kubernetes_service_name]
+    target_label: kubernetes_name
+
+# Scrape config for probing services via the Blackbox Exporter.
+#
+# The relabeling allows the actual service scrape endpoint to be configured
+# via the following annotations:
+#
+# * 'prometheus.io/probehttp': Only probe services that have a value of 'true'
+# * 'prometheus.io/fqdn': The external address to check
+- job_name: 'kubernetes-services-https'
+
+  metrics_path: /probe
+  params:
+    module: [https_2xx]
+
+  kubernetes_sd_configs:
+  - role: service
+
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probehttps]
+    action: keep
+    regex: true
+  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_target]
+    target_label: __param_target
+  - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_service_namespace]
+    target_label: __address__
+    action: replace
+    regex: (.+);(.+)
+    replacement: $1.$2.svc
+  - source_labels: [__param_target]
+    target_label: instance
+  - action: labelmap
+    regex: __meta_kubernetes_service_label_(.+)
+  - source_labels: [__meta_kubernetes_service_namespace]
+    target_label: kubernetes_namespace
+  - source_labels: [__meta_kubernetes_service_name]
+    target_label: kubernetes_name
+
 # Example scrape config for pods
 #
 # The relabeling allows the actual pod scrape endpoint to be configured via the
@@ -762,4 +979,5 @@ scrape_configs:
   - source_labels: [__meta_kubernetes_pod_name]
     action: replace
     target_label: kubernetes_pod_name
+
 `

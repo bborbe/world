@@ -31,7 +31,7 @@ func (t *Traefik) Validate(ctx context.Context) error {
 func (t *Traefik) Children() []world.Configuration {
 	traefikImage := docker.Image{
 		Repository: "bborbe/traefik",
-		Tag:        "1.6.6-alpine",
+		Tag:        "1.7.0-alpine",
 	}
 	httpPort := deployer.Port{
 		Port:     80,
@@ -77,10 +77,14 @@ func (t *Traefik) Children() []world.Configuration {
 		}
 	}
 	result := []world.Configuration{
+		&deployer.NamespaceDeployer{
+			Context:   t.Cluster.Context,
+			Namespace: "traefik",
+		},
 		configuration.New().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   t.Cluster.Context,
-				Namespace: "kube-system",
+				Namespace: "traefik",
 				Name:      "traefik",
 				ConfigEntryList: deployer.ConfigEntryList{
 					deployer.ConfigEntry{
@@ -92,7 +96,7 @@ func (t *Traefik) Children() []world.Configuration {
 		),
 		&deployer.DeploymentDeployer{
 			Context:   t.Cluster.Context,
-			Namespace: "kube-system",
+			Namespace: "traefik",
 			Name:      "traefik",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "RollingUpdate",
@@ -170,7 +174,7 @@ func (t *Traefik) Children() []world.Configuration {
 		},
 		&deployer.ServiceDeployer{
 			Context:   t.Cluster.Context,
-			Namespace: "kube-system",
+			Namespace: "traefik",
 			Name:      "traefik",
 			Ports:     ports,
 			Annotations: k8s.Annotations{
@@ -182,7 +186,7 @@ func (t *Traefik) Children() []world.Configuration {
 		},
 		&deployer.IngressDeployer{
 			Context:   t.Cluster.Context,
-			Namespace: "kube-system",
+			Namespace: "traefik",
 			Name:      "traefik",
 			Port:      "dashboard",
 			Domains:   t.Domains,
@@ -191,7 +195,7 @@ func (t *Traefik) Children() []world.Configuration {
 	if t.SSL {
 		result = append(result, &deployer.DeploymentDeployer{
 			Context:   t.Cluster.Context,
-			Namespace: "kube-system",
+			Namespace: "traefik",
 			Name:      "traefik-extract",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "RollingUpdate",
