@@ -3,8 +3,6 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/configuration"
-
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
@@ -52,7 +50,7 @@ func (p *Proxy) Children() []world.Configuration {
 			Context:   p.Cluster.Context,
 			Namespace: "proxy",
 		},
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   p.Cluster.Context,
 				Namespace: "proxy",

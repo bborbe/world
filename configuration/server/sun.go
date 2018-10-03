@@ -2,12 +2,9 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"net"
 
 	"github.com/bborbe/world/pkg/remote"
 
-	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/dns"
 
 	"github.com/bborbe/world/pkg/k8s"
@@ -20,29 +17,32 @@ import (
 
 type Sun struct {
 	Context   k8s.Context
-	ClusterIP k8s.ClusterIP
+	ClusterIP dns.IP
 }
 
 func (s *Sun) Children() []world.Configuration {
 	ssh := ssh.SSH{
-		Host:           ssh.Host(fmt.Sprintf("%s:22", s.ClusterIP)),
+		Host: ssh.Host{
+			IP:   s.ClusterIP,
+			Port: 22,
+		},
 		User:           "bborbe",
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&dns.Server{
 				Host:    "ns.rocketsource.de",
 				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 				List: []dns.Entry{
 					{
 						Host: "backup.sun.pn.benjamin-borbe.de",
-						IP:   net.ParseIP(s.ClusterIP.String()),
+						IP:   s.ClusterIP,
 					},
 				},
 			},
 		),
-		configuration.New().WithApplier(&remote.Iptables{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
 			SSH:  ssh,
 			Port: 80,
 		}),

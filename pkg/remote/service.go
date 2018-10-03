@@ -19,40 +19,38 @@ func (h ServiceName) Validate(ctx context.Context) error {
 }
 
 type Service struct {
-	SSH ssh.SSH
-
+	SSH  ssh.SSH
 	Name ServiceName
 }
 
-func (f *Service) Satisfied(ctx context.Context) (bool, error) {
-	running, err := f.ServiceRunning(ctx)
+func (s *Service) Satisfied(ctx context.Context) (bool, error) {
+	running, err := s.ServiceRunning(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "check service running failed")
 	}
-	enabled, err := f.ServiceRunning(ctx)
+	enabled, err := s.ServiceRunning(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "check service enabled failed")
 	}
 	return running && enabled, nil
 }
 
-func (f *Service) Apply(ctx context.Context) error {
-
-	if err := f.StartService(ctx); err != nil {
+func (s *Service) Apply(ctx context.Context) error {
+	if err := s.StartService(ctx); err != nil {
 		return errors.Wrap(err, "start service failed")
 	}
 
-	if err := f.ServiceEnable(ctx); err != nil {
+	if err := s.ServiceEnable(ctx); err != nil {
 		return errors.Wrap(err, "enable service failed")
 	}
 	return nil
 }
 
-func (f *Service) Validate(ctx context.Context) error {
+func (s *Service) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		f.SSH,
-		f.Name,
+		s.SSH,
+		s.Name,
 	)
 }
 

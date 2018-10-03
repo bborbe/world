@@ -43,8 +43,9 @@ func main() {
 	pflag.Set("logtostderr", "true")
 
 	rootCmd := &cobra.Command{
-		Use:   "world",
-		Short: "Manage the world",
+		Use:          "world",
+		Short:        "Manage the world",
+		SilenceUsage: true,
 	}
 	rootCmd.PersistentFlags().StringP("app", "a", "", "app name")
 	rootCmd.PersistentFlags().StringP("cluster", "c", "", "cluster name")

@@ -10,7 +10,8 @@ import (
 	"os/user"
 	"path"
 
-	"github.com/bborbe/world/pkg/configuration"
+	"github.com/bborbe/world/pkg/dns"
+
 	"github.com/bborbe/world/pkg/local"
 
 	"github.com/bborbe/world/pkg/k8s"
@@ -38,12 +39,12 @@ type Kubelet struct {
 	SSH       ssh.SSH
 	Version   docker.Tag
 	Context   k8s.Context
-	ClusterIP k8s.ClusterIP
+	ClusterIP dns.IP
 }
 
 func (k *Kubelet) Children() []world.Configuration {
 	return []world.Configuration{
-		configuration.New().WithApplier(&remote.Iptables{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
 			SSH:  k.SSH,
 			Port: 6443,
 		}),
@@ -111,8 +112,8 @@ func (k *Kubelet) Children() []world.Configuration {
 			User:  "root",
 			Group: "root",
 			Perm:  0644,
-			Content: remote.ContentFunc(func() ([]byte, error) {
-				return k.readPem(caCert)
+			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+				return k.readPem(ctx, caCert)
 			}),
 		},
 		&File{
@@ -121,8 +122,8 @@ func (k *Kubelet) Children() []world.Configuration {
 			User:  "root",
 			Group: "root",
 			Perm:  0644,
-			Content: remote.ContentFunc(func() ([]byte, error) {
-				return k.readPem(serverKey)
+			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+				return k.readPem(ctx, serverKey)
 			}),
 		},
 		&File{
@@ -131,8 +132,8 @@ func (k *Kubelet) Children() []world.Configuration {
 			User:  "root",
 			Group: "root",
 			Perm:  0644,
-			Content: remote.ContentFunc(func() ([]byte, error) {
-				return k.readPem(serverCert)
+			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+				return k.readPem(ctx, serverCert)
 			}),
 		},
 		&File{
@@ -184,52 +185,67 @@ func (k *Kubelet) Children() []world.Configuration {
 			Content: remote.ContentFunc(k.kubeControllerManagerYaml),
 		},
 		&Docker{
-			SSH:        k.SSH,
-			Name:       "kubelet",
-			Memory:     2048,
-			HostNet:    true,
-			HostPid:    true,
-			Privileged: true,
-			Volumes: []string{
-				"/:/rootfs:ro",
-				"/sys:/sys:ro",
-				"/var/log/:/var/log:rw",
-				"/var/lib/docker/:/var/lib/docker:rw",
-				"/var/lib/kubelet/:/var/lib/kubelet:rw,rslave",
-				"/run:/run:rw",
-				"/var/run:/var/run:rw",
-				"/etc/kubernetes:/etc/kubernetes",
-				"/srv/kubernetes:/srv/kubernetes",
-			},
-			Image:   k.hyperkubeImage(),
-			Command: "/hyperkube",
-			Args: []string{
-				"kubelet",
-				"--fail-swap-on=false",
-				fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
-				"--containerized",
-				"--register-node=true",
-				"--allow-privileged=true",
-				"--pod-manifest-path=/etc/kubernetes/manifests",
-				fmt.Sprintf("--hostname-override=%s", k.ClusterIP),
-				"--cluster-dns=10.103.0.10",
-				"--cluster-domain=cluster.local",
-				"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
-				"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
-				"--v=0",
+			SSH:  k.SSH,
+			Name: "kubelet",
+			BuildDockerServiceContent: func(ctx context.Context) (*DockerServiceContent, error) {
+				ip, err := k.ClusterIP.IP(ctx)
+				if err != nil {
+					return nil, errors.Wrap(err, "get ip failed")
+				}
+				return &DockerServiceContent{
+					Name:       "kubelet",
+					Memory:     2048,
+					HostNet:    true,
+					HostPid:    true,
+					Privileged: true,
+					Volumes: []string{
+						"/:/rootfs:ro",
+						"/sys:/sys:ro",
+						"/var/log/:/var/log:rw",
+						"/var/lib/docker/:/var/lib/docker:rw",
+						"/var/lib/kubelet/:/var/lib/kubelet:rw,rslave",
+						"/run:/run:rw",
+						"/var/run:/var/run:rw",
+						"/etc/kubernetes:/etc/kubernetes",
+						"/srv/kubernetes:/srv/kubernetes",
+					},
+					Image:   k.hyperkubeImage(),
+					Command: "/hyperkube",
+					Args: []string{
+						"kubelet",
+						"--fail-swap-on=false",
+						fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
+						"--containerized",
+						"--register-node=true",
+						"--allow-privileged=true",
+						"--pod-manifest-path=/etc/kubernetes/manifests",
+						fmt.Sprintf("--hostname-override=%s", ip.String()),
+						"--cluster-dns=10.103.0.10",
+						"--cluster-domain=cluster.local",
+						"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
+						"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
+						"--v=0",
+					},
+				}, nil
 			},
 		},
-		configuration.New().WithApplier(&local.Command{
-			Command: "kubectl",
-			Args: []string{
-				"config",
-				"set-cluster",
-				fmt.Sprintf("%s-cluster", k.Context),
-				fmt.Sprintf("--server=https://%s:6443", k.ClusterIP),
-				fmt.Sprintf("--certificate-authority=/Users/bborbe/.kube/%s/%s", k.Context, caCert),
-			},
+		world.NewConfiguraionBuilder().WithApplierBuildFunc(func(ctx context.Context) (world.Applier, error) {
+			ip, err := k.ClusterIP.IP(ctx)
+			if err != nil {
+				return nil, errors.Wrap(err, "get ip failed")
+			}
+			return &local.Command{
+				Command: "kubectl",
+				Args: []string{
+					"config",
+					"set-cluster",
+					fmt.Sprintf("%s-cluster", k.Context),
+					fmt.Sprintf("--server=https://%s:6443", ip.String()),
+					fmt.Sprintf("--certificate-authority=/Users/bborbe/.kube/%s/%s", k.Context, caCert),
+				},
+			}, nil
 		}),
-		configuration.New().WithApplier(&local.Command{
+		world.NewConfiguraionBuilder().WithApplier(&local.Command{
 			Command: "kubectl",
 			Args: []string{
 				"config",
@@ -240,7 +256,7 @@ func (k *Kubelet) Children() []world.Configuration {
 				fmt.Sprintf("--client-certificate=/Users/bborbe/.kube/%s/%s", k.Context, clientCert),
 			},
 		}),
-		configuration.New().WithApplier(&local.Command{
+		world.NewConfiguraionBuilder().WithApplier(&local.Command{
 			Command: "kubectl",
 			Args: []string{
 				"config",
@@ -252,10 +268,6 @@ func (k *Kubelet) Children() []world.Configuration {
 		}),
 	}
 }
-
-//
-//
-//
 
 func (k *Kubelet) Applier() (world.Applier, error) {
 	return nil, nil
@@ -271,7 +283,11 @@ func (k *Kubelet) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *Kubelet) kubeApiserverYaml() ([]byte, error) {
+func (k *Kubelet) kubeApiserverYaml(ctx context.Context) ([]byte, error) {
+	ip, err := k.ClusterIP.IP(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return render(`  
 apiVersion: v1
 kind: Pod
@@ -333,11 +349,15 @@ spec:
 		ClusterIP string
 	}{
 		Image:     k.hyperkubeImage().String(),
-		ClusterIP: k.ClusterIP.String(),
+		ClusterIP: ip.String(),
 	})
 }
 
-func (k *Kubelet) kubePodmasterYaml() ([]byte, error) {
+func (k *Kubelet) kubePodmasterYaml(ctx context.Context) ([]byte, error) {
+	ip, err := k.ClusterIP.IP(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return render(`
 apiVersion: v1
 kind: Pod
@@ -390,11 +410,11 @@ spec:
 		ClusterIP string
 	}{
 		Image:     k.podmasterImage().String(),
-		ClusterIP: k.ClusterIP.String(),
+		ClusterIP: ip.String(),
 	})
 }
 
-func (k *Kubelet) nodeKubeconfigYaml() ([]byte, error) {
+func (k *Kubelet) nodeKubeconfigYaml(ctx context.Context) ([]byte, error) {
 	return render(`
 apiVersion: v1
 kind: Config
@@ -417,7 +437,7 @@ current-context: kubelet-context
 `, struct{}{})
 }
 
-func (k *Kubelet) kubeProxyYaml() ([]byte, error) {
+func (k *Kubelet) kubeProxyYaml(ctx context.Context) ([]byte, error) {
 	return render(`
 apiVersion: v1
 kind: Pod
@@ -451,7 +471,7 @@ spec:
 	})
 }
 
-func (k *Kubelet) kubeSchedulerYaml() ([]byte, error) {
+func (k *Kubelet) kubeSchedulerYaml(ctx context.Context) ([]byte, error) {
 	return render(`
 apiVersion: v1
 kind: Pod
@@ -481,7 +501,7 @@ spec:
 	})
 }
 
-func (k *Kubelet) kubeControllerManagerYaml() ([]byte, error) {
+func (k *Kubelet) kubeControllerManagerYaml(ctx context.Context) ([]byte, error) {
 	return render(`
 apiVersion: v1
 kind: Pod
@@ -568,7 +588,11 @@ func (k *Kubelet) certDirectory() (string, error) {
 	return fmt.Sprintf("%s/.kube/%s", usr.HomeDir, k.Context), nil
 }
 
-func (k *Kubelet) generateKeys() error {
+func (k *Kubelet) generateKeys(ctx context.Context) error {
+	ip, err := k.ClusterIP.IP(ctx)
+	if err != nil {
+		return err
+	}
 	certDir, err := k.certDirectory()
 	if err != nil {
 		return err
@@ -596,7 +620,7 @@ func (k *Kubelet) generateKeys() error {
 		name,
 		namespace,
 		"cluster.local",
-		[]string{"10.103.0.1", k.ClusterIP.String()},
+		[]string{"10.103.0.1", ip.String()},
 		[]string{},
 	)
 	if err != nil {
@@ -623,7 +647,7 @@ func (k *Kubelet) generateKeys() error {
 	return nil
 }
 
-func (k *Kubelet) readPem(name string) ([]byte, error) {
+func (k *Kubelet) readPem(ctx context.Context, name string) ([]byte, error) {
 	certDir, err := k.certDirectory()
 	if err != nil {
 		return nil, err
@@ -631,7 +655,7 @@ func (k *Kubelet) readPem(name string) ([]byte, error) {
 	filepath := path.Join(certDir, name)
 	_, err = os.Stat(filepath)
 	if os.IsNotExist(err) {
-		if err := k.generateKeys(); err != nil {
+		if err := k.generateKeys(ctx); err != nil {
 			return nil, err
 		}
 	}

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,19 +15,19 @@ type DockerEngine struct {
 
 func (d *DockerEngine) Children() []world.Configuration {
 	return []world.Configuration{
-		configuration.New().WithApplier(&remote.Command{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     d.SSH,
 			Command: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -",
 		}),
-		configuration.New().WithApplier(&remote.Command{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     d.SSH,
 			Command: `add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"`,
 		}),
-		configuration.New().WithApplier(&remote.Command{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     d.SSH,
 			Command: `apt-get --quiet --yes update`,
 		}),
-		configuration.New().WithApplier(&remote.Command{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     d.SSH,
 			Command: `apt-get --quiet --yes --no-install-recommends install docker-ce`,
 		}),

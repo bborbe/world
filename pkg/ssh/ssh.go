@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/bborbe/world/pkg/dns"
+
 	"github.com/golang/glog"
 
 	"github.com/bborbe/run"
@@ -20,16 +22,39 @@ type SSH struct {
 	User           User
 }
 
-type Host string
+type Host struct {
+	IP   dns.IP
+	Port int
+}
+
+func (h Host) Address(ctx context.Context) (string, error) {
+	ip, err := h.IP.IP(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s:%d", ip.String(), h.Port), nil
+}
 
 func (h Host) Validate(ctx context.Context) error {
-	if h == "" {
-		return errors.New("Host missing")
+	if err := h.IP.Validate(ctx); err != nil {
+		return err
+	}
+	if h.Port <= 0 {
+		return errors.New("invalid Port")
 	}
 	return nil
 }
 
-func (p Host) String() string {
+type PublicKeyPath string
+
+func (h PublicKeyPath) Validate(ctx context.Context) error {
+	if h == "" {
+		return errors.New("PublicKeyPath missing")
+	}
+	return nil
+}
+
+func (p PublicKeyPath) String() string {
 	return string(p)
 }
 
@@ -72,8 +97,8 @@ func (p User) String() string {
 }
 
 func (s SSH) Validate(ctx context.Context) error {
-	if s.Host == "" {
-		return errors.New("Host missing")
+	if err := s.Host.Validate(ctx); err != nil {
+		return err
 	}
 	if s.PrivateKeyPath == "" {
 		return errors.New("PrivateKeyPath missing")
@@ -89,7 +114,11 @@ func (s *SSH) client(ctx context.Context) (*ssh.Client, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "get signer failed")
 	}
-	client, err := ssh.Dial("tcp", s.Host.String(), &ssh.ClientConfig{
+	addr, err := s.Host.Address(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get addr from host failed")
+	}
+	client, err := ssh.Dial("tcp", addr, &ssh.ClientConfig{
 		User: s.User.String(),
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),

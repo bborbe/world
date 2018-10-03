@@ -1,0 +1,71 @@
+package server
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/bborbe/world/configuration/serivce"
+
+	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/pkg/dns"
+	"github.com/bborbe/world/pkg/ssh"
+
+	"github.com/bborbe/world/pkg/hetzner"
+	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
+)
+
+type Hetzner struct {
+	Context k8s.Context
+	ApiKey  deployer.SecretValue
+	IP      dns.IP
+}
+
+func (h *Hetzner) Children() []world.Configuration {
+	user := ssh.User("bborbe")
+	return []world.Configuration{
+		world.NewConfiguraionBuilder().WithApplier(&hetzner.Server{
+			ApiKey:        h.ApiKey,
+			Name:          h.Context,
+			User:          user,
+			PublicKeyPath: "/Users/bborbe/.ssh/id_rsa.pub",
+		}),
+		world.NewConfiguraionBuilder().WithApplier(
+			&dns.Server{
+				Host:    "ns.rocketsource.de",
+				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+				List: []dns.Entry{
+					{
+						Host: dns.Host(fmt.Sprintf("%s.benjamin-borbe.de", h.Context.String())),
+						IP:   h.IP,
+					},
+				},
+			},
+		),
+		&service.Kubernetes{
+			SSH: ssh.SSH{
+				Host: ssh.Host{
+					IP:   h.IP,
+					Port: 22,
+				},
+				User:           user,
+				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+			},
+			Context:   h.Context,
+			ClusterIP: h.IP,
+		},
+	}
+}
+
+func (h *Hetzner) Applier() (world.Applier, error) {
+	return nil, nil
+}
+
+func (h *Hetzner) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		h.Context,
+		h.ApiKey,
+	)
+}

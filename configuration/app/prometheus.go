@@ -3,8 +3,6 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/configuration"
-
 	"fmt"
 
 	"github.com/bborbe/world/configuration/build"
@@ -68,7 +66,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   p.Cluster.Context,
 				Namespace: "prometheus",
@@ -230,7 +228,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   p.Cluster.Context,
 				Namespace: "prometheus",
@@ -260,6 +258,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					Image: image,
 					Args: []k8s.Arg{
 						"--config.file=/config/alertmanager.yaml",
+						"--storage.path=/alertmanager",
 						k8s.Arg(fmt.Sprintf("--web.external-url=https://%s", p.AlertmanagerDomain)),
 					},
 					Requirement: &build.PrometheusAlertmanager{
@@ -321,8 +320,11 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 			},
 			Volumes: []k8s.PodVolume{
 				{
-					Name:     "alertmanager",
-					EmptyDir: &k8s.PodVolumeEmptyDir{},
+					Name: "alertmanager",
+					Nfs: k8s.PodVolumeNfs{
+						Path:   "/data/alertmanager",
+						Server: k8s.PodNfsServer(p.Cluster.NfsServer),
+					},
 				},
 				{
 					Name: "config",

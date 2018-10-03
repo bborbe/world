@@ -7,8 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bborbe/world/pkg/configuration"
-
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
@@ -62,7 +60,7 @@ func (g *Grafana) grafana() []world.Configuration {
 			Context:   g.Cluster.Context,
 			Namespace: "grafana",
 		},
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   g.Cluster.Context,
 				Namespace: "grafana",
@@ -79,7 +77,7 @@ func (g *Grafana) grafana() []world.Configuration {
 				},
 			},
 		),
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   g.Cluster.Context,
 				Namespace: "grafana",

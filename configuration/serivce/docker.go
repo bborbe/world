@@ -26,17 +26,9 @@ func (m Memory) Validate(ctx context.Context) error {
 }
 
 type Docker struct {
-	SSH        ssh.SSH
-	Name       remote.ServiceName
-	Ports      []int
-	Volumes    []string
-	Image      docker.Image
-	Command    string
-	Args       []string
-	Memory     Memory
-	HostNet    bool
-	Privileged bool
-	HostPid    bool
+	SSH                       ssh.SSH
+	Name                      remote.ServiceName
+	BuildDockerServiceContent func(ctx context.Context) (*DockerServiceContent, error)
 }
 
 func (d *Docker) Children() []world.Configuration {
@@ -45,9 +37,15 @@ func (d *Docker) Children() []world.Configuration {
 			SSH: d.SSH,
 		},
 		&Service{
-			SSH:     d.SSH,
-			Name:    d.Name,
-			Content: d.SystemdServiceContent(),
+			SSH:  d.SSH,
+			Name: d.Name,
+			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+				content, err := d.BuildDockerServiceContent(ctx)
+				if err != nil {
+					return nil, errors.Wrap(err, "get DockerServiceContent failed")
+				}
+				return content.Content(ctx)
+			}),
 		},
 	}
 }
@@ -61,12 +59,23 @@ func (d *Docker) Validate(ctx context.Context) error {
 		ctx,
 		d.SSH,
 		d.Name,
-		d.Memory,
-		d.Image,
 	)
 }
 
-func (d Docker) SystemdServiceContent() remote.HasContent {
+type DockerServiceContent struct {
+	Name       remote.ServiceName
+	Ports      []int
+	Volumes    []string
+	Image      docker.Image
+	Command    string
+	Args       []string
+	Memory     Memory
+	HostNet    bool
+	Privileged bool
+	HostPid    bool
+}
+
+func (d *DockerServiceContent) Content(ctx context.Context) ([]byte, error) {
 	b := &bytes.Buffer{}
 	fmt.Fprintf(b, "[Unit]\n")
 	fmt.Fprintf(b, "Description=%s\n", d.Name)
@@ -108,5 +117,5 @@ func (d Docker) SystemdServiceContent() remote.HasContent {
 	fmt.Fprintf(b, "\n")
 	fmt.Fprintf(b, "[Install]\n")
 	fmt.Fprintf(b, "WantedBy=multi-user.target\n")
-	return remote.StaticContent(b.Bytes())
+	return b.Bytes(), nil
 }

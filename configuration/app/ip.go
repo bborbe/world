@@ -3,8 +3,9 @@ package app
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/dns"
+
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,17 +14,19 @@ import (
 )
 
 type Ip struct {
-	Cluster cluster.Cluster
-	Domains k8s.IngressHosts
+	Context k8s.Context
+	Domain  k8s.IngressHost
 	Tag     docker.Tag
+	IP      dns.IP
 }
 
 func (t *Ip) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
-		t.Domains,
+		t.Context,
+		t.Domain,
 		t.Tag,
+		t.IP,
 	)
 }
 
@@ -42,12 +45,24 @@ func (i *Ip) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
+		world.NewConfiguraionBuilder().WithApplier(
+			&dns.Server{
+				Host:    "ns.rocketsource.de",
+				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+				List: []dns.Entry{
+					{
+						Host: dns.Host(i.Domain.String()),
+						IP:   i.IP,
+					},
+				},
+			},
+		),
 		&deployer.NamespaceDeployer{
-			Context:   i.Cluster.Context,
+			Context:   i.Context,
 			Namespace: "ip",
 		},
 		&deployer.DeploymentDeployer{
-			Context:   i.Cluster.Context,
+			Context:   i.Context,
 			Namespace: "ip",
 			Name:      "ip",
 			Strategy: k8s.DeploymentStrategy{
@@ -100,17 +115,17 @@ func (i *Ip) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   i.Cluster.Context,
+			Context:   i.Context,
 			Namespace: "ip",
 			Name:      "ip",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   i.Cluster.Context,
+			Context:   i.Context,
 			Namespace: "ip",
 			Name:      "ip",
 			Port:      "http",
-			Domains:   i.Domains,
+			Domains:   k8s.IngressHosts{i.Domain},
 		},
 	}
 }

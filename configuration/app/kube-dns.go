@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,13 +12,13 @@ import (
 )
 
 type KubeDns struct {
-	Cluster cluster.Cluster
+	Context k8s.Context
 }
 
 func (d *KubeDns) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		d.Cluster,
+		d.Context,
 	)
 }
 
@@ -68,7 +67,7 @@ func (d *KubeDns) Children() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context:   d.Cluster.Context,
+			Context:   d.Context,
 			Namespace: "kube-system",
 			Name:      "kube-dns",
 			DnsPolicy: "Default",
@@ -187,7 +186,7 @@ func (d *KubeDns) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   d.Cluster.Context,
+			Context:   d.Context,
 			Namespace: "kube-system",
 			Name:      "kube-dns",
 			Ports:     kubednsMasqPorts,

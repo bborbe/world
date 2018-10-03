@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/dns"
+
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -12,7 +14,7 @@ import (
 type Kubernetes struct {
 	SSH       ssh.SSH
 	Context   k8s.Context
-	ClusterIP k8s.ClusterIP
+	ClusterIP dns.IP
 }
 
 func (k *Kubernetes) Children() []world.Configuration {

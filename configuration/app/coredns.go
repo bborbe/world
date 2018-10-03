@@ -3,8 +3,6 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/configuration"
-
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/docker"
 
@@ -47,7 +45,7 @@ func (c *CoreDns) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   c.Cluster.Context,
 				Namespace: "kube-system",

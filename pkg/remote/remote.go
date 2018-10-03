@@ -21,19 +21,19 @@ func (f Path) Validate(ctx context.Context) error {
 }
 
 type HasContent interface {
-	Content() ([]byte, error)
+	Content(ctx context.Context) ([]byte, error)
 }
 
 type StaticContent []byte
 
-func (s StaticContent) Content() ([]byte, error) {
+func (s StaticContent) Content(ctx context.Context) ([]byte, error) {
 	return s, nil
 }
 
-type ContentFunc func() ([]byte, error)
+type ContentFunc func(ctx context.Context) ([]byte, error)
 
-func (s ContentFunc) Content() ([]byte, error) {
-	return s()
+func (s ContentFunc) Content(ctx context.Context) ([]byte, error) {
+	return s(ctx)
 }
 
 type User string

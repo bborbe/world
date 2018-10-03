@@ -6,7 +6,7 @@ import (
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/pkg/configuration"
+
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
@@ -64,7 +64,7 @@ func (e *ErpNext) redisCache() []world.Configuration {
 		Name:     "redis",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   e.Cluster.Context,
 				Namespace: "erpnext",
@@ -166,7 +166,7 @@ func (e *ErpNext) redisQueue() []world.Configuration {
 		Name:     "redis",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   e.Cluster.Context,
 				Namespace: "erpnext",
@@ -268,7 +268,7 @@ func (e *ErpNext) redisSocketio() []world.Configuration {
 		Name:     "redis",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   e.Cluster.Context,
 				Namespace: "erpnext",
@@ -370,7 +370,7 @@ func (e *ErpNext) mariadb() []world.Configuration {
 		Name:     "mariadb",
 	}
 	return []world.Configuration{
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   e.Cluster.Context,
 				Namespace: "erpnext",
@@ -696,7 +696,7 @@ func (e *ErpNext) erpnext() []world.Configuration {
 			Name:      "erpnext",
 			Ports:     ports,
 		},
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&k8s.IngressApplier{
 				Context: e.Cluster.Context,
 				Ingress: k8s.Ingress{

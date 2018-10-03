@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -20,17 +19,17 @@ type Directory struct {
 
 func (f *Directory) Children() []world.Configuration {
 	return []world.Configuration{
-		configuration.New().WithApplier(&remote.Directory{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Directory{
 			SSH:  f.SSH,
 			Path: f.Path,
 		}),
-		configuration.New().WithApplier(&remote.Chown{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Chown{
 			SSH:   f.SSH,
 			Path:  f.Path,
 			User:  f.User,
 			Group: f.Group,
 		}),
-		configuration.New().WithApplier(&remote.Chmod{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Chmod{
 			SSH:  f.SSH,
 			Path: f.Path,
 			Perm: f.Perm,

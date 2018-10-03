@@ -12,14 +12,13 @@ import (
 )
 
 type File struct {
-	SSH ssh.SSH
-
+	SSH     ssh.SSH
 	Path    Path
 	Content HasContent
 }
 
 func (f *File) Satisfied(ctx context.Context) (bool, error) {
-	content, err := f.Content.Content()
+	content, err := f.Content.Content(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "get content failed")
 	}
@@ -29,7 +28,7 @@ func (f *File) Satisfied(ctx context.Context) (bool, error) {
 }
 
 func (f *File) Apply(ctx context.Context) error {
-	content, err := f.Content.Content()
+	content, err := f.Content.Content(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get content failed")
 	}

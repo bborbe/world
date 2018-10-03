@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/world/pkg/configuration"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -27,11 +26,11 @@ func (s *Service) Children() []world.Configuration {
 			Group:   "root",
 			Perm:    0664,
 		},
-		configuration.New().WithApplier(&remote.Command{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     s.SSH,
 			Command: "systemctl daemon-reload",
 		}),
-		configuration.New().WithApplier(&remote.Service{
+		world.NewConfiguraionBuilder().WithApplier(&remote.Service{
 			SSH:  s.SSH,
 			Name: s.Name,
 		}),

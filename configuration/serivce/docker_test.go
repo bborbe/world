@@ -1,6 +1,8 @@
 package service_test
 
 import (
+	"context"
+
 	"github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/docker"
 
@@ -10,7 +12,7 @@ import (
 
 var _ = Describe("Docker", func() {
 	It("generate systemd service", func() {
-		service := service.Docker{
+		service := service.DockerServiceContent{
 			Name:    "etcd",
 			Memory:  1024,
 			Ports:   []int{2379, 2380},
@@ -32,7 +34,7 @@ var _ = Describe("Docker", func() {
 				"--name kubernetes",
 			},
 		}
-		bytes, err := service.SystemdServiceContent().Content()
+		bytes, err := service.Content(context.Background())
 		Expect(err).To(BeNil())
 		Expect(string(bytes)).To(Equal(`[Unit]
 Description=etcd

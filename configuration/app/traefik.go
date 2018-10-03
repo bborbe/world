@@ -3,10 +3,7 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/configuration"
-
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -15,15 +12,24 @@ import (
 )
 
 type Traefik struct {
-	Cluster cluster.Cluster
-	Domains k8s.IngressHosts
-	SSL     bool
+	Context   k8s.Context
+	NfsServer k8s.PodNfsServer
+	Domains   k8s.IngressHosts
+	SSL       bool
 }
 
 func (t *Traefik) Validate(ctx context.Context) error {
+	if t.SSL {
+		return validation.Validate(
+			ctx,
+			t.Context,
+			t.Domains,
+			t.NfsServer,
+		)
+	}
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Domains,
 	)
 }
@@ -67,7 +73,7 @@ func (t *Traefik) Children() []world.Configuration {
 			Name: "acme",
 			Nfs: k8s.PodVolumeNfs{
 				Path:   "/data/traefik-acme",
-				Server: t.Cluster.NfsServer,
+				Server: t.NfsServer,
 			},
 		}
 	} else {
@@ -78,12 +84,12 @@ func (t *Traefik) Children() []world.Configuration {
 	}
 	result := []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "traefik",
 		},
-		configuration.New().WithApplier(
+		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   t.Cluster.Context,
+				Context:   t.Context,
 				Namespace: "traefik",
 				Name:      "traefik",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -95,7 +101,7 @@ func (t *Traefik) Children() []world.Configuration {
 			},
 		),
 		&deployer.DeploymentDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "traefik",
 			Name:      "traefik",
 			Strategy: k8s.DeploymentStrategy{
@@ -173,7 +179,7 @@ func (t *Traefik) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "traefik",
 			Name:      "traefik",
 			Ports:     ports,
@@ -185,7 +191,7 @@ func (t *Traefik) Children() []world.Configuration {
 			},
 		},
 		&deployer.IngressDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "traefik",
 			Name:      "traefik",
 			Port:      "dashboard",
@@ -194,7 +200,7 @@ func (t *Traefik) Children() []world.Configuration {
 	}
 	if t.SSL {
 		result = append(result, &deployer.DeploymentDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "traefik",
 			Name:      "traefik-extract",
 			Strategy: k8s.DeploymentStrategy{
@@ -239,14 +245,14 @@ func (t *Traefik) Children() []world.Configuration {
 					Name: "acme",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/traefik-acme",
-						Server: t.Cluster.NfsServer,
+						Server: t.NfsServer,
 					},
 				},
 				{
 					Name: "certs",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/traefik-extract",
-						Server: t.Cluster.NfsServer,
+						Server: t.NfsServer,
 					},
 				},
 			},

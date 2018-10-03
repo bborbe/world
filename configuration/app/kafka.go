@@ -204,13 +204,13 @@ func (k *Kafka) zookeeper() []world.Configuration {
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
 								{
-									Name:            "kafka",
+									Name:            "zookeeper",
 									ImagePullPolicy: "Always",
 									Image:           k8s.Image(image.String()),
 									Resources: k8s.Resources{
 										Limits: k8s.ContainerResource{
-											Cpu:    "2000m",
-											Memory: "1000Mi",
+											Cpu:    "1000m",
+											Memory: "700Mi",
 										},
 										Requests: k8s.ContainerResource{
 											Cpu:    "100m",
@@ -304,10 +304,15 @@ func (k *Kafka) zookeeper() []world.Configuration {
 }
 
 func (k *Kafka) kafka() []world.Configuration {
-	port := deployer.Port{
+	kafkaPort := deployer.Port{
 		Port:     9093,
 		Protocol: "TCP",
 		Name:     "server",
+	}
+	jmxPort := deployer.Port{
+		Port:     9999,
+		Protocol: "TCP",
+		Name:     "jmx",
 	}
 	image := docker.Image{
 		Repository: "bborbe/kafka",
@@ -374,15 +379,16 @@ func (k *Kafka) kafka() []world.Configuration {
 									Resources: k8s.Resources{
 										Limits: k8s.ContainerResource{
 											Cpu:    "2000m",
-											Memory: "1000Mi",
+											Memory: "1500Mi",
 										},
 										Requests: k8s.ContainerResource{
 											Cpu:    "100m",
-											Memory: "400Mi",
+											Memory: "750Mi",
 										},
 									},
 									Ports: []k8s.ContainerPort{
-										port.ContainerPort(),
+										kafkaPort.ContainerPort(),
+										jmxPort.ContainerPort(),
 									},
 									Command: []k8s.Command{
 										"sh",
@@ -398,6 +404,10 @@ func (k *Kafka) kafka() []world.Configuration {
 											Name:  "KAFKA_OPTS",
 											Value: "-Dlogging.level=INFO",
 										},
+										{
+											Name:  "JMX_PORT",
+											Value: jmxPort.Port.String(),
+										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
 										{
@@ -410,7 +420,7 @@ func (k *Kafka) kafka() []world.Configuration {
 											Command: []k8s.Command{
 												"sh",
 												"-c",
-												"/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server=localhost:9093",
+												"JMX_PORT= /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server=localhost:9093",
 											},
 										},
 									},
@@ -433,7 +443,8 @@ func (k *Kafka) kafka() []world.Configuration {
 				Spec: k8s.ServiceSpec{
 					ClusterIP: "None",
 					Ports: []k8s.ServicePort{
-						port.ServicePort(),
+						kafkaPort.ServicePort(),
+						jmxPort.ServicePort(),
 					},
 					Selector: k8s.ServiceSelector{
 						"app": "kafka",
@@ -452,7 +463,7 @@ const kafkaCommand = `exec kafka-server-start.sh /opt/kafka/config/server.proper
 --override broker.id=${HOSTNAME##*-} \
 --override listeners=PLAINTEXT://:9093 \
 --override zookeeper.connect=zookeeper-0.zookeeper.kafka.svc.cluster.local:2181 \
---override log.dir=/var/lib/kafka \
+--override log.dirs=/var/lib/kafka/data \
 --override auto.create.topics.enable=true \
 --override auto.leader.rebalance.enable=true \
 --override background.threads=10 \

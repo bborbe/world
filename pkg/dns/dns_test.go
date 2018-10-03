@@ -2,7 +2,6 @@ package dns_test
 
 import (
 	"context"
-	"net"
 	"testing"
 
 	"github.com/bborbe/world/pkg/dns"
@@ -15,7 +14,7 @@ func TestApply(t *testing.T) {
 		List: []dns.Entry{
 			{
 				Host: "now.benjamin-borbe.de",
-				IP:   net.ParseIP("185.170.112.48"),
+				IP:   dns.IPStatic("185.170.112.48"),
 			},
 		},
 	}
@@ -32,7 +31,7 @@ func TestValidateSuccess(t *testing.T) {
 		List: []dns.Entry{
 			{
 				Host: "now.benjamin-borbe.de",
-				IP:   net.ParseIP("185.170.112.48"),
+				IP:   dns.IPStatic("185.170.112.48"),
 			},
 		},
 	}
@@ -49,7 +48,7 @@ func TestValidateFailure(t *testing.T) {
 		List: []dns.Entry{
 			{
 				Host: "now.benjamin-borbe.de",
-				IP:   net.ParseIP("2001:db8::68"),
+				IP:   dns.IPStatic("2001:db8::68"),
 			},
 		},
 	}
