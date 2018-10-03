@@ -129,7 +129,7 @@ func (k *Kafka) zookeeper() []world.Configuration {
 	}
 	image := docker.Image{
 		Repository: "bborbe/zookeeper",
-		Tag:        "master",
+		Tag:        "3.4.10",
 	}
 	replicas := k8s.Replicas(1)
 	return []world.Configuration{
@@ -169,6 +169,9 @@ func (k *Kafka) zookeeper() []world.Configuration {
 					Name:      "zookeeper",
 				},
 				Spec: k8s.StatefulSetSpec{
+					UpdateStrategy: k8s.UpdateStrategy{
+						Type: "RollingUpdate",
+					},
 					VolumeClaimTemplates: []k8s.VolumeClaimTemplate{
 						{
 							Metadata: k8s.Metadata{
@@ -205,7 +208,7 @@ func (k *Kafka) zookeeper() []world.Configuration {
 							Containers: []k8s.Container{
 								{
 									Name:            "zookeeper",
-									ImagePullPolicy: "Always",
+									ImagePullPolicy: "IfNotPresent",
 									Image:           k8s.Image(image.String()),
 									Resources: k8s.Resources{
 										Limits: k8s.ContainerResource{
@@ -316,7 +319,7 @@ func (k *Kafka) kafka() []world.Configuration {
 	}
 	image := docker.Image{
 		Repository: "bborbe/kafka",
-		Tag:        "1.1.1",
+		Tag:        "2.0.0",
 	}
 	return []world.Configuration{
 		&k8s.StatefulSetConfiguration{
@@ -334,6 +337,9 @@ func (k *Kafka) kafka() []world.Configuration {
 					Name:      "kafka",
 				},
 				Spec: k8s.StatefulSetSpec{
+					UpdateStrategy: k8s.UpdateStrategy{
+						Type: "RollingUpdate",
+					},
 					VolumeClaimTemplates: []k8s.VolumeClaimTemplate{
 						{
 							Metadata: k8s.Metadata{
@@ -374,7 +380,7 @@ func (k *Kafka) kafka() []world.Configuration {
 							Containers: []k8s.Container{
 								{
 									Name:            "kafka",
-									ImagePullPolicy: "Always",
+									ImagePullPolicy: "IfNotPresent",
 									Image:           k8s.Image(image.String()),
 									Resources: k8s.Resources{
 										Limits: k8s.ContainerResource{

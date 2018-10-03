@@ -124,6 +124,7 @@ type StatefulSetSpec struct {
 	Selector             Selector              `yaml:"selector,omitempty"`
 	Template             PodTemplate           `yaml:"template"`
 	VolumeClaimTemplates []VolumeClaimTemplate `yaml:"volumeClaimTemplates,omitempty"`
+	UpdateStrategy       UpdateStrategy        `yaml:"updateStrategy,omitempty"`
 }
 
 func (s StatefulSetSpec) Validate(ctx context.Context) error {
@@ -133,4 +134,8 @@ func (s StatefulSetSpec) Validate(ctx context.Context) error {
 		s.Replicas,
 		s.Template,
 	)
+}
+
+type UpdateStrategy struct {
+	Type string `yaml:"type,omitempty"`
 }

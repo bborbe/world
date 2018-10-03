@@ -40,7 +40,7 @@ func (k *KafkaSample) Children() []world.Configuration {
 func (k *KafkaSample) sampleApp() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/kafka-sample",
-		Tag:        "master",
+		Tag:        "1.1.1",
 	}
 	port := deployer.Port{
 		Port:     8080,

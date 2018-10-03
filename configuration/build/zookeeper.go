@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -27,6 +28,9 @@ func (k *Zookeeper) Children() []world.Configuration {
 				Image:           k.Image,
 				GitBranch:       "master",
 				SourceDirectory: "statefulsets/zookeeper",
+				BuildArgs: map[string]string{
+					"ZK_DIST": fmt.Sprintf("zookeeper-%s", k.Image.Tag.String()),
+				},
 			},
 		},
 	}
