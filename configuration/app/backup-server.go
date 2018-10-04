@@ -16,10 +16,10 @@ type BackupServer struct {
 	Cluster cluster.Cluster
 }
 
-func (t *BackupServer) Validate(ctx context.Context) error {
+func (b *BackupServer) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		b.Cluster,
 	)
 }
 

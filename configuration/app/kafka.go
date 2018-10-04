@@ -98,7 +98,7 @@ func (c *Kafka) connect() []world.Configuration {
 						},
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
-								k8s.Container{
+								{
 									Name:  "prometheus-jmx-exporter",
 									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
 									Command: []k8s.Command{
@@ -113,22 +113,22 @@ func (c *Kafka) connect() []world.Configuration {
 										"/etc/jmx-kafka-connect/jmx-kafka-connect-prometheus.yml",
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5556,
 										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path: "/etc/jmx-kafka-connect",
 											Name: "jmx-config",
 										},
 									},
 								},
-								k8s.Container{
+								{
 									Name:  "cp-kafka-connect-server",
 									Image: k8s.Image(image.String()),
 									Env: []k8s.Env{
-										k8s.Env{
+										{
 											Name: "CONNECT_REST_ADVERTISED_HOST_NAME",
 											ValueFrom: k8s.ValueFrom{
 												FieldRef: k8s.FieldRef{
@@ -136,78 +136,78 @@ func (c *Kafka) connect() []world.Configuration {
 												},
 											},
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR",
 											Value: c.kafkaReplicas().String(),
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR",
 											Value: c.kafkaReplicas().String(),
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_STATUS_STORAGE_REPLICATION_FACTOR",
 											Value: c.kafkaReplicas().String(),
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_PLUGIN_PATH",
 											Value: "/usr/share/java",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_BOOTSTRAP_SERVERS",
 											Value: "PLAINTEXT://kafka-cp-kafka-headless:9092",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_GROUP_ID",
 											Value: "kafka",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_CONFIG_STORAGE_TOPIC",
 											Value: "kafka-cp-kafka-connect-config",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_OFFSET_STORAGE_TOPIC",
 											Value: "kafka-cp-kafka-connect-offset",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_STATUS_STORAGE_TOPIC",
 											Value: "kafka-cp-kafka-connect-status",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL",
 											Value: "http://kafka-cp-schema-registry:8081",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL",
 											Value: "http://kafka-cp-schema-registry:8081",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_KEY_CONVERTER",
 											Value: "io.confluent.connect.avro.AvroConverter",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_VALUE_CONVERTER",
 											Value: "io.confluent.connect.avro.AvroConverter",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_INTERNAL_KEY_CONVERTER",
 											Value: "org.apache.kafka.connect.json.JsonConverter",
 										},
-										k8s.Env{
+										{
 											Name:  "CONNECT_INTERNAL_VALUE_CONVERTER",
 											Value: "org.apache.kafka.connect.json.JsonConverter",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_JMX_PORT",
 											Value: "5555",
 										},
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 8083,
 											Name:          "kafka-connect",
 											Protocol:      "TCP",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5555,
 											Name:          "jmx",
 										},
@@ -216,7 +216,7 @@ func (c *Kafka) connect() []world.Configuration {
 								},
 							},
 							Volumes: []k8s.PodVolume{
-								k8s.PodVolume{
+								{
 									Name: "jmx-config",
 									ConfigMap: k8s.PodVolumeConfigMap{
 										Name: "kafka-cp-kafka-connect-jmx-configmap",
@@ -242,7 +242,7 @@ func (c *Kafka) connect() []world.Configuration {
 					},
 				},
 				Data: k8s.ConfigMapData{
-					"jmx-kafka-connect-prometheus.yml": "jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi\nlowercaseOutputName: true\nlowercaseOutputLabelNames: true\nssl: false\nrules:\n- pattern : \"kafka.connect<type=connect-worker-metrics>([^:]+):\"\n  name: \"cp_kafka_connect_connect_worker_metrics_$1\"\n- pattern : \"kafka.connect<type=connect-metrics,client-id=([^:]+)><>([^:]+)\"\n  name: \"cp_kafka_connect_connect_metrics_$1_$2\"",
+					"jmx-kafka-connect-prometheus.yml": kafkaCpKafkaConnectJmxConfigmap,
 				},
 			},
 		},
@@ -261,7 +261,7 @@ func (c *Kafka) connect() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "kafka-connect",
 							Port: 8083,
 						},
@@ -298,7 +298,7 @@ func (c *Kafka) kafka() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "broker",
 							Port: 9092,
 						},
@@ -324,7 +324,7 @@ func (c *Kafka) kafka() []world.Configuration {
 					},
 				},
 				Data: k8s.ConfigMapData{
-					"jmx-kafka-prometheus.yml": "jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi\nlowercaseOutputName: true\nlowercaseOutputLabelNames: true\nssl: false\nrules:\n- pattern : kafka.server<type=ReplicaManager,name=(.+)><>(Value|OneMinuteRate)\n  name: \"cp_kafka_server_replicamanager_$1\"\n- pattern : kafka.controller<type=KafkaController,name=(.+)><>Value\n  name: \"cp_kafka_controller_kafkacontroller_$1\"\n- pattern : kafka.server<type=BrokerTopicMetrics,name=(.+)><>OneMinuteRate\n  name: \"cp_kafka_server_brokertopicmetrics_$1\"\n- pattern : kafka.network<type=RequestMetrics,name=RequestsPerSec,request=(.+)><>OneMinuteRate\n  name: \"cp_kafka_network_requestmetrics_requestspersec_$1\"\n- pattern : kafka.network<type=SocketServer,name=NetworkProcessorAvgIdlePercent><>Value\n  name: \"cp_kafka_network_socketserver_networkprocessoravgidlepercent\"\n- pattern : kafka.server<type=ReplicaFetcherManager,name=MaxLag,clientId=(.+)><>Value\n  name: \"cp_kafka_server_replicafetchermanager_maxlag_$1\"\n- pattern : kafka.server<type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent><>OneMinuteRate\n  name: \"cp_kafka_kafkarequesthandlerpool_requesthandleravgidlepercent\"\n- pattern : kafka.controller<type=ControllerStats,name=(.+)><>OneMinuteRate\n  name: \"cp_kafka_controller_controllerstats_$1\"\n- pattern : kafka.server<type=SessionExpireListener,name=(.+)><>OneMinuteRate\n  name: \"cp_kafka_server_sessionexpirelistener_$1\"",
+					"jmx-kafka-prometheus.yml": kafkaCpKafkaJmxConfigmap,
 				},
 			},
 		},
@@ -356,7 +356,7 @@ func (c *Kafka) kafka() []world.Configuration {
 						},
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
-								k8s.Container{
+								{
 									Name:  "prometheus-jmx-exporter",
 									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
 									Command: []k8s.Command{
@@ -371,18 +371,18 @@ func (c *Kafka) kafka() []world.Configuration {
 										"/etc/jmx-kafka/jmx-kafka-prometheus.yml",
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5556,
 										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path: "/etc/jmx-kafka",
 											Name: "jmx-config",
 										},
 									},
 								},
-								k8s.Container{
+								{
 									Name:  "cp-kafka-broker",
 									Image: k8s.Image(image.String()),
 									Command: []k8s.Command{
@@ -391,7 +391,7 @@ func (c *Kafka) kafka() []world.Configuration {
 										"export KAFKA_BROKER_ID=${HOSTNAME##*-} && \\\nexport KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_IP}:9092,EXTERNAL://${HOST_IP}:$((31090 + ${KAFKA_BROKER_ID})) && \\\nexec /etc/confluent/docker/run\n",
 									},
 									Env: []k8s.Env{
-										k8s.Env{
+										{
 											Name: "POD_IP",
 											ValueFrom: k8s.ValueFrom{
 												FieldRef: k8s.FieldRef{
@@ -399,7 +399,7 @@ func (c *Kafka) kafka() []world.Configuration {
 												},
 											},
 										},
-										k8s.Env{
+										{
 											Name: "HOST_IP",
 											ValueFrom: k8s.ValueFrom{
 												FieldRef: k8s.FieldRef{
@@ -407,41 +407,41 @@ func (c *Kafka) kafka() []world.Configuration {
 												},
 											},
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_HEAP_OPTS",
 											Value: "-Xms512M -Xmx512M",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_ZOOKEEPER_CONNECT",
 											Value: "kafka-cp-zookeeper-headless:2181",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_ADVERTISED_LISTENERS",
 											Value: "EXTERNAL://${HOST_IP}:$((31090 + ${KAFKA_BROKER_ID}))",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
 											Value: "PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_LOG_DIRS",
 											Value: "/opt/kafka/data/logs",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
 											Value: c.kafkaReplicas().String(),
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_JMX_PORT",
 											Value: "5555",
 										},
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 9092,
 											Name:          "kafka",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5555,
 											Name:          "jmx",
 										},
@@ -451,7 +451,7 @@ func (c *Kafka) kafka() []world.Configuration {
 										Requests: k8s.ContainerResource{},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path: "/opt/kafka/data",
 											Name: "datadir",
 										},
@@ -460,7 +460,7 @@ func (c *Kafka) kafka() []world.Configuration {
 								},
 							},
 							Volumes: []k8s.PodVolume{
-								k8s.PodVolume{
+								{
 									Name: "jmx-config",
 									ConfigMap: k8s.PodVolumeConfigMap{
 										Name: "kafka-cp-kafka-jmx-configmap",
@@ -470,7 +470,7 @@ func (c *Kafka) kafka() []world.Configuration {
 						},
 					},
 					VolumeClaimTemplates: []k8s.VolumeClaimTemplate{
-						k8s.VolumeClaimTemplate{
+						{
 							Metadata: k8s.Metadata{
 								Name: "datadir",
 								Annotations: map[string]string{
@@ -509,7 +509,7 @@ func (c *Kafka) kafka() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "broker",
 							Port: 9092,
 						},
@@ -564,7 +564,7 @@ func (c *Kafka) rest() []world.Configuration {
 						},
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
-								k8s.Container{
+								{
 									Name:  "prometheus-jmx-exporter",
 									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
 									Command: []k8s.Command{
@@ -579,22 +579,22 @@ func (c *Kafka) rest() []world.Configuration {
 										"/etc/jmx-kafka-rest/jmx-kafka-rest-prometheus.yml",
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5556,
 										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path: "/etc/jmx-kafka-rest",
 											Name: "jmx-config",
 										},
 									},
 								},
-								k8s.Container{
+								{
 									Name:  "cp-kafka-rest-server",
 									Image: k8s.Image(image.String()),
 									Env: []k8s.Env{
-										k8s.Env{
+										{
 											Name: "KAFKA_REST_HOST_NAME",
 											ValueFrom: k8s.ValueFrom{
 												SecretKeyRef: k8s.SecretKeyRef{},
@@ -603,26 +603,26 @@ func (c *Kafka) rest() []world.Configuration {
 												},
 											},
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_REST_ZOOKEEPER_CONNECT",
 											Value: "kafka-cp-zookeeper-headless:2181",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_REST_SCHEMA_REGISTRY_URL",
 											Value: "http://kafka-cp-schema-registry:8081",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_REST_JMX_PORT",
 											Value: "5555",
 										},
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 8082,
 											Name:          "rest-proxy",
 											Protocol:      "TCP",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5555,
 											Name:          "jmx",
 										},
@@ -631,7 +631,7 @@ func (c *Kafka) rest() []world.Configuration {
 								},
 							},
 							Volumes: []k8s.PodVolume{
-								k8s.PodVolume{
+								{
 									Name: "jmx-config",
 									ConfigMap: k8s.PodVolumeConfigMap{
 										Name: "kafka-cp-kafka-rest-jmx-configmap",
@@ -658,7 +658,7 @@ func (c *Kafka) rest() []world.Configuration {
 					Annotations: k8s.Annotations(nil),
 				},
 				Data: k8s.ConfigMapData{
-					"jmx-kafka-rest-prometheus.yml": "jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi\nlowercaseOutputName: true\nlowercaseOutputLabelNames: true\nssl: false\nrules:\n- pattern : 'kafka.rest<type=jetty-metrics>([^:]+):'\n  name: \"cp_kafka_rest_jetty_metrics_$1\"\n- pattern : 'kafka.rest<type=jersey-metrics>([^:]+):'\n  name: \"cp_kafka_rest_jersey_metrics_$1\"",
+					"jmx-kafka-rest-prometheus.yml": kafkaCpKafkaRestJmxConfigmap,
 				},
 			},
 		},
@@ -678,7 +678,7 @@ func (c *Kafka) rest() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "rest-proxy",
 							Port: 8082,
 						},
@@ -739,7 +739,7 @@ func (c *Kafka) ksql() []world.Configuration {
 						Spec: k8s.PodSpec{
 							Tolerations: []k8s.Toleration(nil),
 							Containers: []k8s.Container{
-								k8s.Container{
+								{
 									Name:  "prometheus-jmx-exporter",
 									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
 									Command: []k8s.Command{
@@ -756,7 +756,7 @@ func (c *Kafka) ksql() []world.Configuration {
 									Args: []k8s.Arg(nil),
 									Env:  []k8s.Env(nil),
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5556,
 											HostPort:      0,
 										},
@@ -766,7 +766,7 @@ func (c *Kafka) ksql() []world.Configuration {
 										Requests: k8s.ContainerResource{},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path:     "/etc/jmx-ksql-server",
 											Name:     "jmx-config",
 											ReadOnly: false},
@@ -805,36 +805,36 @@ func (c *Kafka) ksql() []world.Configuration {
 										FsGroup:                  0,
 										Capabilities:             k8s.SecurityContextCapabilities(nil)},
 								},
-								k8s.Container{
+								{
 									Name:    "cp-ksql-server",
 									Image:   k8s.Image(image.String()),
 									Command: []k8s.Command(nil),
 									Args:    []k8s.Arg(nil),
 									Env: []k8s.Env{
-										k8s.Env{
+										{
 											Name:  "KSQL_BOOTSTRAP_SERVERS",
 											Value: "PLAINTEXT://kafka-cp-kafka-headless:9092",
 										},
-										k8s.Env{
+										{
 											Name:  "KSQL_KSQL_SERVICE_ID",
 											Value: "kafka",
 										},
-										k8s.Env{
+										{
 											Name:  "KSQL_LISTENERS",
 											Value: "http://0.0.0.0:8088",
 										},
-										k8s.Env{
+										{
 											Name:  "KSQL_JMX_PORT",
 											Value: "5555",
 										},
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 8088,
 											Name:          "server",
 											Protocol:      "TCP",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5555,
 											Name:          "jmx",
 										},
@@ -843,7 +843,7 @@ func (c *Kafka) ksql() []world.Configuration {
 								},
 							},
 							Volumes: []k8s.PodVolume{
-								k8s.PodVolume{
+								{
 									Name: "jmx-config",
 									ConfigMap: k8s.PodVolumeConfigMap{
 										Name: "kafka-cp-ksql-server-jmx-configmap",
@@ -869,7 +869,7 @@ func (c *Kafka) ksql() []world.Configuration {
 					},
 				},
 				Data: k8s.ConfigMapData{
-					"jmx-ksql-server-prometheus.yml": "jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi\nlowercaseOutputName: true\nlowercaseOutputLabelNames: true\nssl: false\nrules:\n- pattern : 'io.confluent.ksql.metrics<type=ksql-engine-query-stats>([^:]+):'\n  name: \"cp_ksql_server_metrics_$1\"",
+					"jmx-ksql-server-prometheus.yml": kafkaCpKsqlServerJmxConfigmap,
 				},
 			},
 		},
@@ -887,7 +887,7 @@ func (c *Kafka) ksql() []world.Configuration {
 					},
 				},
 				Data: k8s.ConfigMapData{
-					"queries.sql": "-- From http://docs.confluent.io/current/ksql/docs/tutorials/basics-docker.html#create-a-stream-and-table\n\n-- Create a stream pageviews_original from the Kafka topic pageviews, specifying the value_format of DELIMITED\nCREATE STREAM pageviews_original (viewtime bigint, userid varchar, pageid varchar) WITH (kafka_topic='pageviews', value_format='DELIMITED');\n\n-- Create a table users_original from the Kafka topic users, specifying the value_format of JSON\nCREATE TABLE users_original (registertime BIGINT, gender VARCHAR, regionid VARCHAR, userid VARCHAR) WITH (kafka_topic='users', value_format='JSON', key = 'userid');\n\n-- Create a persistent query by using the CREATE STREAM keywords to precede the SELECT statement\nCREATE STREAM pageviews_enriched AS SELECT users_original.userid AS userid, pageid, regionid, gender FROM pageviews_original LEFT JOIN users_original ON pageviews_original.userid = users_original.userid;\n\n-- Create a new persistent query where a condition limits the streams content, using WHERE\nCREATE STREAM pageviews_female AS SELECT * FROM pageviews_enriched WHERE gender = 'FEMALE';\n\n-- Create a new persistent query where another condition is met, using LIKE\nCREATE STREAM pageviews_female_like_89 WITH (kafka_topic='pageviews_enriched_r8_r9') AS SELECT * FROM pageviews_female WHERE regionid LIKE '%_8' OR regionid LIKE '%_9';\n\n-- Create a new persistent query that counts the pageviews for each region and gender combination in a tumbling window of 30 seconds when the count is greater than one\nCREATE TABLE pageviews_regions WITH (VALUE_FORMAT='avro') AS SELECT gender, regionid , COUNT(*) AS numusers FROM pageviews_enriched WINDOW TUMBLING (size 30 second) GROUP BY gender, regionid HAVING COUNT(*) > 1;",
+					"queries.sql": ksqlQueries,
 				},
 			},
 		},
@@ -906,7 +906,7 @@ func (c *Kafka) ksql() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "ksql-server",
 							Port: 8088,
 						},
@@ -966,7 +966,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 						},
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
-								k8s.Container{
+								{
 									Name:  "prometheus-jmx-exporter",
 									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
 									Command: []k8s.Command{
@@ -981,22 +981,22 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 										"/etc/jmx-schema-registry/jmx-schema-registry-prometheus.yml",
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5556,
 										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path: "/etc/jmx-schema-registry",
 											Name: "jmx-config",
 										},
 									},
 								},
-								k8s.Container{
+								{
 									Name:  "cp-schema-registry-server",
 									Image: k8s.Image(image.String()),
 									Env: []k8s.Env{
-										k8s.Env{
+										{
 											Name: "SCHEMA_REGISTRY_HOST_NAME",
 											ValueFrom: k8s.ValueFrom{
 												FieldRef: k8s.FieldRef{
@@ -1004,30 +1004,30 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 												},
 											},
 										},
-										k8s.Env{
+										{
 											Name:  "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS",
 											Value: "PLAINTEXT://kafka-cp-kafka-headless:9092",
 										},
-										k8s.Env{
+										{
 											Name:  "SCHEMA_REGISTRY_KAFKASTORE_GROUP_ID",
 											Value: "kafka",
 										},
-										k8s.Env{
+										{
 											Name:  "SCHEMA_REGISTRY_MASTER_ELIGIBILITY",
 											Value: "true",
 										},
-										k8s.Env{
+										{
 											Name:  "JMX_PORT",
 											Value: "5555",
 										},
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 8081,
 											Name:          "schema-registry",
 											Protocol:      "TCP",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5555,
 											Name:          "jmx",
 										},
@@ -1036,7 +1036,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 								},
 							},
 							Volumes: []k8s.PodVolume{
-								k8s.PodVolume{
+								{
 									Name: "jmx-config",
 									ConfigMap: k8s.PodVolumeConfigMap{
 										Name: "kafka-cp-schema-registry-jmx-configmap",
@@ -1062,7 +1062,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 					},
 				},
 				Data: k8s.ConfigMapData{
-					"jmx-schema-registry-prometheus.yml": "jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi\nlowercaseOutputName: true\nlowercaseOutputLabelNames: true\nssl: false\nrules:\n- pattern : 'kafka.schema.registry<type=jetty-metrics>([^:]+):'\n  name: \"cp_kafka_schema_registry_jetty_metrics_$1\"\n- pattern : 'kafka.schema.registry<type=master-slave-role>([^:]+):'\n  name: \"cp_kafka_schema_registry_master_slave_role\"\n- pattern : 'kafka.schema.registry<type=jersey-metrics>([^:]+):'\n  name: \"cp_kafka_schema_registry_jersey_metrics_$1\"",
+					"jmx-schema-registry-prometheus.yml": kafkaCpSchemaRegistryJmxConfigmap,
 				},
 			},
 		},
@@ -1081,7 +1081,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "schema-registry",
 							Port: 8081,
 						},
@@ -1123,11 +1123,11 @@ func (c *Kafka) zookeeper() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "server",
 							Port: 2888,
 						},
-						k8s.ServicePort{
+						{
 							Name: "leader-election",
 							Port: 3888,
 						},
@@ -1153,7 +1153,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 					},
 				},
 				Data: k8s.ConfigMapData{
-					"jmx-zookeeper-prometheus.yml": "jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi\nlowercaseOutputName: true\nlowercaseOutputLabelNames: true\nssl: false\nrules:\n- pattern: \"org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\\\d+)><>(\\\\w+)\"\n  name: \"cp_zookeeper_$2\"\n- pattern: \"org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\\\d+),name1=replica.(\\\\d+)><>(\\\\w+)\"\n  name: \"cp_zookeeper_$3\"\n  labels:\n    replicaId: \"$2\"\n- pattern: \"org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\\\d+),name1=replica.(\\\\d+),name2=(\\\\w+)><>(\\\\w+)\"\n  name: \"cp_zookeeper_$4\"\n  labels:\n    replicaId: \"$2\"\n    memberType: \"$3\"\n- pattern: \"org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\\\d+),name1=replica.(\\\\d+),name2=(\\\\w+),name3=(\\\\w+)><>(\\\\w+)\"\n  name: \"cp_zookeeper_$4_$5\"\n  labels:\n    replicaId: \"$2\"\n    memberType: \"$3\"",
+					"jmx-zookeeper-prometheus.yml": kafkaCpZookeeperJmxConfigmap,
 				},
 			},
 		},
@@ -1209,7 +1209,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 						},
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
-								k8s.Container{
+								{
 									Name:  "prometheus-jmx-exporter",
 									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
 									Command: []k8s.Command{
@@ -1224,18 +1224,18 @@ func (c *Kafka) zookeeper() []world.Configuration {
 										"/etc/jmx-zookeeper/jmx-zookeeper-prometheus.yml",
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5556,
 										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path: "/etc/jmx-zookeeper",
 											Name: "jmx-config",
 										},
 									},
 								},
-								k8s.Container{
+								{
 									Name:  "cp-zookeeper-server",
 									Image: k8s.Image(image.String()),
 									Command: []k8s.Command{
@@ -1244,47 +1244,47 @@ func (c *Kafka) zookeeper() []world.Configuration {
 										"ZOOKEEPER_SERVER_ID=$((${HOSTNAME##*-}+1)) && /etc/confluent/docker/run",
 									},
 									Env: []k8s.Env{
-										k8s.Env{
+										{
 											Name:  "KAFKA_HEAP_OPTS",
 											Value: "-Xms512M -Xmx512M",
 										},
-										k8s.Env{
+										{
 											Name:  "KAFKA_JMX_PORT",
 											Value: "5555",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_TICK_TIME",
 											Value: "2000",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_SYNC_LIMIT",
 											Value: "5",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_INIT_LIMIT",
 											Value: "10",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_MAX_CLIENT_CNXNS",
 											Value: "60",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_AUTOPURGE_SNAP_RETAIN_COUNT",
 											Value: "3",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL",
 											Value: "24",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_CLIENT_PORT",
 											Value: "2181",
 										},
-										k8s.Env{
+										{
 											Name:  "ZOOKEEPER_SERVERS",
 											Value: strings.Join(zookeeperServerLists, ";"),
 										},
-										k8s.Env{
+										{
 											Name: "ZOOKEEPER_SERVER_ID",
 											ValueFrom: k8s.ValueFrom{
 												FieldRef: k8s.FieldRef{
@@ -1294,29 +1294,29 @@ func (c *Kafka) zookeeper() []world.Configuration {
 										},
 									},
 									Ports: []k8s.ContainerPort{
-										k8s.ContainerPort{
+										{
 											ContainerPort: 2181,
 											Name:          "client",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 2888,
 											Name:          "server",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 3888,
 											Name:          "leader-election",
 										},
-										k8s.ContainerPort{
+										{
 											ContainerPort: 5555,
 											Name:          "jmx",
 										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
-										k8s.ContainerMount{
+										{
 											Path: "/var/lib/zookeeper/data",
 											Name: "datadir",
 										},
-										k8s.ContainerMount{
+										{
 											Path: "/var/lib/zookeeper/log",
 											Name: "datalogdir",
 										},
@@ -1336,7 +1336,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 								},
 							},
 							Volumes: []k8s.PodVolume{
-								k8s.PodVolume{
+								{
 									Name: "jmx-config",
 									ConfigMap: k8s.PodVolumeConfigMap{
 										Name: "kafka-cp-zookeeper-jmx-configmap",
@@ -1402,7 +1402,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
-						k8s.ServicePort{
+						{
 							Name: "client",
 							Port: 2181,
 						},
@@ -1418,3 +1418,123 @@ func (c *Kafka) zookeeper() []world.Configuration {
 func (c *Kafka) Applier() (world.Applier, error) {
 	return nil, nil
 }
+
+const kafkaCpKafkaJmxConfigmap = `
+jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+ssl: false
+rules:
+- pattern : kafka.server<type=ReplicaManager, name=(.+)><>(Value|OneMinuteRate)
+  name: "cp_kafka_server_replicamanager_$1"
+- pattern : kafka.controller<type=KafkaController, name=(.+)><>Value
+  name: "cp_kafka_controller_kafkacontroller_$1"
+- pattern : kafka.server<type=BrokerTopicMetrics, name=(.+)><>OneMinuteRate
+  name: "cp_kafka_server_brokertopicmetrics_$1"
+- pattern : kafka.network<type=RequestMetrics, name=RequestsPerSec, request=(.+)><>OneMinuteRate
+  name: "cp_kafka_network_requestmetrics_requestspersec_$1"
+- pattern : kafka.network<type=SocketServer, name=NetworkProcessorAvgIdlePercent><>Value
+  name: "cp_kafka_network_socketserver_networkprocessoravgidlepercent"
+- pattern : kafka.server<type=ReplicaFetcherManager, name=MaxLag, clientId=(.+)><>Value
+  name: "cp_kafka_server_replicafetchermanager_maxlag_$1"
+- pattern : kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate
+  name: "cp_kafka_kafkarequesthandlerpool_requesthandleravgidlepercent"
+- pattern : kafka.controller<type=ControllerStats, name=(.+)><>OneMinuteRate
+  name: "cp_kafka_controller_controllerstats_$1"
+- pattern : kafka.server<type=SessionExpireListener, name=(.+)><>OneMinuteRate
+  name: "cp_kafka_server_sessionexpirelistener_$1"
+`
+
+const ksqlQueries = `
+-- From http://docs.confluent.io/current/ksql/docs/tutorials/basics-docker.html#create-a-stream-and-table
+    
+-- Create a stream pageviews_original from the Kafka topic pageviews, specifying the value_format of DELIMITED
+CREATE STREAM pageviews_original (viewtime bigint, userid varchar, pageid varchar) WITH (kafka_topic='pageviews', value_format='DELIMITED');
+
+-- Create a table users_original from the Kafka topic users, specifying the value_format of JSON
+CREATE TABLE users_original (registertime BIGINT, gender VARCHAR, regionid VARCHAR, userid VARCHAR) WITH (kafka_topic='users', value_format='JSON', key = 'userid');
+
+-- Create a persistent query by using the CREATE STREAM keywords to precede the SELECT statement
+CREATE STREAM pageviews_enriched AS SELECT users_original.userid AS userid, pageid, regionid, gender FROM pageviews_original LEFT JOIN users_original ON pageviews_original.userid = users_original.userid;
+
+-- Create a new persistent query where a condition limits the streams content, using WHERE
+CREATE STREAM pageviews_female AS SELECT * FROM pageviews_enriched WHERE gender = 'FEMALE';
+
+-- Create a new persistent query where another condition is met, using LIKE
+CREATE STREAM pageviews_female_like_89 WITH (kafka_topic='pageviews_enriched_r8_r9') AS SELECT * FROM pageviews_female WHERE regionid LIKE '%_8' OR regionid LIKE '%_9';
+
+-- Create a new persistent query that counts the pageviews for each region and gender combination in a tumbling window of 30 seconds when the count is greater than one
+CREATE TABLE pageviews_regions WITH (VALUE_FORMAT='avro') AS SELECT gender, regionid , COUNT(*) AS numusers FROM pageviews_enriched WINDOW TUMBLING (size 30 second) GROUP BY gender, regionid HAVING COUNT(*) > 1;
+`
+
+const kafkaCpZookeeperJmxConfigmap = `
+jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+ssl: false
+rules:
+- pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+)><>(\\w+)"
+  name: "cp_zookeeper_$2"
+- pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+)><>(\\w+)"
+  name: "cp_zookeeper_$3"
+  labels:
+    replicaId: "$2"
+- pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+)><>(\\w+)"
+  name: "cp_zookeeper_$4"
+  labels:
+    replicaId: "$2"
+    memberType: "$3"
+- pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+), name3=(\\w+)><>(\\w+)"
+  name: "cp_zookeeper_$4_$5"
+  labels:
+    replicaId: "$2"
+    memberType: "$3"
+`
+
+const kafkaCpSchemaRegistryJmxConfigmap = `
+jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+ssl: false
+rules:
+- pattern : 'kafka.schema.registry<type=jetty-metrics>([^:]+):'
+  name: "cp_kafka_schema_registry_jetty_metrics_$1"
+- pattern : 'kafka.schema.registry<type=master-slave-role>([^:]+):'
+  name: "cp_kafka_schema_registry_master_slave_role"
+- pattern : 'kafka.schema.registry<type=jersey-metrics>([^:]+):'
+  name: "cp_kafka_schema_registry_jersey_metrics_$1"
+`
+
+const kafkaCpKafkaConnectJmxConfigmap = `
+jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+ssl: false
+rules:
+- pattern : "kafka.connect<type=connect-worker-metrics>([^:]+):"
+  name: "cp_kafka_connect_connect_worker_metrics_$1"
+- pattern : "kafka.connect<type=connect-metrics, client-id=([^:]+)><>([^:]+)"
+  name: "cp_kafka_connect_connect_metrics_$1_$2"
+`
+
+const kafkaCpKafkaRestJmxConfigmap = `
+jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+ssl: false
+rules:
+- pattern : 'kafka.rest<type=jetty-metrics>([^:]+):'
+  name: "cp_kafka_rest_jetty_metrics_$1"
+- pattern : 'kafka.rest<type=jersey-metrics>([^:]+):'
+  name: "cp_kafka_rest_jersey_metrics_$1"
+`
+
+const kafkaCpKsqlServerJmxConfigmap = `
+jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+ssl: false
+rules:
+- pattern : 'io.confluent.ksql.metrics<type=ksql-engine-query-stats>([^:]+):'
+  name: "cp_ksql_server_metrics_$1"
+`

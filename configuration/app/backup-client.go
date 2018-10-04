@@ -21,14 +21,14 @@ type BackupClient struct {
 	GitRepoUrl      container.GitRepoUrl
 }
 
-func (t *BackupClient) Validate(ctx context.Context) error {
+func (b *BackupClient) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
-		t.Domains,
-		t.GitSyncPassword,
-		t.BackupSshKey,
-		t.GitRepoUrl,
+		b.Cluster,
+		b.Domains,
+		b.GitSyncPassword,
+		b.BackupSshKey,
+		b.GitRepoUrl,
 	)
 }
 
