@@ -10,6 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bborbe/world/pkg/k8s"
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/http/client_builder"
 	"github.com/bborbe/teamvault-utils"
 	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
@@ -81,6 +84,24 @@ func main() {
 			return nil
 		},
 	})
+	command := &cobra.Command{
+		Use:   "yaml-to-struct",
+		Short: "Convert the given yaml to world struct",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filename, err := cmd.Flags().GetString("file")
+			if err != nil {
+				return errors.Wrap(err, "get parameter file failed")
+			}
+			file, err := os.Open(filename)
+			if err != nil {
+				return errors.Wrap(err, "open file failed")
+			}
+			defer file.Close()
+			return errors.Wrap(k8s.YamlToStruct(file, os.Stdout), "convert to struct failed")
+		},
+	}
+	command.Flags().StringP("file", "f", "", "filename")
+	rootCmd.AddCommand(command)
 
 	if err := rootCmd.Execute(); err != nil {
 		if glog.V(4) {

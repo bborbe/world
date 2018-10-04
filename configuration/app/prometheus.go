@@ -383,7 +383,7 @@ func (p *Prometheus) nodeExporter() []world.Configuration {
 					},
 				},
 				Spec: k8s.DaemonSetSpec{
-					Selector: k8s.Selector{
+					Selector: k8s.LabelSelector{
 						MatchLabels: k8s.Labels{
 							"app": "node-exporter",
 						},
@@ -494,7 +494,7 @@ func (p *Prometheus) kubeStateMetrics() []world.Configuration {
 							MaxUnavailable: 1,
 						},
 					},
-					Selector: k8s.Selector{
+					Selector: k8s.LabelSelector{
 						MatchLabels: k8s.Labels{
 							"app": "kube-state-metrics",
 						},

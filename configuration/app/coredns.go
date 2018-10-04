@@ -82,7 +82,7 @@ func (c *CoreDns) Children() []world.Configuration {
 							MaxUnavailable: 1,
 						},
 					},
-					Selector: k8s.Selector{
+					Selector: k8s.LabelSelector{
 						MatchLabels: k8s.Labels{
 							"k8s-app": "kube-dns",
 						},

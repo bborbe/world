@@ -121,7 +121,7 @@ type VolumeClaimTemplate struct {
 type StatefulSetSpec struct {
 	ServiceName          MetadataName          `yaml:"serviceName"`
 	Replicas             Replicas              `yaml:"replicas"`
-	Selector             Selector              `yaml:"selector,omitempty"`
+	Selector             LabelSelector         `yaml:"selector,omitempty"`
 	Template             PodTemplate           `yaml:"template"`
 	VolumeClaimTemplates []VolumeClaimTemplate `yaml:"volumeClaimTemplates,omitempty"`
 	UpdateStrategy       UpdateStrategy        `yaml:"updateStrategy,omitempty"`

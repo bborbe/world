@@ -89,8 +89,8 @@ func (s DaemonSet) String() string {
 }
 
 type DaemonSetSpec struct {
-	Selector Selector    `yaml:"selector,omitempty"`
-	Template PodTemplate `yaml:"template"`
+	Selector LabelSelector `yaml:"selector,omitempty"`
+	Template PodTemplate   `yaml:"template"`
 }
 
 func (c DaemonSetSpec) Validate(ctx context.Context) error {

@@ -148,7 +148,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 		Spec: k8s.DeploymentSpec{
 			Replicas:             1,
 			RevisionHistoryLimit: 2,
-			Selector: k8s.Selector{
+			Selector: k8s.LabelSelector{
 				MatchLabels: k8s.Labels{
 					"app": d.Name.String(),
 				},

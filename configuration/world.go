@@ -104,7 +104,7 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 	}
 	return map[AppName]world.Configuration{
 		"kafka": &app.Kafka{
-			Cluster:      c,
+			Context:      c.Context,
 			StorageClass: "standard",
 			AccessMode:   "ReadWriteOnce",
 		},
@@ -266,7 +266,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			HostPath: "/data/nfs-provisioner",
 		},
 		"kafka": &app.Kafka{
-			Cluster:      c,
+			Context:      c.Context,
 			StorageClass: "example-nfs",
 			AccessMode:   "ReadWriteMany",
 		},

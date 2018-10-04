@@ -69,7 +69,7 @@ func (k *KafkaSample) sampleApp() []world.Configuration {
 					Env: []k8s.Env{
 						{
 							Name:  "BROKERS",
-							Value: "kafka-0.kafka.kafka.svc.cluster.local:9093",
+							Value: "kafka-cp-kafka-headless.kafka.svc.cluster.local:9092",
 						},
 					},
 					Image: image,

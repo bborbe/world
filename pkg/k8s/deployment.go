@@ -102,12 +102,12 @@ type DeploymentRevisionHistoryLimit int
 type DeploymentSpec struct {
 	Replicas             Replicas                       `yaml:"replicas"`
 	RevisionHistoryLimit DeploymentRevisionHistoryLimit `yaml:"revisionHistoryLimit"`
-	Selector             Selector                       `yaml:"selector,omitempty"`
+	Selector             LabelSelector                  `yaml:"selector,omitempty"`
 	Strategy             DeploymentStrategy             `yaml:"strategy"`
 	Template             PodTemplate                    `yaml:"template"`
 }
 
-type Selector struct {
+type LabelSelector struct {
 	MatchLabels Labels `yaml:"matchLabels,omitempty"`
 }
 
