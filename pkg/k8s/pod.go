@@ -12,10 +12,10 @@ type PodTemplate struct {
 	Spec     PodSpec  `yaml:"spec"`
 }
 
-func (c PodTemplate) Validate(ctx context.Context) error {
+func (p PodTemplate) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		c.Spec,
+		p.Spec,
 	)
 }
 
@@ -38,6 +38,11 @@ type PodSpec struct {
 func (c PodSpec) Validate(ctx context.Context) error {
 	if len(c.Containers) == 0 {
 		return errors.New("Containers empty")
+	}
+	for _, container := range c.Containers {
+		if err := container.Validate(ctx); err != nil {
+			return err
+		}
 	}
 	return nil
 }

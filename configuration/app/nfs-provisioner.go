@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
@@ -12,8 +13,9 @@ import (
 )
 
 type NfsProvisioner struct {
-	Context  k8s.Context
-	HostPath k8s.PodHostPath
+	Context             k8s.Context
+	HostPath            k8s.PodHostPath
+	DefaultStorageClass bool
 }
 
 func (n *NfsProvisioner) Validate(ctx context.Context) error {
@@ -75,7 +77,10 @@ func (n *NfsProvisioner) Children() []world.Configuration {
 				Kind:       "StorageClass",
 				Metadata: k8s.Metadata{
 					Namespace: "kube-system",
-					Name:      "example-nfs",
+					Name:      "nfs",
+					Annotations: map[string]string{
+						"storageclass.kubernetes.io/is-default-class": strconv.FormatBool(n.DefaultStorageClass),
+					},
 				},
 				Provisioner: "example.com/nfs",
 				Parameters: map[string]string{
@@ -137,6 +142,16 @@ func (n *NfsProvisioner) Children() []world.Configuration {
 						{
 							Name: "export-volume",
 							Path: "/export",
+						},
+					},
+					Resources: k8s.Resources{
+						Limits: k8s.ContainerResource{
+							Cpu:    "2000m",
+							Memory: "2000Mi",
+						},
+						Requests: k8s.ContainerResource{
+							Cpu:    "10m",
+							Memory: "10Mi",
 						},
 					},
 				},

@@ -78,9 +78,10 @@ func (w *World) hetzner() map[AppName]world.Configuration {
 		"dns": &app.KubeDns{
 			Context: context,
 		},
-		"nfs": &app.NfsProvisioner{
-			Context:  context,
-			HostPath: "/data",
+		"hostpath": &app.HostPathProvisioner{
+			Context:             context,
+			HostPath:            "/data",
+			DefaultStorageClass: true,
 		},
 		"traefik": &app.Traefik{
 			Context: context,
@@ -104,9 +105,14 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 	}
 	return map[AppName]world.Configuration{
 		"kafka": &app.Kafka{
-			Context:      c.Context,
-			StorageClass: "standard",
-			AccessMode:   "ReadWriteOnce",
+			Context:           c.Context,
+			StorageClass:      "standard",
+			AccessMode:        "ReadWriteOnce",
+			ZookeeperReplicas: 1,
+			KafkaReplicas:     1,
+			DisableRest:       true,
+			DisableKsql:       true,
+			DisableConnect:    true,
 		},
 		"kafka-sample": &app.KafkaSample{
 			Cluster: c,
@@ -261,14 +267,24 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				),
 			},
 		},
-		"nfs": &app.NfsProvisioner{
-			Context:  c.Context,
-			HostPath: "/data/nfs-provisioner",
+		//"nfs": &app.NfsProvisioner{
+		//	Context:  c.Context,
+		//	HostPath: "/data/nfs-provisioner",
+		//},
+		"hostpath": &app.HostPathProvisioner{
+			Context:             c.Context,
+			HostPath:            "/data/hostpath-provisioner",
+			DefaultStorageClass: true,
 		},
 		"kafka": &app.Kafka{
-			Context:      c.Context,
-			StorageClass: "example-nfs",
-			AccessMode:   "ReadWriteMany",
+			Context:           c.Context,
+			StorageClass:      "hostpath",
+			AccessMode:        "ReadWriteMany",
+			ZookeeperReplicas: 1,
+			KafkaReplicas:     1,
+			DisableRest:       true,
+			DisableKsql:       true,
+			DisableConnect:    true,
 		},
 		"kafka-sample": &app.KafkaSample{
 			Cluster: c,
@@ -288,14 +304,17 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				),
 			},
 		},
-		"erpnext": &app.ErpNext{
-			Cluster:              c,
-			Domain:               "erpnext.benjamin-borbe.de",
-			DatabaseRootPassword: w.TeamvaultSecrets.Password("dqDzmO"),
-			DatabaseName:         w.TeamvaultSecrets.Username("MOPGMw"),
-			DatabasePassword:     w.TeamvaultSecrets.Password("MOPGMw"),
-			AdminPassword:        w.TeamvaultSecrets.Password("AwJndw"),
+		"kafka-version-collector": &app.KafkaVersionCollector{
+			Context: c.Context,
 		},
+		//"erpnext": &app.ErpNext{
+		//	Cluster:              c,
+		//	Domain:               "erpnext.benjamin-borbe.de",
+		//	DatabaseRootPassword: w.TeamvaultSecrets.Password("dqDzmO"),
+		//	DatabaseName:         w.TeamvaultSecrets.Username("MOPGMw"),
+		//	DatabasePassword:     w.TeamvaultSecrets.Password("MOPGMw"),
+		//	AdminPassword:        w.TeamvaultSecrets.Password("AwJndw"),
+		//},
 		"dns": &app.CoreDns{
 			Cluster: c,
 		},
@@ -373,7 +392,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"poste": &app.Poste{
 			Cluster:      c,
-			PosteVersion: "1.0.7",
+			PosteVersion: "2.0.18",
 			Domains: k8s.IngressHosts{
 				"mail.benjamin-borbe.de",
 			},

@@ -68,19 +68,19 @@ type DaemonSet struct {
 	Spec       DaemonSetSpec `yaml:"spec"`
 }
 
-func (c DaemonSet) Validate(ctx context.Context) error {
-	if c.ApiVersion != "apps/v1" {
+func (d DaemonSet) Validate(ctx context.Context) error {
+	if d.ApiVersion != "apps/v1" {
 		return errors.New("invalid ApiVersion")
 	}
-	if c.Kind != "DaemonSet" {
+	if d.Kind != "DaemonSet" {
 		return errors.New("invalid Kind")
 	}
 	return validation.Validate(
 		ctx,
-		c.ApiVersion,
-		c.Kind,
-		c.Metadata,
-		c.Spec,
+		d.ApiVersion,
+		d.Kind,
+		d.Metadata,
+		d.Spec,
 	)
 }
 
@@ -93,15 +93,15 @@ type DaemonSetSpec struct {
 	Template PodTemplate   `yaml:"template"`
 }
 
-func (c DaemonSetSpec) Validate(ctx context.Context) error {
-	for key, value := range c.Selector.MatchLabels {
-		v, ok := c.Template.Metadata.Labels[key]
+func (d DaemonSetSpec) Validate(ctx context.Context) error {
+	for key, value := range d.Selector.MatchLabels {
+		v, ok := d.Template.Metadata.Labels[key]
 		if !ok || v != value {
 			return fmt.Errorf("label %s not in selector and not in metadata", key)
 		}
 	}
 	return validation.Validate(
 		ctx,
-		c.Template,
+		d.Template,
 	)
 }

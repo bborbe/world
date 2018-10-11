@@ -80,7 +80,10 @@ func (s Deployment) Validate(ctx context.Context) error {
 	if s.Kind != "Deployment" {
 		return errors.New("invalid Kind")
 	}
-	return nil
+	return validation.Validate(
+		ctx,
+		s.Spec,
+	)
 }
 
 type Replicas int
@@ -94,6 +97,9 @@ func (r Replicas) String() string {
 }
 
 func (s Replicas) Validate(ctx context.Context) error {
+	if s.Int() <= 0 {
+		return errors.New("invalid Relicas amount")
+	}
 	return nil
 }
 
@@ -105,6 +111,13 @@ type DeploymentSpec struct {
 	Selector             LabelSelector                  `yaml:"selector,omitempty"`
 	Strategy             DeploymentStrategy             `yaml:"strategy"`
 	Template             PodTemplate                    `yaml:"template"`
+}
+
+func (d DeploymentSpec) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Template,
+	)
 }
 
 type LabelSelector struct {

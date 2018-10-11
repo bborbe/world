@@ -540,6 +540,16 @@ func (p *Prometheus) kubeStateMetrics() []world.Configuration {
 										InitialDelaySeconds: 3,
 										TimeoutSeconds:      5,
 									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 								},
 							},
 						},

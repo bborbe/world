@@ -68,7 +68,7 @@ type StorageClass struct {
 	Kind        Kind                    `yaml:"kind"`
 	Metadata    Metadata                `yaml:"metadata"`
 	Provisioner StorageClassProvisioner `yaml:"provisioner"`
-	Parameters  StorageClassParameters  `yaml:"parameters"`
+	Parameters  StorageClassParameters  `yaml:"parameters,omitempty"`
 }
 
 func (s StorageClass) Validate(ctx context.Context) error {

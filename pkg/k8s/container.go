@@ -3,6 +3,8 @@ package k8s
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/validation"
+
 	"github.com/pkg/errors"
 )
 
@@ -12,16 +14,46 @@ type ContainerName string
 
 type CpuLimit string
 
+func (c CpuLimit) Validate(ctx context.Context) error {
+	if c == "" {
+		return errors.New("CpuLimit empty")
+	}
+	return nil
+}
+
 type MemoryLimit string
 
+func (m MemoryLimit) Validate(ctx context.Context) error {
+	if m == "" {
+		return errors.New("MemoryLimit empty")
+	}
+	return nil
+}
+
 type ContainerResource struct {
-	Cpu    string      `yaml:"cpu"`
+	Cpu    CpuLimit    `yaml:"cpu"`
 	Memory MemoryLimit `yaml:"memory"`
+}
+
+func (c ContainerResource) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		c.Cpu,
+		c.Memory,
+	)
 }
 
 type Resources struct {
 	Limits   ContainerResource `yaml:"limits"`
 	Requests ContainerResource `yaml:"requests"`
+}
+
+func (r Resources) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		r.Limits,
+		r.Requests,
+	)
 }
 
 type ContainerPort struct {
@@ -75,6 +107,13 @@ type Container struct {
 	LivenessProbe   Probe            `yaml:"livenessProbe,omitempty"`
 	SecurityContext SecurityContext  `yaml:"securityContext,omitempty"`
 	ImagePullPolicy ImagePullPolicy  `yaml:"imagePullPolicy,omitempty"`
+}
+
+func (c Container) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		c.Resources,
+	)
 }
 
 type SecurityContext struct {

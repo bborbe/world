@@ -30,7 +30,7 @@ func (t *Poste) Validate(ctx context.Context) error {
 }
 
 func (p *Poste) Children() []world.Configuration {
-	var buildVersion docker.GitBranch = "1.0.0"
+	var buildVersion docker.GitBranch = "2.0.1"
 	image := docker.Image{
 		Repository: "bborbe/poste.io",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", p.PosteVersion, buildVersion)),

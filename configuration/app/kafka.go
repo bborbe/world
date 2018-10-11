@@ -13,9 +13,15 @@ import (
 )
 
 type Kafka struct {
-	Context      k8s.Context
-	StorageClass k8s.StorageClassName
-	AccessMode   k8s.AccessMode
+	Context               k8s.Context
+	StorageClass          k8s.StorageClassName
+	AccessMode            k8s.AccessMode
+	ZookeeperReplicas     k8s.Replicas
+	KafkaReplicas         k8s.Replicas
+	DisableRest           bool
+	DisableKsql           bool
+	DisableSchemaRegistry bool
+	DisableConnect        bool
 }
 
 func (c *Kafka) Validate(ctx context.Context) error {
@@ -24,6 +30,8 @@ func (c *Kafka) Validate(ctx context.Context) error {
 		c.Context,
 		c.StorageClass,
 		c.AccessMode,
+		c.ZookeeperReplicas,
+		c.KafkaReplicas,
 	)
 }
 func (c *Kafka) Children() []world.Configuration {
@@ -42,19 +50,19 @@ func (c *Kafka) Children() []world.Configuration {
 	}
 	result = append(result, c.zookeeper()...)
 	result = append(result, c.kafka()...)
-	result = append(result, c.connect()...)
-	result = append(result, c.rest()...)
-	result = append(result, c.ksql()...)
-	result = append(result, c.schemaRegistry()...)
+	if !c.DisableConnect {
+		result = append(result, c.connect()...)
+	}
+	if !c.DisableRest {
+		result = append(result, c.rest()...)
+	}
+	if !c.DisableKsql {
+		result = append(result, c.ksql()...)
+	}
+	if !c.DisableSchemaRegistry {
+		result = append(result, c.schemaRegistry()...)
+	}
 	return result
-}
-
-func (c *Kafka) kafkaReplicas() k8s.Replicas {
-	return 1
-}
-
-func (c *Kafka) zookeeperReplicas() k8s.Replicas {
-	return 1
 }
 
 func (c *Kafka) connect() []world.Configuration {
@@ -123,6 +131,16 @@ func (c *Kafka) connect() []world.Configuration {
 											Name: "jmx-config",
 										},
 									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 								},
 								{
 									Name:  "cp-kafka-connect-server",
@@ -138,15 +156,15 @@ func (c *Kafka) connect() []world.Configuration {
 										},
 										{
 											Name:  "CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR",
-											Value: c.kafkaReplicas().String(),
+											Value: c.KafkaReplicas.String(),
 										},
 										{
 											Name:  "CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR",
-											Value: c.kafkaReplicas().String(),
+											Value: c.KafkaReplicas.String(),
 										},
 										{
 											Name:  "CONNECT_STATUS_STORAGE_REPLICATION_FACTOR",
-											Value: c.kafkaReplicas().String(),
+											Value: c.KafkaReplicas.String(),
 										},
 										{
 											Name:  "CONNECT_PLUGIN_PATH",
@@ -210,6 +228,16 @@ func (c *Kafka) connect() []world.Configuration {
 										{
 											ContainerPort: 5555,
 											Name:          "jmx",
+										},
+									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
 										},
 									},
 									ImagePullPolicy: "IfNotPresent",
@@ -283,33 +311,6 @@ func (c *Kafka) kafka() []world.Configuration {
 		&build.CpKafka{
 			Image: image,
 		},
-		&k8s.ServiceConfiguration{
-			Context: c.Context,
-			Service: k8s.Service{
-				ApiVersion: "v1",
-				Kind:       "Service",
-				Metadata: k8s.Metadata{
-					Namespace: "kafka",
-					Name:      "kafka-cp-kafka-headless",
-					Labels: k8s.Labels{
-						"app":   "cp-kafka",
-						"chart": "cp-kafka-0.1.0",
-					},
-				},
-				Spec: k8s.ServiceSpec{
-					Ports: []k8s.ServicePort{
-						{
-							Name: "broker",
-							Port: 9092,
-						},
-					},
-					Selector: k8s.ServiceSelector{
-						"app": "cp-kafka",
-					},
-					ClusterIP: "None",
-				},
-			},
-		},
 		&k8s.ConfigMapConfiguration{
 			Context: c.Context,
 			ConfigMap: k8s.ConfigMap{
@@ -318,10 +319,6 @@ func (c *Kafka) kafka() []world.Configuration {
 				Metadata: k8s.Metadata{
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka-jmx-configmap",
-					Labels: k8s.Labels{
-						"chart": "cp-kafka-0.1.0",
-						"app":   "cp-kafka",
-					},
 				},
 				Data: k8s.ConfigMapData{
 					"jmx-kafka-prometheus.yml": kafkaCpKafkaJmxConfigmap,
@@ -336,14 +333,10 @@ func (c *Kafka) kafka() []world.Configuration {
 				Metadata: k8s.Metadata{
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka",
-					Labels: k8s.Labels{
-						"app":   "cp-kafka",
-						"chart": "cp-kafka-0.1.0",
-					},
 				},
 				Spec: k8s.StatefulSetSpec{
 					ServiceName: "kafka-cp-kafka-headless",
-					Replicas:    c.kafkaReplicas(),
+					Replicas:    c.KafkaReplicas,
 					Template: k8s.PodTemplate{
 						Metadata: k8s.Metadata{
 							Labels: k8s.Labels{
@@ -356,32 +349,6 @@ func (c *Kafka) kafka() []world.Configuration {
 						},
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
-								{
-									Name:  "prometheus-jmx-exporter",
-									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
-									Command: []k8s.Command{
-										"java",
-										"-XX:+UnlockExperimentalVMOptions",
-										"-XX:+UseCGroupMemoryLimitForHeap",
-										"-XX:MaxRAMFraction=1",
-										"-XshowSettings:vm",
-										"-jar",
-										"jmx_prometheus_httpserver.jar",
-										"5556",
-										"/etc/jmx-kafka/jmx-kafka-prometheus.yml",
-									},
-									Ports: []k8s.ContainerPort{
-										{
-											ContainerPort: 5556,
-										},
-									},
-									VolumeMounts: []k8s.ContainerMount{
-										{
-											Path: "/etc/jmx-kafka",
-											Name: "jmx-config",
-										},
-									},
-								},
 								{
 									Name:  "cp-kafka-broker",
 									Image: k8s.Image(image.String()),
@@ -429,11 +396,15 @@ func (c *Kafka) kafka() []world.Configuration {
 										},
 										{
 											Name:  "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
-											Value: c.kafkaReplicas().String(),
+											Value: c.KafkaReplicas.String(),
 										},
 										{
 											Name:  "KAFKA_JMX_PORT",
 											Value: "5555",
+										},
+										{
+											Name:  "KAFKA_AUTO_CREATE_TOPICS_ENABLE",
+											Value: "false",
 										},
 									},
 									Ports: []k8s.ContainerPort{
@@ -447,8 +418,14 @@ func (c *Kafka) kafka() []world.Configuration {
 										},
 									},
 									Resources: k8s.Resources{
-										Limits:   k8s.ContainerResource{},
-										Requests: k8s.ContainerResource{},
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
 										{
@@ -457,6 +434,42 @@ func (c *Kafka) kafka() []world.Configuration {
 										},
 									},
 									ImagePullPolicy: "IfNotPresent",
+								},
+								{
+									Name:  "prometheus-jmx-exporter",
+									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
+									Command: []k8s.Command{
+										"java",
+										"-XX:+UnlockExperimentalVMOptions",
+										"-XX:+UseCGroupMemoryLimitForHeap",
+										"-XX:MaxRAMFraction=1",
+										"-XshowSettings:vm",
+										"-jar",
+										"jmx_prometheus_httpserver.jar",
+										"5556",
+										"/etc/jmx-kafka/jmx-kafka-prometheus.yml",
+									},
+									Ports: []k8s.ContainerPort{
+										{
+											ContainerPort: 5556,
+										},
+									},
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Path: "/etc/jmx-kafka",
+											Name: "jmx-config",
+										},
+									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 								},
 							},
 							Volumes: []k8s.PodVolume{
@@ -501,11 +514,30 @@ func (c *Kafka) kafka() []world.Configuration {
 				Kind:       "Service",
 				Metadata: k8s.Metadata{
 					Namespace: "kafka",
-					Name:      "kafka-cp-kafka",
-					Labels: k8s.Labels{
-						"app":   "cp-kafka",
-						"chart": "cp-kafka-0.1.0",
+					Name:      "kafka-cp-kafka-headless",
+				},
+				Spec: k8s.ServiceSpec{
+					Ports: []k8s.ServicePort{
+						{
+							Name: "broker",
+							Port: 9092,
+						},
 					},
+					Selector: k8s.ServiceSelector{
+						"app": "cp-kafka",
+					},
+					ClusterIP: "None",
+				},
+			},
+		},
+		&k8s.ServiceConfiguration{
+			Context: c.Context,
+			Service: k8s.Service{
+				ApiVersion: "v1",
+				Kind:       "Service",
+				Metadata: k8s.Metadata{
+					Namespace: "kafka",
+					Name:      "kafka-cp-kafka",
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
@@ -583,6 +615,16 @@ func (c *Kafka) rest() []world.Configuration {
 											ContainerPort: 5556,
 										},
 									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 									VolumeMounts: []k8s.ContainerMount{
 										{
 											Path: "/etc/jmx-kafka-rest",
@@ -628,6 +670,16 @@ func (c *Kafka) rest() []world.Configuration {
 										},
 									},
 									ImagePullPolicy: "IfNotPresent",
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 								},
 							},
 							Volumes: []k8s.PodVolume{
@@ -762,8 +814,14 @@ func (c *Kafka) ksql() []world.Configuration {
 										},
 									},
 									Resources: k8s.Resources{
-										Limits:   k8s.ContainerResource{},
-										Requests: k8s.ContainerResource{},
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
 									},
 									VolumeMounts: []k8s.ContainerMount{
 										{
@@ -771,39 +829,6 @@ func (c *Kafka) ksql() []world.Configuration {
 											Name:     "jmx-config",
 											ReadOnly: false},
 									},
-									ReadinessProbe: k8s.Probe{
-										Exec: k8s.Exec{
-											Command: []k8s.Command(nil)},
-										HttpGet: k8s.HttpGet{
-											Port: 0,
-										},
-										TcpSocket: k8s.TcpSocket{
-											Port: 0},
-										InitialDelaySeconds: 0,
-										SuccessThreshold:    0,
-										FailureThreshold:    0,
-										TimeoutSeconds:      0,
-										PeriodSeconds:       0},
-									LivenessProbe: k8s.Probe{
-										Exec: k8s.Exec{
-											Command: []k8s.Command(nil)},
-										HttpGet: k8s.HttpGet{
-											Port: 0,
-										},
-										TcpSocket: k8s.TcpSocket{
-											Port: 0},
-										InitialDelaySeconds: 0,
-										SuccessThreshold:    0,
-										FailureThreshold:    0,
-										TimeoutSeconds:      0,
-										PeriodSeconds:       0},
-									SecurityContext: k8s.SecurityContext{
-										AllowPrivilegeEscalation: false,
-										ReadOnlyRootFilesystem:   false,
-										Privileged:               false,
-										RunAsUser:                0,
-										FsGroup:                  0,
-										Capabilities:             k8s.SecurityContextCapabilities(nil)},
 								},
 								{
 									Name:    "cp-ksql-server",
@@ -837,6 +862,16 @@ func (c *Kafka) ksql() []world.Configuration {
 										{
 											ContainerPort: 5555,
 											Name:          "jmx",
+										},
+									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
 										},
 									},
 									ImagePullPolicy: "IfNotPresent",
@@ -937,8 +972,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-schema-registry",
 					Labels: k8s.Labels{
-						"app":   "cp-schema-registry",
-						"chart": "cp-schema-registry-0.1.0",
+						"app": "cp-schema-registry",
 					},
 				},
 				Spec: k8s.DeploymentSpec{
@@ -991,6 +1025,16 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 											Name: "jmx-config",
 										},
 									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 								},
 								{
 									Name:  "cp-schema-registry-server",
@@ -1032,6 +1076,16 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 											Name:          "jmx",
 										},
 									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 									ImagePullPolicy: "IfNotPresent",
 								},
 							},
@@ -1057,8 +1111,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-schema-registry-jmx-configmap",
 					Labels: k8s.Labels{
-						"app":   "cp-schema-registry",
-						"chart": "cp-schema-registry-0.1.0",
+						"app": "cp-schema-registry",
 					},
 				},
 				Data: k8s.ConfigMapData{
@@ -1075,8 +1128,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-schema-registry",
 					Labels: k8s.Labels{
-						"app":   "cp-schema-registry",
-						"chart": "cp-schema-registry-0.1.0",
+						"app": "cp-schema-registry",
 					},
 				},
 				Spec: k8s.ServiceSpec{
@@ -1100,7 +1152,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 		Tag:        "5.0.0",
 	}
 	var zookeeperServerLists []string
-	for i := k8s.Replicas(0); i < c.zookeeperReplicas(); i++ {
+	for i := k8s.Replicas(0); i < c.ZookeeperReplicas; i++ {
 		addr := fmt.Sprintf("kafka-cp-zookeeper-%d.kafka-cp-zookeeper-headless.default.svc.cluster.local:2888:3888", i)
 		zookeeperServerLists = append(zookeeperServerLists, addr)
 	}
@@ -1196,7 +1248,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 				},
 				Spec: k8s.StatefulSetSpec{
 					ServiceName: "kafka-cp-zookeeper-headless",
-					Replicas:    k8s.Replicas(c.zookeeperReplicas()),
+					Replicas:    k8s.Replicas(c.ZookeeperReplicas),
 					Template: k8s.PodTemplate{
 						Metadata: k8s.Metadata{
 							Labels: k8s.Labels{
@@ -1209,32 +1261,6 @@ func (c *Kafka) zookeeper() []world.Configuration {
 						},
 						Spec: k8s.PodSpec{
 							Containers: []k8s.Container{
-								{
-									Name:  "prometheus-jmx-exporter",
-									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
-									Command: []k8s.Command{
-										"java",
-										"-XX:+UnlockExperimentalVMOptions",
-										"-XX:+UseCGroupMemoryLimitForHeap",
-										"-XX:MaxRAMFraction=1",
-										"-XshowSettings:vm",
-										"-jar",
-										"jmx_prometheus_httpserver.jar",
-										"5556",
-										"/etc/jmx-zookeeper/jmx-zookeeper-prometheus.yml",
-									},
-									Ports: []k8s.ContainerPort{
-										{
-											ContainerPort: 5556,
-										},
-									},
-									VolumeMounts: []k8s.ContainerMount{
-										{
-											Path: "/etc/jmx-zookeeper",
-											Name: "jmx-config",
-										},
-									},
-								},
 								{
 									Name:  "cp-zookeeper-server",
 									Image: k8s.Image(image.String()),
@@ -1332,7 +1358,53 @@ func (c *Kafka) zookeeper() []world.Configuration {
 										InitialDelaySeconds: 1,
 										TimeoutSeconds:      3,
 									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 									ImagePullPolicy: "IfNotPresent",
+								},
+								{
+									Name:  "prometheus-jmx-exporter",
+									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
+									Command: []k8s.Command{
+										"java",
+										"-XX:+UnlockExperimentalVMOptions",
+										"-XX:+UseCGroupMemoryLimitForHeap",
+										"-XX:MaxRAMFraction=1",
+										"-XshowSettings:vm",
+										"-jar",
+										"jmx_prometheus_httpserver.jar",
+										"5556",
+										"/etc/jmx-zookeeper/jmx-zookeeper-prometheus.yml",
+									},
+									Ports: []k8s.ContainerPort{
+										{
+											ContainerPort: 5556,
+										},
+									},
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Path: "/etc/jmx-zookeeper",
+											Name: "jmx-config",
+										},
+									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
 								},
 							},
 							Volumes: []k8s.PodVolume{
