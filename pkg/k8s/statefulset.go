@@ -87,8 +87,17 @@ func (s StatefulSet) String() string {
 	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
 }
 
+type Storage string
+
+func (s Storage) Validate(ctx context.Context) error {
+	if s == "" {
+		return errors.New("invalid Storage")
+	}
+	return nil
+}
+
 type VolumeClaimTemplatesSpecResourcesRequests struct {
-	Storage string `yaml:"storage,omitempty"`
+	Storage Storage `yaml:"storage,omitempty"`
 }
 
 type VolumeClaimTemplatesSpecResources struct {

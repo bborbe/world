@@ -105,14 +105,15 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 	}
 	return map[AppName]world.Configuration{
 		"kafka": &app.Kafka{
-			Context:           c.Context,
-			StorageClass:      "standard",
 			AccessMode:        "ReadWriteOnce",
-			ZookeeperReplicas: 1,
-			KafkaReplicas:     1,
-			DisableRest:       true,
-			DisableKsql:       true,
+			Context:           c.Context,
 			DisableConnect:    true,
+			DisableRest:       true,
+			KafkaReplicas:     1,
+			KafkaStorage:      "20Gi",
+			StorageClass:      "standard",
+			ZookeeperReplicas: 1,
+			ZookeeperStorage:  "5Gi",
 		},
 		"kafka-sample": &app.KafkaSample{
 			Cluster: c,
@@ -277,14 +278,36 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			DefaultStorageClass: true,
 		},
 		"kafka": &app.Kafka{
-			Context:           c.Context,
-			StorageClass:      "hostpath",
 			AccessMode:        "ReadWriteMany",
-			ZookeeperReplicas: 1,
-			KafkaReplicas:     1,
-			DisableRest:       true,
-			DisableKsql:       true,
+			Context:           c.Context,
 			DisableConnect:    true,
+			DisableRest:       true,
+			KafkaReplicas:     1,
+			KafkaStorage:      "5Gi",
+			StorageClass:      "hostpath",
+			ZookeeperReplicas: 1,
+			ZookeeperStorage:  "5Gi",
+		},
+		"kafka-latest-versions": &app.KafkaLatestVersions{
+			Cluster: c,
+			Domain:  "versions.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: dns.Host("versions.benjamin-borbe.de"),
+								IP:   dns.IPStatic(c.IP.String()),
+							},
+						},
+					},
+				),
+			},
+		},
+		"kafka-version-collector": &app.KafkaVersionCollector{
+			Context: c.Context,
 		},
 		"kafka-sample": &app.KafkaSample{
 			Cluster: c,
@@ -303,9 +326,6 @@ func (w *World) netcup() map[AppName]world.Configuration {
 					},
 				),
 			},
-		},
-		"kafka-version-collector": &app.KafkaVersionCollector{
-			Context: c.Context,
 		},
 		//"erpnext": &app.ErpNext{
 		//	Cluster:              c,

@@ -13,31 +13,31 @@ import (
 )
 
 type Kafka struct {
-	Context               k8s.Context
-	StorageClass          k8s.StorageClassName
-	AccessMode            k8s.AccessMode
-	ZookeeperReplicas     k8s.Replicas
-	KafkaReplicas         k8s.Replicas
-	DisableRest           bool
-	DisableKsql           bool
-	DisableSchemaRegistry bool
-	DisableConnect        bool
+	AccessMode        k8s.AccessMode
+	Context           k8s.Context
+	DisableConnect    bool
+	DisableRest       bool
+	KafkaReplicas     k8s.Replicas
+	KafkaStorage      k8s.Storage
+	StorageClass      k8s.StorageClassName
+	ZookeeperReplicas k8s.Replicas
+	ZookeeperStorage  k8s.Storage
 }
 
-func (c *Kafka) Validate(ctx context.Context) error {
+func (k *Kafka) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		c.Context,
-		c.StorageClass,
-		c.AccessMode,
-		c.ZookeeperReplicas,
-		c.KafkaReplicas,
+		k.Context,
+		k.StorageClass,
+		k.AccessMode,
+		k.ZookeeperReplicas,
+		k.KafkaReplicas,
 	)
 }
-func (c *Kafka) Children() []world.Configuration {
+func (k *Kafka) Children() []world.Configuration {
 	result := []world.Configuration{
 		&k8s.NamespaceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Namespace: k8s.Namespace{
 				ApiVersion: "v1",
 				Kind:       "Namespace",
@@ -48,24 +48,20 @@ func (c *Kafka) Children() []world.Configuration {
 			},
 		},
 	}
-	result = append(result, c.zookeeper()...)
-	result = append(result, c.kafka()...)
-	if !c.DisableConnect {
-		result = append(result, c.connect()...)
+	result = append(result, k.zookeeper()...)
+	result = append(result, k.kafka()...)
+	result = append(result, k.ksql()...)
+	result = append(result, k.schemaRegistry()...)
+	if !k.DisableConnect {
+		result = append(result, k.connect()...)
 	}
-	if !c.DisableRest {
-		result = append(result, c.rest()...)
-	}
-	if !c.DisableKsql {
-		result = append(result, c.ksql()...)
-	}
-	if !c.DisableSchemaRegistry {
-		result = append(result, c.schemaRegistry()...)
+	if !k.DisableRest {
+		result = append(result, k.rest()...)
 	}
 	return result
 }
 
-func (c *Kafka) connect() []world.Configuration {
+func (k *Kafka) connect() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-kafka-connect",
 		Tag:        "5.0.0",
@@ -75,7 +71,7 @@ func (c *Kafka) connect() []world.Configuration {
 			Image: image,
 		},
 		&k8s.DeploymentConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
@@ -83,8 +79,7 @@ func (c *Kafka) connect() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka-connect",
 					Labels: k8s.Labels{
-						"app":   "cp-kafka-connect",
-						"chart": "cp-kafka-connect-0.1.0",
+						"app": "cp-kafka-connect",
 					},
 				},
 				Spec: k8s.DeploymentSpec{
@@ -156,15 +151,15 @@ func (c *Kafka) connect() []world.Configuration {
 										},
 										{
 											Name:  "CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR",
-											Value: c.KafkaReplicas.String(),
+											Value: k.KafkaReplicas.String(),
 										},
 										{
 											Name:  "CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR",
-											Value: c.KafkaReplicas.String(),
+											Value: k.KafkaReplicas.String(),
 										},
 										{
 											Name:  "CONNECT_STATUS_STORAGE_REPLICATION_FACTOR",
-											Value: c.KafkaReplicas.String(),
+											Value: k.KafkaReplicas.String(),
 										},
 										{
 											Name:  "CONNECT_PLUGIN_PATH",
@@ -257,7 +252,7 @@ func (c *Kafka) connect() []world.Configuration {
 			},
 		},
 		&k8s.ConfigMapConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
@@ -265,8 +260,7 @@ func (c *Kafka) connect() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka-connect-jmx-configmap",
 					Labels: k8s.Labels{
-						"app":   "cp-kafka-connect",
-						"chart": "cp-kafka-connect-0.1.0",
+						"app": "cp-kafka-connect",
 					},
 				},
 				Data: k8s.ConfigMapData{
@@ -275,7 +269,7 @@ func (c *Kafka) connect() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -283,8 +277,7 @@ func (c *Kafka) connect() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka-connect",
 					Labels: k8s.Labels{
-						"app":   "cp-kafka-connect",
-						"chart": "cp-kafka-connect-0.1.0",
+						"app": "cp-kafka-connect",
 					},
 				},
 				Spec: k8s.ServiceSpec{
@@ -302,7 +295,7 @@ func (c *Kafka) connect() []world.Configuration {
 		},
 	}
 }
-func (c *Kafka) kafka() []world.Configuration {
+func (k *Kafka) kafka() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-kafka",
 		Tag:        "5.0.0",
@@ -312,7 +305,7 @@ func (c *Kafka) kafka() []world.Configuration {
 			Image: image,
 		},
 		&k8s.ConfigMapConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
@@ -326,7 +319,7 @@ func (c *Kafka) kafka() []world.Configuration {
 			},
 		},
 		&k8s.StatefulSetConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			StatefulSet: k8s.StatefulSet{
 				ApiVersion: "apps/v1beta1",
 				Kind:       "StatefulSet",
@@ -336,7 +329,7 @@ func (c *Kafka) kafka() []world.Configuration {
 				},
 				Spec: k8s.StatefulSetSpec{
 					ServiceName: "kafka-cp-kafka-headless",
-					Replicas:    c.KafkaReplicas,
+					Replicas:    k.KafkaReplicas,
 					Template: k8s.PodTemplate{
 						Metadata: k8s.Metadata{
 							Labels: k8s.Labels{
@@ -396,7 +389,7 @@ func (c *Kafka) kafka() []world.Configuration {
 										},
 										{
 											Name:  "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
-											Value: c.KafkaReplicas.String(),
+											Value: k.KafkaReplicas.String(),
 										},
 										{
 											Name:  "KAFKA_JMX_PORT",
@@ -487,15 +480,15 @@ func (c *Kafka) kafka() []world.Configuration {
 							Metadata: k8s.Metadata{
 								Name: "datadir",
 								Annotations: map[string]string{
-									"volume.alpha.kubernetes.io/storage-class": c.StorageClass.String(),
-									"volume.beta.kubernetes.io/storage-class":  c.StorageClass.String(),
+									"volume.alpha.kubernetes.io/storage-class": k.StorageClass.String(),
+									"volume.beta.kubernetes.io/storage-class":  k.StorageClass.String(),
 								},
 							},
 							Spec: k8s.VolumeClaimTemplatesSpec{
-								AccessModes: []k8s.AccessMode{c.AccessMode},
+								AccessModes: []k8s.AccessMode{k.AccessMode},
 								Resources: k8s.VolumeClaimTemplatesSpecResources{
 									Requests: k8s.VolumeClaimTemplatesSpecResourcesRequests{
-										Storage: "5Gi",
+										Storage: k.KafkaStorage,
 									},
 								},
 							},
@@ -508,7 +501,7 @@ func (c *Kafka) kafka() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -531,7 +524,7 @@ func (c *Kafka) kafka() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -554,7 +547,7 @@ func (c *Kafka) kafka() []world.Configuration {
 		},
 	}
 }
-func (c *Kafka) rest() []world.Configuration {
+func (k *Kafka) rest() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-kafka-rest",
 		Tag:        "5.0.0",
@@ -564,7 +557,7 @@ func (c *Kafka) rest() []world.Configuration {
 			Image: image,
 		},
 		&k8s.DeploymentConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
@@ -572,8 +565,7 @@ func (c *Kafka) rest() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka-rest",
 					Labels: k8s.Labels{
-						"app":   "cp-kafka-rest",
-						"chart": "cp-kafka-rest-0.1.0",
+						"app": "cp-kafka-rest",
 					},
 				},
 				Spec: k8s.DeploymentSpec{
@@ -696,7 +688,7 @@ func (c *Kafka) rest() []world.Configuration {
 			},
 		},
 		&k8s.ConfigMapConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
@@ -704,10 +696,8 @@ func (c *Kafka) rest() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka-rest-jmx-configmap",
 					Labels: k8s.Labels{
-						"app":   "cp-kafka-rest",
-						"chart": "cp-kafka-rest-0.1.0",
+						"app": "cp-kafka-rest",
 					},
-					Annotations: k8s.Annotations(nil),
 				},
 				Data: k8s.ConfigMapData{
 					"jmx-kafka-rest-prometheus.yml": kafkaCpKafkaRestJmxConfigmap,
@@ -715,7 +705,7 @@ func (c *Kafka) rest() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -723,10 +713,8 @@ func (c *Kafka) rest() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-kafka-rest",
 					Labels: k8s.Labels{
-						"app":   "cp-kafka-rest",
-						"chart": "cp-kafka-rest-0.1.0",
+						"app": "cp-kafka-rest",
 					},
-					Annotations: k8s.Annotations(nil),
 				},
 				Spec: k8s.ServiceSpec{
 					Ports: []k8s.ServicePort{
@@ -743,7 +731,7 @@ func (c *Kafka) rest() []world.Configuration {
 		},
 	}
 }
-func (c *Kafka) ksql() []world.Configuration {
+func (k *Kafka) ksql() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-ksql-server",
 		Tag:        "5.0.0",
@@ -753,7 +741,7 @@ func (c *Kafka) ksql() []world.Configuration {
 			Image: image,
 		},
 		&k8s.DeploymentConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
@@ -761,10 +749,9 @@ func (c *Kafka) ksql() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-ksql-server",
 					Labels: k8s.Labels{
-						"app":   "cp-ksql-server",
-						"chart": "cp-ksql-server-0.1.0",
+						"app": "cp-ksql-server",
 					},
-					Annotations: k8s.Annotations(nil)},
+				},
 				Spec: k8s.DeploymentSpec{
 					Replicas:             1,
 					RevisionHistoryLimit: 0,
@@ -789,52 +776,10 @@ func (c *Kafka) ksql() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
-							Tolerations: []k8s.Toleration(nil),
 							Containers: []k8s.Container{
 								{
-									Name:  "prometheus-jmx-exporter",
-									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
-									Command: []k8s.Command{
-										"java",
-										"-XX:+UnlockExperimentalVMOptions",
-										"-XX:+UseCGroupMemoryLimitForHeap",
-										"-XX:MaxRAMFraction=1",
-										"-XshowSettings:vm",
-										"-jar",
-										"jmx_prometheus_httpserver.jar",
-										"5556",
-										"/etc/jmx-ksql-server/jmx-ksql-server-prometheus.yml",
-									},
-									Args: []k8s.Arg(nil),
-									Env:  []k8s.Env(nil),
-									Ports: []k8s.ContainerPort{
-										{
-											ContainerPort: 5556,
-											HostPort:      0,
-										},
-									},
-									Resources: k8s.Resources{
-										Limits: k8s.ContainerResource{
-											Cpu:    "2000m",
-											Memory: "2000Mi",
-										},
-										Requests: k8s.ContainerResource{
-											Cpu:    "10m",
-											Memory: "10Mi",
-										},
-									},
-									VolumeMounts: []k8s.ContainerMount{
-										{
-											Path:     "/etc/jmx-ksql-server",
-											Name:     "jmx-config",
-											ReadOnly: false},
-									},
-								},
-								{
-									Name:    "cp-ksql-server",
-									Image:   k8s.Image(image.String()),
-									Command: []k8s.Command(nil),
-									Args:    []k8s.Arg(nil),
+									Name:  "cp-ksql-server",
+									Image: k8s.Image(image.String()),
 									Env: []k8s.Env{
 										{
 											Name:  "KSQL_BOOTSTRAP_SERVERS",
@@ -851,6 +796,10 @@ func (c *Kafka) ksql() []world.Configuration {
 										{
 											Name:  "KSQL_JMX_PORT",
 											Value: "5555",
+										},
+										{
+											Name:  "KSQL_KSQL_SCHEMA_REGISTRY_URL",
+											Value: "http://kafka-cp-schema-registry:8081",
 										},
 									},
 									Ports: []k8s.ContainerPort{
@@ -876,6 +825,43 @@ func (c *Kafka) ksql() []world.Configuration {
 									},
 									ImagePullPolicy: "IfNotPresent",
 								},
+								{
+									Name:  "prometheus-jmx-exporter",
+									Image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8",
+									Command: []k8s.Command{
+										"java",
+										"-XX:+UnlockExperimentalVMOptions",
+										"-XX:+UseCGroupMemoryLimitForHeap",
+										"-XX:MaxRAMFraction=1",
+										"-XshowSettings:vm",
+										"-jar",
+										"jmx_prometheus_httpserver.jar",
+										"5556",
+										"/etc/jmx-ksql-server/jmx-ksql-server-prometheus.yml",
+									},
+									Ports: []k8s.ContainerPort{
+										{
+											ContainerPort: 5556,
+											HostPort:      0,
+										},
+									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "2000m",
+											Memory: "2000Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "10m",
+											Memory: "10Mi",
+										},
+									},
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Path:     "/etc/jmx-ksql-server",
+											Name:     "jmx-config",
+											ReadOnly: false},
+									},
+								},
 							},
 							Volumes: []k8s.PodVolume{
 								{
@@ -891,7 +877,7 @@ func (c *Kafka) ksql() []world.Configuration {
 			},
 		},
 		&k8s.ConfigMapConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
@@ -899,8 +885,7 @@ func (c *Kafka) ksql() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-ksql-server-jmx-configmap",
 					Labels: k8s.Labels{
-						"app":   "cp-ksql-server",
-						"chart": "cp-ksql-server-0.1.0",
+						"app": "cp-ksql-server",
 					},
 				},
 				Data: k8s.ConfigMapData{
@@ -909,7 +894,7 @@ func (c *Kafka) ksql() []world.Configuration {
 			},
 		},
 		&k8s.ConfigMapConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
@@ -917,8 +902,7 @@ func (c *Kafka) ksql() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-ksql-server-ksql-queries-configmap",
 					Labels: k8s.Labels{
-						"app":   "cp-ksql-server",
-						"chart": "cp-ksql-server-0.1.0",
+						"app": "cp-ksql-server",
 					},
 				},
 				Data: k8s.ConfigMapData{
@@ -927,7 +911,7 @@ func (c *Kafka) ksql() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -935,8 +919,7 @@ func (c *Kafka) ksql() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-ksql-server",
 					Labels: k8s.Labels{
-						"app":   "cp-ksql-server",
-						"chart": "cp-ksql-server-0.1.0",
+						"app": "cp-ksql-server",
 					},
 				},
 				Spec: k8s.ServiceSpec{
@@ -954,7 +937,7 @@ func (c *Kafka) ksql() []world.Configuration {
 		},
 	}
 }
-func (c *Kafka) schemaRegistry() []world.Configuration {
+func (k *Kafka) schemaRegistry() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-schema-registry",
 		Tag:        "5.0.0",
@@ -964,7 +947,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 			Image: image,
 		},
 		&k8s.DeploymentConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
@@ -1103,7 +1086,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 			},
 		},
 		&k8s.ConfigMapConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
@@ -1120,7 +1103,7 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -1146,13 +1129,13 @@ func (c *Kafka) schemaRegistry() []world.Configuration {
 		},
 	}
 }
-func (c *Kafka) zookeeper() []world.Configuration {
+func (k *Kafka) zookeeper() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-zookeeper",
 		Tag:        "5.0.0",
 	}
 	var zookeeperServerLists []string
-	for i := k8s.Replicas(0); i < c.ZookeeperReplicas; i++ {
+	for i := k8s.Replicas(0); i < k.ZookeeperReplicas; i++ {
 		addr := fmt.Sprintf("kafka-cp-zookeeper-%d.kafka-cp-zookeeper-headless.default.svc.cluster.local:2888:3888", i)
 		zookeeperServerLists = append(zookeeperServerLists, addr)
 	}
@@ -1161,7 +1144,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 			Image: image,
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -1169,8 +1152,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-zookeeper-headless",
 					Labels: k8s.Labels{
-						"chart": "cp-zookeeper-0.1.0",
-						"app":   "cp-zookeeper",
+						"app": "cp-zookeeper",
 					},
 				},
 				Spec: k8s.ServiceSpec{
@@ -1192,7 +1174,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 			},
 		},
 		&k8s.ConfigMapConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
@@ -1200,8 +1182,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-zookeeper-jmx-configmap",
 					Labels: k8s.Labels{
-						"app":   "cp-zookeeper",
-						"chart": "cp-zookeeper-0.1.0",
+						"app": "cp-zookeeper",
 					},
 				},
 				Data: k8s.ConfigMapData{
@@ -1210,7 +1191,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 			},
 		},
 		&k8s.PodDisruptionBudgetConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			PodDisruptionBudget: k8s.PodDisruptionBudget{
 				ApiVersion: "policy/v1beta1",
 				Kind:       "PodDisruptionBudget",
@@ -1218,8 +1199,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-zookeeper-pdb",
 					Labels: k8s.Labels{
-						"app":   "cp-zookeeper",
-						"chart": "cp-zookeeper-0.1.0",
+						"app": "cp-zookeeper",
 					},
 				},
 				Spec: k8s.PodDisruptionBudgetSpec{
@@ -1234,7 +1214,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 			},
 		},
 		&k8s.StatefulSetConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			StatefulSet: k8s.StatefulSet{
 				ApiVersion: "apps/v1beta1",
 				Kind:       "StatefulSet",
@@ -1242,13 +1222,12 @@ func (c *Kafka) zookeeper() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-zookeeper",
 					Labels: k8s.Labels{
-						"app":   "cp-zookeeper",
-						"chart": "cp-zookeeper-0.1.0",
+						"app": "cp-zookeeper",
 					},
 				},
 				Spec: k8s.StatefulSetSpec{
 					ServiceName: "kafka-cp-zookeeper-headless",
-					Replicas:    k8s.Replicas(c.ZookeeperReplicas),
+					Replicas:    k8s.Replicas(k.ZookeeperReplicas),
 					Template: k8s.PodTemplate{
 						Metadata: k8s.Metadata{
 							Labels: k8s.Labels{
@@ -1422,15 +1401,15 @@ func (c *Kafka) zookeeper() []world.Configuration {
 							Metadata: k8s.Metadata{
 								Name: "datadir",
 								Annotations: map[string]string{
-									"volume.alpha.kubernetes.io/storage-class": c.StorageClass.String(),
-									"volume.beta.kubernetes.io/storage-class":  c.StorageClass.String(),
+									"volume.alpha.kubernetes.io/storage-class": k.StorageClass.String(),
+									"volume.beta.kubernetes.io/storage-class":  k.StorageClass.String(),
 								},
 							},
 							Spec: k8s.VolumeClaimTemplatesSpec{
-								AccessModes: []k8s.AccessMode{c.AccessMode},
+								AccessModes: []k8s.AccessMode{k.AccessMode},
 								Resources: k8s.VolumeClaimTemplatesSpecResources{
 									Requests: k8s.VolumeClaimTemplatesSpecResourcesRequests{
-										Storage: "5Gi",
+										Storage: k.ZookeeperStorage,
 									},
 								},
 							},
@@ -1439,15 +1418,15 @@ func (c *Kafka) zookeeper() []world.Configuration {
 							Metadata: k8s.Metadata{
 								Name: "datalogdir",
 								Annotations: map[string]string{
-									"volume.alpha.kubernetes.io/storage-class": c.StorageClass.String(),
-									"volume.beta.kubernetes.io/storage-class":  c.StorageClass.String(),
+									"volume.alpha.kubernetes.io/storage-class": k.StorageClass.String(),
+									"volume.beta.kubernetes.io/storage-class":  k.StorageClass.String(),
 								},
 							},
 							Spec: k8s.VolumeClaimTemplatesSpec{
-								AccessModes: []k8s.AccessMode{c.AccessMode},
+								AccessModes: []k8s.AccessMode{k.AccessMode},
 								Resources: k8s.VolumeClaimTemplatesSpecResources{
 									Requests: k8s.VolumeClaimTemplatesSpecResourcesRequests{
-										Storage: "5Gi",
+										Storage: k.ZookeeperStorage,
 									},
 								},
 							},
@@ -1460,7 +1439,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Context,
+			Context: k.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -1468,8 +1447,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 					Namespace: "kafka",
 					Name:      "kafka-cp-zookeeper",
 					Labels: k8s.Labels{
-						"chart": "cp-zookeeper-0.1.0",
-						"app":   "cp-zookeeper",
+						"app": "cp-zookeeper",
 					},
 				},
 				Spec: k8s.ServiceSpec{
@@ -1487,7 +1465,7 @@ func (c *Kafka) zookeeper() []world.Configuration {
 		},
 	}
 }
-func (c *Kafka) Applier() (world.Applier, error) {
+func (k *Kafka) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
