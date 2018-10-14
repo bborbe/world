@@ -67,6 +67,10 @@ func (d PodNfsServer) Validate(ctx context.Context) error {
 
 type PodHostPath string
 
+func (p PodHostPath) String() string {
+	return string(p)
+}
+
 func (p PodHostPath) Validate(ctx context.Context) error {
 	if p == "" {
 		return errors.New("PodHostPath missing")

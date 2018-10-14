@@ -2,9 +2,7 @@ package app
 
 import (
 	"context"
-
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,16 +11,22 @@ import (
 )
 
 type KafkaLatestVersions struct {
-	Cluster      cluster.Cluster
+	Context      k8s.Context
 	Domain       k8s.IngressHost
 	Requirements []world.Configuration
+	Replicas     k8s.Replicas
+	StorageClass k8s.StorageClassName
+	AccessMode   k8s.AccessMode
 }
 
 func (k *KafkaLatestVersions) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		k.Cluster,
+		k.Context,
 		k.Domain,
+		k.Replicas,
+		k.StorageClass,
+		k.AccessMode,
 	)
 }
 
@@ -40,93 +44,146 @@ func (k *KafkaLatestVersions) Children() []world.Configuration {
 func (k *KafkaLatestVersions) app() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/kafka-latest-versions",
-		Tag:        "1.1.0",
+		Tag:        "1.2.0",
 	}
 	port := deployer.Port{
-		Port:     80,
+		Port:     8080,
 		Name:     "http",
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&deployer.NamespaceDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kafka-latest-versions",
 		},
-		&deployer.DeploymentDeployer{
-			Context:   k.Cluster.Context,
-			Namespace: "kafka-latest-versions",
-			Name:      "kafka-latest-versions",
-			Strategy: k8s.DeploymentStrategy{
-				Type: "RollingUpdate",
-				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
-					MaxSurge:       1,
-					MaxUnavailable: 1,
+		&build.KafkaLatestVersions{
+			Image: image,
+		},
+		&k8s.StatefulSetConfiguration{
+			Context: k.Context,
+			StatefulSet: k8s.StatefulSet{
+				ApiVersion: "apps/v1beta1",
+				Kind:       "StatefulSet",
+				Metadata: k8s.Metadata{
+					Namespace: "kafka-latest-versions",
+					Name:      "kafka-latest-versions",
+					Labels: k8s.Labels{
+						"app": "kafka-latest-versions",
+					},
 				},
-			},
-			Containers: []deployer.HasContainer{
-				&deployer.DeploymentDeployerContainer{
-					Name:  "server",
-					Image: image,
-					Requirement: &build.KafkaLatestVersions{
-						Image: image,
+				Spec: k8s.StatefulSetSpec{
+					ServiceName: "kafka-latest-versions-headless",
+					Replicas:    k.Replicas,
+					Template: k8s.PodTemplate{
+						Metadata: k8s.Metadata{
+							Labels: k8s.Labels{
+								"app": "kafka-latest-versions",
+							},
+							Annotations: k8s.Annotations{
+								"prometheus.io/path":   "/metrics",
+								"prometheus.io/port":   port.Port.String(),
+								"prometheus.io/scheme": "http",
+								"prometheus.io/scrape": "true",
+							},
+						},
+						Spec: k8s.PodSpec{
+							Containers: []k8s.Container{
+								{
+									Name:  "server",
+									Image: k8s.Image(image.String()),
+									Ports: []k8s.ContainerPort{port.ContainerPort()},
+									Args:  []k8s.Arg{"-v=2"},
+									Env: []k8s.Env{
+										{
+											Name:  "PORT",
+											Value: port.Port.String(),
+										},
+										{
+											Name:  "KAFKA_BROKERS",
+											Value: "kafka-cp-kafka-headless.kafka.svc.cluster.local:9092",
+										},
+										{
+											Name:  "KAFKA_TOPIC",
+											Value: "versions",
+										},
+										{
+											Name:  "DATADIR",
+											Value: "/data",
+										},
+									},
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Path: "/data",
+											Name: "datadir",
+										},
+									},
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "500m",
+											Memory: "50Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "25m",
+											Memory: "25Mi",
+										},
+									},
+									LivenessProbe: k8s.Probe{
+										HttpGet: k8s.HttpGet{
+											Path:   "/",
+											Port:   port.Port,
+											Scheme: "HTTP",
+										},
+										InitialDelaySeconds: 60,
+										SuccessThreshold:    1,
+										FailureThreshold:    5,
+										TimeoutSeconds:      5,
+									},
+									ReadinessProbe: k8s.Probe{
+										HttpGet: k8s.HttpGet{
+											Path:   "/",
+											Port:   port.Port,
+											Scheme: "HTTP",
+										},
+										InitialDelaySeconds: 3,
+										TimeoutSeconds:      5,
+									},
+								},
+							},
+						},
 					},
-					Ports: []deployer.Port{port},
-					Args:  []k8s.Arg{"-v=2"},
-					Env: []k8s.Env{
+					VolumeClaimTemplates: []k8s.VolumeClaimTemplate{
 						{
-							Name:  "PORT",
-							Value: port.Port.String(),
-						},
-						{
-							Name:  "KAFKA_BROKERS",
-							Value: "kafka-cp-kafka-headless.kafka.svc.cluster.local:9092",
-						},
-						{
-							Name:  "KAFKA_TOPIC",
-							Value: "versions",
-						},
-					},
-					Resources: k8s.Resources{
-						Limits: k8s.ContainerResource{
-							Cpu:    "500m",
-							Memory: "50Mi",
-						},
-						Requests: k8s.ContainerResource{
-							Cpu:    "25m",
-							Memory: "25Mi",
+							Metadata: k8s.Metadata{
+								Name: "datadir",
+								Annotations: map[string]string{
+									"volume.alpha.kubernetes.io/storage-class": k.StorageClass.String(),
+									"volume.beta.kubernetes.io/storage-class":  k.StorageClass.String(),
+								},
+							},
+							Spec: k8s.VolumeClaimTemplatesSpec{
+								AccessModes: []k8s.AccessMode{k.AccessMode},
+								Resources: k8s.VolumeClaimTemplatesSpecResources{
+									Requests: k8s.VolumeClaimTemplatesSpecResourcesRequests{
+										Storage: "1Gi",
+									},
+								},
+							},
 						},
 					},
-					LivenessProbe: k8s.Probe{
-						HttpGet: k8s.HttpGet{
-							Path:   "/",
-							Port:   port.Port,
-							Scheme: "HTTP",
-						},
-						InitialDelaySeconds: 60,
-						SuccessThreshold:    1,
-						FailureThreshold:    5,
-						TimeoutSeconds:      5,
-					},
-					ReadinessProbe: k8s.Probe{
-						HttpGet: k8s.HttpGet{
-							Path:   "/",
-							Port:   port.Port,
-							Scheme: "HTTP",
-						},
-						InitialDelaySeconds: 3,
-						TimeoutSeconds:      5,
+					UpdateStrategy: k8s.UpdateStrategy{
+						Type: "RollingUpdate",
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kafka-latest-versions",
 			Name:      "kafka-latest-versions",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kafka-latest-versions",
 			Name:      "kafka-latest-versions",
 			Port:      "http",

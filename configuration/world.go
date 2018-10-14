@@ -289,8 +289,11 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			ZookeeperStorage:  "5Gi",
 		},
 		"kafka-latest-versions": &app.KafkaLatestVersions{
-			Cluster: c,
-			Domain:  "versions.benjamin-borbe.de",
+			Context:      c.Context,
+			Replicas:     1,
+			AccessMode:   "ReadWriteMany",
+			StorageClass: "hostpath",
+			Domain:       "versions.benjamin-borbe.de",
 			Requirements: []world.Configuration{
 				world.NewConfiguraionBuilder().WithApplier(
 					&dns.Server{

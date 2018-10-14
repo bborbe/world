@@ -32,7 +32,7 @@ func (h *HostPathProvisioner) Applier() (world.Applier, error) {
 func (h *HostPathProvisioner) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/hostpath-provisioner",
-		Tag:        "1.0.0",
+		Tag:        "1.1.0",
 	}
 	return []world.Configuration{
 		&build.HostPathProvisioner{
@@ -117,7 +117,7 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 										},
 										{
 											Name:  "PV_DIR",
-											Value: "/data",
+											Value: h.HostPath.String(),
 										},
 										//{
 										//	Name:  "PV_RECLAIM_POLICY",
@@ -127,7 +127,7 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 									VolumeMounts: []k8s.ContainerMount{
 										{
 											Name: "data",
-											Path: "/data",
+											Path: k8s.ContainerMountPath(h.HostPath),
 										},
 									},
 									Resources: k8s.Resources{
