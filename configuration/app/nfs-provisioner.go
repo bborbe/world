@@ -61,7 +61,7 @@ func (n *NfsProvisioner) Children() []world.Configuration {
 	return []world.Configuration{
 		&k8s.ServiceaccountConfiguration{
 			Context: n.Context,
-			Serviceaccount: k8s.Serviceaccount{
+			Serviceaccount: k8s.ServiceAccount{
 				ApiVersion: "v1",
 				Kind:       "ServiceAccount",
 				Metadata: k8s.Metadata{

@@ -1,9 +1,8 @@
 package k8s_test
 
 import (
-	"testing"
-
 	"bytes"
+	"testing"
 
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/go-yaml/yaml"

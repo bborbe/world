@@ -2,11 +2,9 @@ package app
 
 import (
 	"context"
-
 	"fmt"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -16,7 +14,8 @@ import (
 )
 
 type Prometheus struct {
-	Cluster            cluster.Cluster
+	Context            k8s.Context
+	NfsServer          k8s.PodNfsServer
 	PrometheusDomain   k8s.IngressHost
 	AlertmanagerDomain k8s.IngressHost
 	Secret             deployer.SecretValue
@@ -27,8 +26,8 @@ type Prometheus struct {
 func (t *Prometheus) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
-		t.Cluster,
+		t.Context,
+		t.NfsServer,
 		t.PrometheusDomain,
 		t.AlertmanagerDomain,
 		t.Secret,
@@ -38,11 +37,19 @@ func (t *Prometheus) Validate(ctx context.Context) error {
 }
 
 func (p *Prometheus) Children() []world.Configuration {
-	var result []world.Configuration
-	result = append(result, &deployer.NamespaceDeployer{
-		Context:   p.Cluster.Context,
-		Namespace: "prometheus",
-	})
+	result := []world.Configuration{
+		&k8s.NamespaceConfiguration{
+			Context: p.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "prometheus",
+					Name:      "prometheus",
+				},
+			},
+		},
+	}
 	result = append(result, p.prometheus()...)
 	result = append(result, p.alertmanager()...)
 	result = append(result, p.nodeExporter()...)
@@ -68,7 +75,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   p.Cluster.Context,
+				Context:   p.Context,
 				Namespace: "prometheus",
 				Name:      "prometheus",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -84,7 +91,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 			},
 		),
 		&deployer.DeploymentDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "prometheus",
 			Name:      "prometheus",
 			Strategy: k8s.DeploymentStrategy{
@@ -152,7 +159,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 					},
 				},
 				&container.Auth{
-					Context:      p.Cluster.Context,
+					Context:      p.Context,
 					Namespace:    "prometheus",
 					Port:         authPort.Port,
 					TargetPort:   prometheusPort.Port,
@@ -182,13 +189,13 @@ func (p *Prometheus) prometheus() []world.Configuration {
 					Name: "prometheus",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/prometheus",
-						Server: k8s.PodNfsServer(p.Cluster.NfsServer),
+						Server: k8s.PodNfsServer(p.NfsServer),
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "prometheus",
 			Name:      "prometheus",
 			Ports: []deployer.Port{
@@ -203,7 +210,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 			},
 		},
 		&deployer.IngressDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "prometheus",
 			Name:      "prometheus",
 			Port:      "http-auth",
@@ -230,7 +237,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   p.Cluster.Context,
+				Context:   p.Context,
 				Namespace: "prometheus",
 				Name:      "alertmanager",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -242,7 +249,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 			},
 		),
 		&deployer.DeploymentDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "prometheus",
 			Name:      "alertmanager",
 			Strategy: k8s.DeploymentStrategy{
@@ -309,7 +316,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					},
 				},
 				&container.Auth{
-					Context:      p.Cluster.Context,
+					Context:      p.Context,
 					Namespace:    "prometheus",
 					Port:         authPort.Port,
 					TargetPort:   alertmanagerPort.Port,
@@ -323,7 +330,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					Name: "alertmanager",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/alertmanager",
-						Server: k8s.PodNfsServer(p.Cluster.NfsServer),
+						Server: k8s.PodNfsServer(p.NfsServer),
 					},
 				},
 				{
@@ -341,7 +348,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "prometheus",
 			Name:      "alertmanager",
 			Ports: []deployer.Port{
@@ -350,7 +357,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 			},
 		},
 		&deployer.IngressDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "prometheus",
 			Name:      "alertmanager",
 			Port:      "http-auth",
@@ -371,7 +378,7 @@ func (p *Prometheus) nodeExporter() []world.Configuration {
 					Image: image,
 				},
 			},
-			Context: p.Cluster.Context,
+			Context: p.Context,
 			DaemonSet: k8s.DaemonSet{
 				ApiVersion: "apps/v1",
 				Kind:       "DaemonSet",
@@ -478,7 +485,7 @@ func (p *Prometheus) kubeStateMetrics() []world.Configuration {
 			Image: image,
 		},
 		&k8s.DeploymentConfiguration{
-			Context: p.Cluster.Context,
+			Context: p.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",

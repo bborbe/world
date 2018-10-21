@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/bborbe/world/pkg/docker"
-
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
+	"github.com/pkg/errors"
 )
 
 type Memory int

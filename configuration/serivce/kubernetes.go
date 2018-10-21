@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/pkg/dns"
-
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -12,9 +11,10 @@ import (
 )
 
 type Kubernetes struct {
-	SSH       ssh.SSH
-	Context   k8s.Context
-	ClusterIP dns.IP
+	SSH         ssh.SSH
+	Context     k8s.Context
+	ClusterIP   dns.IP
+	DisableRBAC bool
 }
 
 func (k *Kubernetes) Children() []world.Configuration {
@@ -23,10 +23,11 @@ func (k *Kubernetes) Children() []world.Configuration {
 			SSH: k.SSH,
 		},
 		&Kubelet{
-			SSH:       k.SSH,
-			Version:   "v1.11.2",
-			Context:   k.Context,
-			ClusterIP: k.ClusterIP,
+			SSH:         k.SSH,
+			Version:     "v1.11.2",
+			Context:     k.Context,
+			ClusterIP:   k.ClusterIP,
+			DisableRBAC: k.DisableRBAC,
 		},
 	}
 }

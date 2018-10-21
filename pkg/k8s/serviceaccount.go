@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/world/pkg/world"
-
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
 	"github.com/pkg/errors"
 )
 
 type ServiceaccountConfiguration struct {
 	Context        Context
-	Serviceaccount Serviceaccount
+	Serviceaccount ServiceAccount
 	Requirements   []world.Configuration
 }
 
@@ -37,7 +36,7 @@ func (d *ServiceaccountConfiguration) Children() []world.Configuration {
 
 type ServiceaccountApplier struct {
 	Context        Context
-	Serviceaccount Serviceaccount
+	Serviceaccount ServiceAccount
 }
 
 func (s *ServiceaccountApplier) Satisfied(ctx context.Context) (bool, error) {
@@ -59,13 +58,13 @@ func (s *ServiceaccountApplier) Validate(ctx context.Context) error {
 	return s.Serviceaccount.Validate(ctx)
 }
 
-type Serviceaccount struct {
+type ServiceAccount struct {
 	ApiVersion ApiVersion `yaml:"apiVersion"`
 	Kind       Kind       `yaml:"kind"`
 	Metadata   Metadata   `yaml:"metadata"`
 }
 
-func (s Serviceaccount) Validate(ctx context.Context) error {
+func (s ServiceAccount) Validate(ctx context.Context) error {
 	if s.ApiVersion != "v1" {
 		return errors.New("invalid ApiVersion")
 	}
@@ -79,6 +78,6 @@ func (s Serviceaccount) Validate(ctx context.Context) error {
 	)
 }
 
-func (n Serviceaccount) String() string {
+func (n ServiceAccount) String() string {
 	return fmt.Sprintf("%s/%s", n.Kind, n.Metadata.Name)
 }

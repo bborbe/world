@@ -10,16 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bborbe/world/pkg/k8s"
-	"github.com/pkg/errors"
-
 	"github.com/bborbe/http/client_builder"
 	"github.com/bborbe/teamvault-utils"
 	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world/configuration"
+	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/world"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

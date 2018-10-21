@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/component"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
@@ -16,7 +15,8 @@ import (
 )
 
 type Confluence struct {
-	Cluster          cluster.Cluster
+	Context          k8s.Context
+	NfsServer        k8s.PodNfsServer
 	Domain           k8s.IngressHost
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
@@ -27,7 +27,8 @@ type Confluence struct {
 func (t *Confluence) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
+		t.NfsServer,
 		t.Domain,
 		t.Version,
 		t.DatabasePassword,
@@ -48,17 +49,24 @@ func (c *Confluence) Children() []world.Configuration {
 		Name:     "http",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   c.Cluster.Context,
-			Namespace: "confluence",
+		&k8s.NamespaceConfiguration{
+			Context: c.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "confluence",
+					Name:      "confluence",
+				},
+			},
 		},
 		&component.Postgres{
-			Context:              c.Cluster.Context,
+			Context:              c.Context,
 			Namespace:            "confluence",
 			DataNfsPath:          "/data/confluence-postgres",
-			DataNfsServer:        c.Cluster.NfsServer,
+			DataNfsServer:        c.NfsServer,
 			BackupNfsPath:        "/data/confluence-postgres-backup",
-			BackupNfsServer:      c.Cluster.NfsServer,
+			BackupNfsServer:      c.NfsServer,
 			PostgresVersion:      "9.5.14",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "confluence",
@@ -68,7 +76,7 @@ func (c *Confluence) Children() []world.Configuration {
 			PostgresPassword: c.DatabasePassword,
 		},
 		&deployer.DeploymentDeployer{
-			Context:      c.Cluster.Context,
+			Context:      c.Context,
 			Namespace:    "confluence",
 			Name:         "confluence",
 			Requirements: c.smtp().Requirements(),
@@ -143,19 +151,19 @@ func (c *Confluence) Children() []world.Configuration {
 					Name: "data",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/confluence-data",
-						Server: k8s.PodNfsServer(c.Cluster.NfsServer),
+						Server: k8s.PodNfsServer(c.NfsServer),
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   c.Cluster.Context,
+			Context:   c.Context,
 			Namespace: "confluence",
 			Name:      "confluence",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   c.Cluster.Context,
+			Context:   c.Context,
 			Namespace: "confluence",
 			Name:      "confluence",
 			Port:      "http",
@@ -167,7 +175,7 @@ func (c *Confluence) Children() []world.Configuration {
 func (c *Confluence) smtp() *container.Smtp {
 	return &container.Smtp{
 		Hostname:     container.SmtpHostname(c.Domain.String()),
-		Context:      c.Cluster.Context,
+		Context:      c.Context,
 		Namespace:    "confluence",
 		SmtpPassword: c.SmtpPassword,
 		SmtpUsername: c.SmtpUsername,

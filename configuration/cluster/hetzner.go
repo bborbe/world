@@ -1,25 +1,24 @@
-package server
+package cluster
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/world/configuration/serivce"
-
 	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/dns"
-	"github.com/bborbe/world/pkg/ssh"
-
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
 type Hetzner struct {
-	Context k8s.Context
-	ApiKey  deployer.SecretValue
-	IP      dns.IP
+	Context     k8s.Context
+	ApiKey      deployer.SecretValue
+	IP          dns.IP
+	DisableRBAC bool
 }
 
 func (h *Hetzner) Children() []world.Configuration {
@@ -52,8 +51,9 @@ func (h *Hetzner) Children() []world.Configuration {
 				User:           user,
 				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 			},
-			Context:   h.Context,
-			ClusterIP: h.IP,
+			Context:     h.Context,
+			ClusterIP:   h.IP,
+			DisableRBAC: h.DisableRBAC,
 		},
 	}
 }

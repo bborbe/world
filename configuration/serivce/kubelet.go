@@ -10,22 +10,18 @@ import (
 	"os/user"
 	"path"
 
-	"github.com/bborbe/world/pkg/dns"
-
-	"github.com/bborbe/world/pkg/local"
-
-	"github.com/bborbe/world/pkg/k8s"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/util/cert"
-	"k8s.io/client-go/util/cert/triple"
-
-	"github.com/bborbe/world/pkg/remote"
-
 	"github.com/bborbe/world/configuration/build"
+	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/local"
+	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
+	"github.com/pkg/errors"
+	"k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/cert/triple"
 )
 
 const caKey = "ca-key.pem"
@@ -36,10 +32,11 @@ const clientKey = "client-key.pem"
 const clientCert = "client-cert.pem"
 
 type Kubelet struct {
-	SSH       ssh.SSH
-	Version   docker.Tag
-	Context   k8s.Context
-	ClusterIP dns.IP
+	SSH         ssh.SSH
+	Version     docker.Tag
+	Context     k8s.Context
+	ClusterIP   dns.IP
+	DisableRBAC bool
 }
 
 func (k *Kubelet) Children() []world.Configuration {
@@ -316,6 +313,9 @@ spec:
     - --service-account-key-file=/etc/kubernetes/ssl/node-key.pem
     - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true
     - --anonymous-auth=false
+{{- if .RBAC }} 
+    - --authorization-mode=RBAC
+{{- end }}
     livenessProbe:
       httpGet:
         host: 127.0.0.1
@@ -347,9 +347,11 @@ spec:
 `, struct {
 		Image     string
 		ClusterIP string
+		RBAC      bool
 	}{
 		Image:     k.hyperkubeImage().String(),
 		ClusterIP: ip.String(),
+		RBAC:      !k.DisableRBAC,
 	})
 }
 

@@ -11,25 +11,25 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type KafkaVersionCollector struct {
+type KafkaK8sVersionCollector struct {
 	Context k8s.Context
 }
 
-func (k *KafkaVersionCollector) Validate(ctx context.Context) error {
+func (k *KafkaK8sVersionCollector) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		k.Context,
 	)
 }
 
-func (k *KafkaVersionCollector) Applier() (world.Applier, error) {
+func (k *KafkaK8sVersionCollector) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (k *KafkaVersionCollector) Children() []world.Configuration {
+func (k *KafkaK8sVersionCollector) Children() []world.Configuration {
 	image := docker.Image{
-		Repository: "bborbe/kafka-version-collector",
-		Tag:        "1.0.0",
+		Repository: "bborbe/kafka-k8s-version-collector",
+		Tag:        "2.0.0",
 	}
 	port := deployer.Port{
 		Port:     8080,
@@ -37,14 +37,21 @@ func (k *KafkaVersionCollector) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   k.Context,
-			Namespace: "kafka-version-collector",
+		&k8s.NamespaceConfiguration{
+			Context: k.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "kafka-k8s-version-collector",
+					Name:      "kafka-k8s-version-collector",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
 			Context:   k.Context,
-			Namespace: "kafka-version-collector",
-			Name:      "kafka-version-collector",
+			Namespace: "kafka-k8s-version-collector",
+			Name:      "kafka-k8s-version-collector",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "RollingUpdate",
 				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
@@ -54,7 +61,7 @@ func (k *KafkaVersionCollector) Children() []world.Configuration {
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
-					Name: "server",
+					Name: "collector",
 					Args: []k8s.Arg{"-v=2"},
 					Env: []k8s.Env{
 						{
@@ -67,7 +74,7 @@ func (k *KafkaVersionCollector) Children() []world.Configuration {
 						},
 						{
 							Name:  "KAFKA_TOPIC",
-							Value: "versions",
+							Value: "application-version-available",
 						},
 						{
 							Name:  "KAFKA_SCHEMA_REGISTRY_URL",
@@ -75,7 +82,7 @@ func (k *KafkaVersionCollector) Children() []world.Configuration {
 						},
 					},
 					Image: image,
-					Requirement: &build.KafkaVersionCollector{
+					Requirement: &build.KafkaK8sVersionCollector{
 						Image: image,
 					},
 					Ports: []deployer.Port{port},

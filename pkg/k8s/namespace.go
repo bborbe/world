@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/world/pkg/world"
-
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
 	"github.com/pkg/errors"
 )
 

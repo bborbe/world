@@ -3,12 +3,11 @@ package configuration
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/hetzner"
-
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
-	"github.com/bborbe/world/configuration/server"
+	"github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/dns"
+	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/validation"
@@ -70,10 +69,13 @@ func (w *World) hetzner() map[AppName]world.Configuration {
 		Name:   context,
 	}
 	return map[AppName]world.Configuration{
-		"server": &server.Hetzner{
+		"cluster": &cluster.Hetzner{
 			Context: context,
 			ApiKey:  apiKey,
 			IP:      ip,
+		},
+		"cluster-admin": &service.ClusterAdmin{
+			Context: context,
 		},
 		"dns": &app.KubeDns{
 			Context: context,
@@ -99,14 +101,11 @@ func (w *World) hetzner() map[AppName]world.Configuration {
 }
 
 func (w *World) clusterOne() map[AppName]world.Configuration {
-	c := cluster.Cluster{
-		Context:   "gke_smedia-kubernetes_europe-west1-d_cluster-1",
-		NfsServer: "10.15.48.11",
-	}
+	context := k8s.Context("gke_smedia-kubernetes_europe-west1-d_cluster-1")
 	return map[AppName]world.Configuration{
 		"kafka": &app.Kafka{
 			AccessMode:        "ReadWriteOnce",
-			Context:           c.Context,
+			Context:           context,
 			DisableConnect:    true,
 			DisableRest:       true,
 			KafkaReplicas:     1,
@@ -116,34 +115,36 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 			ZookeeperStorage:  "5Gi",
 		},
 		"kafka-sample": &app.KafkaSample{
-			Cluster: c,
+			Context: context,
 			Domain:  "kafka-sample.lab.seibert-media.net",
 		},
 	}
 }
 
 func (w *World) fire() map[AppName]world.Configuration {
-	c := cluster.Cluster{
-		Context:   "fire",
-		NfsServer: "172.16.22.1",
-	}
+	context := k8s.Context("fire")
+	nfsServer := k8s.PodNfsServer("172.16.22.1")
 	return map[AppName]world.Configuration{
-		"server": &server.Fire{
-			Context:   c.Context,
+		"cluster": &cluster.Fire{
+			Context:   context,
 			ClusterIP: dns.IPStatic("192.168.178.3"),
 		},
+		"cluster-admin": &service.ClusterAdmin{
+			Context: context,
+		},
 		"dns": &app.KubeDns{
-			Context: c.Context,
+			Context: context,
 		},
 		"traefik": &app.Traefik{
-			Context:   c.Context,
-			NfsServer: c.NfsServer,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"traefik.fire.hm.benjamin-borbe.de",
 			},
 		},
 		"backup": &app.BackupClient{
-			Cluster: c,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"backup.fire.hm.benjamin-borbe.de",
 			},
@@ -155,27 +156,29 @@ func (w *World) fire() map[AppName]world.Configuration {
 }
 
 func (w *World) nuke() map[AppName]world.Configuration {
-	c := cluster.Cluster{
-		Context:   "nuke",
-		NfsServer: "172.16.24.1",
-	}
+	context := k8s.Context("nuke")
+	nfsServer := k8s.PodNfsServer("172.16.24.1")
 	return map[AppName]world.Configuration{
-		"server": &server.Nuke{
-			Context:   c.Context,
+		"cluster": &cluster.Nuke{
+			Context:   context,
 			ClusterIP: dns.IPStatic("192.168.178.5"),
 		},
+		"cluster-admin": &service.ClusterAdmin{
+			Context: context,
+		},
 		"dns": &app.KubeDns{
-			Context: c.Context,
+			Context: context,
 		},
 		"traefik": &app.Traefik{
-			Context:   c.Context,
-			NfsServer: c.NfsServer,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"traefik.nuke.hm.benjamin-borbe.de",
 			},
 		},
 		"backup": &app.BackupClient{
-			Cluster: c,
+			NfsServer: nfsServer,
+			Context:   context,
 			Domains: k8s.IngressHosts{
 				"backup.nuke.hm.benjamin-borbe.de",
 			},
@@ -187,20 +190,21 @@ func (w *World) nuke() map[AppName]world.Configuration {
 }
 
 func (w *World) sun() map[AppName]world.Configuration {
-	c := cluster.Cluster{
-		Context:   "sun",
-		NfsServer: "172.16.72.1",
-	}
+	context := k8s.Context("sun")
+	nfsServer := k8s.PodNfsServer("172.16.72.1")
 	return map[AppName]world.Configuration{
-		"server": &server.Sun{
-			Context:   c.Context,
+		"cluster": &cluster.Sun{
+			Context:   context,
 			ClusterIP: dns.IPStatic("192.168.2.3"),
 		},
+		"cluster-admin": &service.ClusterAdmin{
+			Context: context,
+		},
 		"dns": &app.KubeDns{
-			Context: c.Context,
+			Context: context,
 		},
 		"monitoring": &app.Monitoring{
-			Cluster:         c,
+			Context:         context,
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
 			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
 			Configs: []app.MonitoringConfig{
@@ -222,14 +226,15 @@ func (w *World) sun() map[AppName]world.Configuration {
 			},
 		},
 		"traefik": &app.Traefik{
-			Context:   c.Context,
-			NfsServer: c.NfsServer,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"traefik.sun.pn.benjamin-borbe.de",
 			},
 		},
 		"backup": &app.BackupClient{
-			Cluster: c,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"backup.sun.pn.benjamin-borbe.de",
 			},
@@ -241,15 +246,17 @@ func (w *World) sun() map[AppName]world.Configuration {
 }
 
 func (w *World) netcup() map[AppName]world.Configuration {
-	c := cluster.Cluster{
-		Context:   "netcup",
-		NfsServer: "185.170.112.48",
-		IP:        "185.170.112.48",
-	}
+	context := k8s.Context("netcup")
+	nfsServer := k8s.PodNfsServer("185.170.112.48")
+	ip := k8s.ClusterIP("185.170.112.48")
 	return map[AppName]world.Configuration{
-		"server": &server.Netcup{},
+		"cluster": &cluster.Netcup{},
+		"cluster-admin": &service.ClusterAdmin{
+			Context: context,
+		},
 		"grafana": &app.Grafana{
-			Cluster:      c,
+			Context:      context,
+			NfsServer:    nfsServer,
 			Domain:       "grafana.benjamin-borbe.de",
 			LdapUsername: w.TeamvaultSecrets.Username("MOPMLG"),
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
@@ -261,7 +268,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("grafana.benjamin-borbe.de"),
-								IP:   dns.IPStatic(c.IP.String()),
+								IP:   dns.IPStatic(ip.String()),
 							},
 						},
 					},
@@ -269,17 +276,17 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		//"nfs": &app.NfsProvisioner{
-		//	Context:  c.Context,
+		//	Context:  context,
 		//	HostPath: "/data/nfs-provisioner",
 		//},
 		"hostpath": &app.HostPathProvisioner{
-			Context:             c.Context,
+			Context:             context,
 			HostPath:            "/data/hostpath-provisioner",
 			DefaultStorageClass: true,
 		},
 		"kafka": &app.Kafka{
 			AccessMode:        "ReadWriteMany",
-			Context:           c.Context,
+			Context:           context,
 			DisableConnect:    true,
 			DisableRest:       true,
 			KafkaReplicas:     1,
@@ -289,7 +296,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			ZookeeperStorage:  "5Gi",
 		},
 		"kafka-latest-versions": &app.KafkaLatestVersions{
-			Context:      c.Context,
+			Context:      context,
 			Replicas:     1,
 			AccessMode:   "ReadWriteMany",
 			StorageClass: "hostpath",
@@ -302,18 +309,61 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("versions.benjamin-borbe.de"),
-								IP:   dns.IPStatic(c.IP.String()),
+								IP:   dns.IPStatic(ip.String()),
 							},
 						},
 					},
 				),
 			},
 		},
-		"kafka-version-collector": &app.KafkaVersionCollector{
-			Context: c.Context,
+		"kafka-update-available": &app.KafkaUpdateAvailable{
+			Context:      context,
+			Replicas:     1,
+			AccessMode:   "ReadWriteMany",
+			StorageClass: "hostpath",
+			Domain:       "updates.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: dns.Host("updates.benjamin-borbe.de"),
+								IP:   dns.IPStatic(ip.String()),
+							},
+						},
+					},
+				),
+			},
+		},
+		"kafka-k8s-version-collector": &app.KafkaK8sVersionCollector{
+			Context: context,
+		},
+		"kafka-atlassian-version-collector": &app.KafkaAtlassianVersionCollector{
+			Context: context,
+		},
+		"kafka-installed-version-collector": &app.KafkaInstalledVersionCollector{
+			Context: context,
+			Apps: []struct {
+				Name  string
+				Regex string
+				Url   string
+			}{
+				{
+					Name:  "Confluence",
+					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
+					Url:   "https://confluence.benjamin-borbe.de",
+				},
+				{
+					Name:  "Jira",
+					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
+					Url:   "https://jira.benjamin-borbe.de",
+				},
+			},
 		},
 		"kafka-sample": &app.KafkaSample{
-			Cluster: c,
+			Context: context,
 			Domain:  "kafka-sample.benjamin-borbe.de",
 			Requirements: []world.Configuration{
 				world.NewConfiguraionBuilder().WithApplier(
@@ -323,7 +373,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("kafka-sample.benjamin-borbe.de"),
-								IP:   dns.IPStatic(c.IP.String()),
+								IP:   dns.IPStatic(ip.String()),
 							},
 						},
 					},
@@ -339,18 +389,19 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		//	AdminPassword:        w.TeamvaultSecrets.Password("AwJndw"),
 		//},
 		"dns": &app.CoreDns{
-			Cluster: c,
+			Context: context,
 		},
 		"traefik": &app.Traefik{
-			Context:   c.Context,
-			NfsServer: c.NfsServer,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"traefik.benjamin-borbe.de",
 			},
 			SSL: true,
 		},
 		"prometheus": &app.Prometheus{
-			Cluster:            c,
+			Context:            context,
+			NfsServer:          nfsServer,
 			PrometheusDomain:   "prometheus.benjamin-borbe.de",
 			AlertmanagerDomain: "prometheus-alertmanager.benjamin-borbe.de",
 			Secret:             w.TeamvaultSecrets.Password("aqMr6w"),
@@ -358,12 +409,14 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			LdapPassword:       w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"ldap": &app.Ldap{
-			Cluster:      c,
+			Context:      context,
+			NfsServer:    nfsServer,
 			Tag:          "1.1.0",
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"teamvault": &app.Teamvault{
-			Cluster:          c,
+			Context:          context,
+			NfsServer:        nfsServer,
 			Domain:           "teamvault.benjamin-borbe.de",
 			DatabasePassword: w.TeamvaultSecrets.Password("VO0W5w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("3OlNaq"),
@@ -374,7 +427,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
 		},
 		"monitoring": &app.Monitoring{
-			Cluster:         c,
+			Context:         context,
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
 			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
 			Configs: []app.MonitoringConfig{
@@ -395,7 +448,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		//	Password: w.TeamvaultSecrets.Htpasswd("zL89oq"),
 		//},
 		"confluence": &app.Confluence{
-			Cluster:          c,
+			Context:          context,
+			NfsServer:        nfsServer,
 			Domain:           "confluence.benjamin-borbe.de",
 			Version:          "6.10.2",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
@@ -403,32 +457,36 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
 		},
 		"jira": &app.Jira{
-			Cluster:          c,
+			Context:          context,
+			NfsServer:        nfsServer,
 			Domain:           "jira.benjamin-borbe.de",
-			Version:          "7.12.2",
+			Version:          "7.12.3",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
 		},
 		"backup": &app.BackupServer{
-			Cluster: c,
+			Context:   context,
+			NfsServer: nfsServer,
 		},
 		"poste": &app.Poste{
-			Cluster:      c,
+			Context:      context,
+			NfsServer:    nfsServer,
 			PosteVersion: "2.0.18",
 			Domains: k8s.IngressHosts{
 				"mail.benjamin-borbe.de",
 			},
 		},
 		"maven": &app.Maven{
-			Cluster: c,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"maven.benjamin-borbe.de",
 			},
 			MavenRepoVersion: "1.0.0",
 		},
 		"portfolio": &app.Portfolio{
-			Cluster: c,
+			Context: context,
 			Domains: k8s.IngressHosts{
 				"benjamin-borbe.de",
 				"www.benjamin-borbe.de",
@@ -439,7 +497,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			GitSyncPassword:      w.TeamvaultSecrets.Password("YLb4wV"),
 		},
 		"webdav": &app.Webdav{
-			Cluster: c,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"webdav.benjamin-borbe.de",
 			},
@@ -447,41 +506,43 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Password: w.TeamvaultSecrets.Password("VOzvAO"),
 		},
 		"bind": &app.Bind{
-			Cluster: c,
-			Tag:     "1.0.1",
+			Context:   context,
+			NfsServer: nfsServer,
+			Tag:       "1.0.1",
 		},
 		"download": &app.Download{
-			Cluster: c,
+			Context:   context,
+			NfsServer: nfsServer,
 			Domains: k8s.IngressHosts{
 				"dl.benjamin-borbe.de",
 			},
 		},
 		"mumble": &app.Mumble{
-			Cluster: c,
+			Context: context,
 			Tag:     "1.1.1",
 		},
 		"ip": &app.Ip{
-			Context: c.Context,
-			IP:      dns.IPStatic(c.IP.String()),
+			Context: context,
+			IP:      dns.IPStatic(ip.String()),
 			Tag:     "1.1.0",
 			Domain:  "ip.benjamin-borbe.de",
 		},
 		"password": &app.Password{
-			Cluster: c,
+			Context: context,
 			Tag:     "1.1.0",
 			Domains: k8s.IngressHosts{
 				"password.benjamin-borbe.de",
 			},
 		},
 		"now": &app.Now{
-			Cluster: c,
+			Context: context,
 			Tag:     "1.2.1",
 			Domains: k8s.IngressHosts{
 				"now.benjamin-borbe.de",
 			},
 		},
 		"helloworld": &app.HelloWorld{
-			Cluster: c,
+			Context: context,
 			Tag:     "1.0.1",
 			Domains: k8s.IngressHosts{
 				"rocketsource.de",
@@ -491,13 +552,13 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"slideshow": &app.Slideshow{
-			Cluster: c,
+			Context: context,
 			Domains: k8s.IngressHosts{
 				"slideshow.benjamin-borbe.de",
 			},
 		},
 		"kickstart": &app.Kickstart{
-			Cluster: c,
+			Context: context,
 			Domains: k8s.IngressHosts{
 				"kickstart.benjamin-borbe.de",
 				"ks.benjamin-borbe.de",

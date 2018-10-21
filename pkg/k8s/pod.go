@@ -26,13 +26,15 @@ type Toleration struct {
 }
 
 type PodSpec struct {
-	Tolerations     []Toleration    `yaml:"tolerations,omitempty"`
-	Containers      []Container     `yaml:"containers"`
-	Volumes         []PodVolume     `yaml:"volumes,omitempty"`
-	HostNetwork     PodHostNetwork  `yaml:"hostNetwork,omitempty"`
-	HostPid         PodHostPID      `yaml:"hostPID,omitempty"`
-	DnsPolicy       PodDnsPolicy    `yaml:"dnsPolicy,omitempty"`
-	SecurityContext SecurityContext `yaml:"securityContext,omitempty"`
+	Tolerations                   []Toleration    `yaml:"tolerations,omitempty"`
+	Containers                    []Container     `yaml:"containers"`
+	Volumes                       []PodVolume     `yaml:"volumes,omitempty"`
+	HostNetwork                   PodHostNetwork  `yaml:"hostNetwork,omitempty"`
+	HostPid                       PodHostPID      `yaml:"hostPID,omitempty"`
+	DnsPolicy                     PodDnsPolicy    `yaml:"dnsPolicy,omitempty"`
+	SecurityContext               SecurityContext `yaml:"securityContext,omitempty"`
+	ServiceAccountName            string          `yaml:"serviceAccountName,omitempty"`
+	TerminationGracePeriodSeconds int             `yaml:"terminationGracePeriodSeconds,omitempty"`
 }
 
 func (c PodSpec) Validate(ctx context.Context) error {

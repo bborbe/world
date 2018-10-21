@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
-	"github.com/bborbe/world/pkg/world"
-
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
+	"github.com/pkg/errors"
 )
 
 type DaemonSetConfiguration struct {
@@ -103,5 +101,6 @@ func (d DaemonSetSpec) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		d.Template,
+		d.Selector,
 	)
 }

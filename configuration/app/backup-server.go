@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,13 +12,15 @@ import (
 )
 
 type BackupServer struct {
-	Cluster cluster.Cluster
+	Context   k8s.Context
+	NfsServer k8s.PodNfsServer
 }
 
 func (b *BackupServer) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		b.Cluster,
+		b.Context,
+		b.NfsServer,
 	)
 }
 
@@ -35,12 +36,19 @@ func (b *BackupServer) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   b.Cluster.Context,
-			Namespace: "backup",
+		&k8s.NamespaceConfiguration{
+			Context: b.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "backup",
+					Name:      "backup",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "rsync",
 			Strategy: k8s.DeploymentStrategy{
@@ -105,14 +113,14 @@ func (b *BackupServer) Children() []world.Configuration {
 					Name: "backup",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data",
-						Server: b.Cluster.NfsServer,
+						Server: b.NfsServer,
 					},
 				},
 				{
 					Name: "ssh",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/backup-ssh",
-						Server: b.Cluster.NfsServer,
+						Server: b.NfsServer,
 					},
 				},
 			},

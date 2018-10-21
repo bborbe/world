@@ -3,11 +3,10 @@ package docker
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
-
-	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"

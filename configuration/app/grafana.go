@@ -5,19 +5,18 @@ import (
 	"context"
 	"text/template"
 
-	"github.com/pkg/errors"
-
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
+	"github.com/pkg/errors"
 )
 
 type Grafana struct {
-	Cluster      cluster.Cluster
+	Context      k8s.Context
+	NfsServer    k8s.PodNfsServer
 	Domain       k8s.IngressHost
 	LdapUsername deployer.SecretValue
 	LdapPassword deployer.SecretValue
@@ -27,7 +26,8 @@ type Grafana struct {
 func (g *Grafana) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		g.Cluster,
+		g.Context,
+		g.NfsServer,
 		g.Domain,
 		g.LdapPassword,
 		g.LdapUsername,
@@ -56,13 +56,20 @@ func (g *Grafana) grafana() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   g.Cluster.Context,
-			Namespace: "grafana",
+		&k8s.NamespaceConfiguration{
+			Context: g.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "grafana",
+					Name:      "grafana",
+				},
+			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   g.Cluster.Context,
+				Context:   g.Context,
 				Namespace: "grafana",
 				Name:      "config",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -79,7 +86,7 @@ func (g *Grafana) grafana() []world.Configuration {
 		),
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   g.Cluster.Context,
+				Context:   g.Context,
 				Namespace: "grafana",
 				Name:      "datasources",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -91,7 +98,7 @@ func (g *Grafana) grafana() []world.Configuration {
 			},
 		),
 		&deployer.DeploymentDeployer{
-			Context:   g.Cluster.Context,
+			Context:   g.Context,
 			Namespace: "grafana",
 			Name:      "grafana",
 			Strategy: k8s.DeploymentStrategy{
@@ -198,19 +205,19 @@ func (g *Grafana) grafana() []world.Configuration {
 					Name: "data",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/grafana",
-						Server: g.Cluster.NfsServer,
+						Server: g.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   g.Cluster.Context,
+			Context:   g.Context,
 			Namespace: "grafana",
 			Name:      "grafana",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   g.Cluster.Context,
+			Context:   g.Context,
 			Namespace: "grafana",
 			Name:      "grafana",
 			Port:      port.Name,

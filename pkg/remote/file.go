@@ -5,10 +5,9 @@ import (
 	"crypto/md5"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
 
 type File struct {

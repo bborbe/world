@@ -15,6 +15,7 @@ type HostPathProvisioner struct {
 	Context             k8s.Context
 	HostPath            k8s.PodHostPath
 	DefaultStorageClass bool
+	DisableRBAC         bool
 }
 
 func (h *HostPathProvisioner) Validate(ctx context.Context) error {
@@ -34,17 +35,29 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 		Repository: "bborbe/hostpath-provisioner",
 		Tag:        "1.1.0",
 	}
-	return []world.Configuration{
+	namespace := "hostpath"
+	result := []world.Configuration{
 		&build.HostPathProvisioner{
 			Image: image,
 		},
+		&k8s.NamespaceConfiguration{
+			Context: h.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: k8s.NamespaceName(namespace),
+					Name:      k8s.MetadataName(namespace),
+				},
+			},
+		},
 		&k8s.ServiceaccountConfiguration{
 			Context: h.Context,
-			Serviceaccount: k8s.Serviceaccount{
+			Serviceaccount: k8s.ServiceAccount{
 				ApiVersion: "v1",
 				Kind:       "ServiceAccount",
 				Metadata: k8s.Metadata{
-					Namespace: "kube-system",
+					Namespace: k8s.NamespaceName(namespace),
 					Name:      "hostpath-provisioner",
 				},
 			},
@@ -55,7 +68,7 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 				ApiVersion: "storage.k8s.io/v1",
 				Kind:       "StorageClass",
 				Metadata: k8s.Metadata{
-					Namespace: "kube-system",
+					Namespace: k8s.NamespaceName(namespace),
 					Name:      "hostpath",
 					Annotations: map[string]string{
 						"storageclass.kubernetes.io/is-default-class": strconv.FormatBool(h.DefaultStorageClass),
@@ -70,7 +83,7 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
 				Metadata: k8s.Metadata{
-					Namespace: "kube-system",
+					Namespace: k8s.NamespaceName(namespace),
 					Name:      "hostpath-provisioner",
 				},
 				Spec: k8s.DeploymentSpec{
@@ -93,6 +106,7 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
+							ServiceAccountName: "hostpath-provisioner",
 							Containers: []k8s.Container{
 								{
 									Name:            "hostpath-provisioner",
@@ -156,4 +170,54 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 			},
 		},
 	}
+
+	if !h.DisableRBAC {
+		result = append(result,
+			&k8s.ClusterRoleConfiguration{
+				Context: h.Context,
+				ClusterRole: k8s.ClusterRole{
+					ApiVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRole",
+					Metadata: k8s.Metadata{
+						Name: "hostpath-provisioner",
+					},
+					Rules: []k8s.PolicyRule{
+						{
+							ApiGroups: []string{"*"},
+							Resources: []string{"*"},
+							Verbs:     []string{"*"},
+						},
+						{
+							NonResourceURLs: []string{"*"},
+							Verbs:           []string{"*"},
+						},
+					},
+				},
+			},
+			&k8s.ClusterRoleBindingConfiguration{
+				Context: h.Context,
+				ClusterRoleBinding: k8s.ClusterRoleBinding{
+					ApiVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRoleBinding",
+					Metadata: k8s.Metadata{
+						Name: "hostpath-provisioner",
+					},
+					Subjects: []k8s.Subject{
+						{
+							Kind:      "ServiceAccount",
+							Name:      "hostpath-provisioner",
+							Namespace: namespace,
+						},
+					},
+					RoleRef: k8s.RoleRef{
+						ApiGroup: "rbac.authorization.k8s.io",
+						Kind:     "ClusterRole",
+						Name:     "hostpath-provisioner",
+					},
+				},
+			},
+		)
+	}
+
+	return result
 }

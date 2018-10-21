@@ -1,9 +1,8 @@
 package component
 
 import (
-	"fmt"
-
 	"context"
+	"fmt"
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"

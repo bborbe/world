@@ -1,12 +1,10 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
-	"context"
-
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/component"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
@@ -17,7 +15,8 @@ import (
 )
 
 type Jira struct {
-	Cluster          cluster.Cluster
+	Context          k8s.Context
+	NfsServer        k8s.PodNfsServer
 	Domain           k8s.IngressHost
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
@@ -28,7 +27,8 @@ type Jira struct {
 func (t *Jira) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
+		t.NfsServer,
 		t.Domain,
 		t.Version,
 		t.DatabasePassword,
@@ -38,7 +38,7 @@ func (t *Jira) Validate(ctx context.Context) error {
 }
 
 func (j *Jira) Children() []world.Configuration {
-	var buildVersion docker.GitBranch = "1.2.0"
+	var buildVersion docker.GitBranch = "1.2.1"
 	image := docker.Image{
 		Repository: "bborbe/atlassian-jira-software",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", j.Version, buildVersion)),
@@ -49,17 +49,24 @@ func (j *Jira) Children() []world.Configuration {
 		Name:     "http",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   j.Cluster.Context,
-			Namespace: "jira",
+		&k8s.NamespaceConfiguration{
+			Context: j.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "jira",
+					Name:      "jira",
+				},
+			},
 		},
 		&component.Postgres{
-			Context:              j.Cluster.Context,
+			Context:              j.Context,
 			Namespace:            "jira",
 			DataNfsPath:          "/data/jira-postgres",
-			DataNfsServer:        j.Cluster.NfsServer,
+			DataNfsServer:        j.NfsServer,
 			BackupNfsPath:        "/data/jira-postgres-backup",
-			BackupNfsServer:      j.Cluster.NfsServer,
+			BackupNfsServer:      j.NfsServer,
 			PostgresVersion:      "9.6-alpine",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=POSIX.UTF-8 --lc-ctype=POSIX.UTF-8 -T",
 			PostgresDatabaseName: "jira",
@@ -69,7 +76,7 @@ func (j *Jira) Children() []world.Configuration {
 			PostgresPassword: j.DatabasePassword,
 		},
 		&deployer.DeploymentDeployer{
-			Context:      j.Cluster.Context,
+			Context:      j.Context,
 			Namespace:    "jira",
 			Name:         "jira",
 			Requirements: j.smtp().Requirements(),
@@ -144,19 +151,19 @@ func (j *Jira) Children() []world.Configuration {
 					Name: "data",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/jira-data",
-						Server: j.Cluster.NfsServer,
+						Server: j.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   j.Cluster.Context,
+			Context:   j.Context,
 			Namespace: "jira",
 			Name:      "jira",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   j.Cluster.Context,
+			Context:   j.Context,
 			Namespace: "jira",
 			Name:      "jira",
 			Port:      "http",
@@ -168,7 +175,7 @@ func (j *Jira) Children() []world.Configuration {
 func (j *Jira) smtp() *container.Smtp {
 	return &container.Smtp{
 		Hostname:     container.SmtpHostname(j.Domain.String()),
-		Context:      j.Cluster.Context,
+		Context:      j.Context,
 		Namespace:    "jira",
 		SmtpPassword: j.SmtpPassword,
 		SmtpUsername: j.SmtpUsername,

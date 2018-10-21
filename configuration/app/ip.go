@@ -3,10 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/dns"
-
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
@@ -57,9 +56,16 @@ func (i *Ip) Children() []world.Configuration {
 				},
 			},
 		),
-		&deployer.NamespaceDeployer{
-			Context:   i.Context,
-			Namespace: "ip",
+		&k8s.NamespaceConfiguration{
+			Context: i.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "ip",
+					Name:      "ip",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
 			Context:   i.Context,

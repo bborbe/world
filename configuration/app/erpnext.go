@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
-
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
@@ -14,7 +12,8 @@ import (
 )
 
 type ErpNext struct {
-	Cluster              cluster.Cluster
+	Context              k8s.Context
+	NfsServer            k8s.PodNfsServer
 	Domain               k8s.IngressHost
 	DatabaseRootPassword deployer.SecretValue
 	DatabaseName         deployer.SecretValue
@@ -25,7 +24,8 @@ type ErpNext struct {
 func (e *ErpNext) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		e.Cluster,
+		e.Context,
+		e.NfsServer,
 		e.Domain,
 		e.DatabaseRootPassword,
 		e.DatabaseName,
@@ -40,9 +40,16 @@ func (e *ErpNext) Applier() (world.Applier, error) {
 
 func (e *ErpNext) Children() []world.Configuration {
 	configurations := []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   e.Cluster.Context,
-			Namespace: "erpnext",
+		&k8s.NamespaceConfiguration{
+			Context: e.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "erpnext",
+					Name:      "erpnext",
+				},
+			},
 		},
 	}
 	configurations = append(configurations, e.redisCache()...)
@@ -66,7 +73,7 @@ func (e *ErpNext) redisCache() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   e.Cluster.Context,
+				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "redis-cache",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -78,7 +85,7 @@ func (e *ErpNext) redisCache() []world.Configuration {
 			},
 		),
 		&deployer.DeploymentDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "redis-cache",
 			Strategy: k8s.DeploymentStrategy{
@@ -147,7 +154,7 @@ func (e *ErpNext) redisCache() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "redis-cache",
 			Ports:     []deployer.Port{port},
@@ -168,7 +175,7 @@ func (e *ErpNext) redisQueue() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   e.Cluster.Context,
+				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "redis-queue",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -180,7 +187,7 @@ func (e *ErpNext) redisQueue() []world.Configuration {
 			},
 		),
 		&deployer.DeploymentDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "redis-queue",
 			Strategy: k8s.DeploymentStrategy{
@@ -249,7 +256,7 @@ func (e *ErpNext) redisQueue() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "redis-queue",
 			Ports:     []deployer.Port{port},
@@ -270,7 +277,7 @@ func (e *ErpNext) redisSocketio() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   e.Cluster.Context,
+				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "redis-socketio",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -282,7 +289,7 @@ func (e *ErpNext) redisSocketio() []world.Configuration {
 			},
 		),
 		&deployer.DeploymentDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "redis-socketio",
 			Strategy: k8s.DeploymentStrategy{
@@ -351,7 +358,7 @@ func (e *ErpNext) redisSocketio() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "redis-socketio",
 			Ports:     []deployer.Port{port},
@@ -372,7 +379,7 @@ func (e *ErpNext) mariadb() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   e.Cluster.Context,
+				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "mariadb",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -396,7 +403,7 @@ func (e *ErpNext) mariadb() []world.Configuration {
 			},
 		),
 		&deployer.SecretDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "mariadb",
 			Secrets: deployer.Secrets{
@@ -406,7 +413,7 @@ func (e *ErpNext) mariadb() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "mariadb",
 			Strategy: k8s.DeploymentStrategy{
@@ -509,7 +516,7 @@ func (e *ErpNext) mariadb() []world.Configuration {
 					Name: "data",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/erpnext-mariadb",
-						Server: k8s.PodNfsServer(e.Cluster.NfsServer),
+						Server: k8s.PodNfsServer(e.NfsServer),
 					},
 				},
 				{
@@ -539,7 +546,7 @@ func (e *ErpNext) mariadb() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "mariadb",
 			Ports:     []deployer.Port{port},
@@ -574,7 +581,7 @@ func (e *ErpNext) erpnext() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.SecretDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "erpnext",
 			Secrets: deployer.Secrets{
@@ -584,7 +591,7 @@ func (e *ErpNext) erpnext() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "erpnext",
 			Strategy: k8s.DeploymentStrategy{
@@ -678,27 +685,27 @@ func (e *ErpNext) erpnext() []world.Configuration {
 					Name: "erpnext-frappe-public",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/erpnext-frappe/public",
-						Server: k8s.PodNfsServer(e.Cluster.NfsServer),
+						Server: k8s.PodNfsServer(e.NfsServer),
 					},
 				},
 				{
 					Name: "erpnext-frappe-private",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/erpnext-frappe/private",
-						Server: k8s.PodNfsServer(e.Cluster.NfsServer),
+						Server: k8s.PodNfsServer(e.NfsServer),
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   e.Cluster.Context,
+			Context:   e.Context,
 			Namespace: "erpnext",
 			Name:      "erpnext",
 			Ports:     ports,
 		},
 		world.NewConfiguraionBuilder().WithApplier(
 			&k8s.IngressApplier{
-				Context: e.Cluster.Context,
+				Context: e.Context,
 				Ingress: k8s.Ingress{
 					ApiVersion: "extensions/v1beta1",
 					Kind:       "Ingress",

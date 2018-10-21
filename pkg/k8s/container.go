@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/pkg/validation"
-
 	"github.com/pkg/errors"
 )
 

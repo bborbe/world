@@ -10,6 +10,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Ports []Port
+
+func (p Ports) ContainerPort() []k8s.ContainerPort {
+	var result []k8s.ContainerPort
+	for _, port := range p {
+		result = append(result, port.ContainerPort())
+	}
+	return result
+}
+
+func (p Ports) ServicePort() []k8s.ServicePort {
+	var result []k8s.ServicePort
+	for _, port := range p {
+		result = append(result, port.ServicePort())
+	}
+	return result
+}
+
 type Port struct {
 	Name     k8s.PortName
 	Port     k8s.PortNumber

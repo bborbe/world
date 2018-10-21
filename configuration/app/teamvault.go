@@ -1,12 +1,10 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
-	"context"
-
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/component"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
@@ -17,7 +15,8 @@ import (
 )
 
 type Teamvault struct {
-	Cluster          cluster.Cluster
+	Context          k8s.Context
+	NfsServer        k8s.PodNfsServer
 	Domain           k8s.IngressHost
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
@@ -31,7 +30,8 @@ type Teamvault struct {
 func (t *Teamvault) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
+		t.NfsServer,
 		t.Domain,
 		t.DatabasePassword,
 		t.SmtpPassword,
@@ -54,17 +54,24 @@ func (t *Teamvault) Children() []world.Configuration {
 		Name:     "http",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   t.Cluster.Context,
-			Namespace: "teamvault",
+		&k8s.NamespaceConfiguration{
+			Context: t.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "teamvault",
+					Name:      "teamvault",
+				},
+			},
 		},
 		&component.Postgres{
-			Context:              t.Cluster.Context,
+			Context:              t.Context,
 			Namespace:            "teamvault",
 			DataNfsPath:          "/data/teamvault-postgres",
-			DataNfsServer:        t.Cluster.NfsServer,
+			DataNfsServer:        t.NfsServer,
 			BackupNfsPath:        "/data/teamvault-postgres-backup",
-			BackupNfsServer:      t.Cluster.NfsServer,
+			BackupNfsServer:      t.NfsServer,
 			PostgresVersion:      "10.5",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "teamvault",
@@ -74,7 +81,7 @@ func (t *Teamvault) Children() []world.Configuration {
 			PostgresPassword: t.DatabasePassword,
 		},
 		&deployer.SecretDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "teamvault",
 			Name:      "teamvault",
 			Secrets: deployer.Secrets{
@@ -86,7 +93,7 @@ func (t *Teamvault) Children() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:      t.Cluster.Context,
+			Context:      t.Context,
 			Namespace:    "teamvault",
 			Name:         "teamvault",
 			Requirements: t.smtp().Requirements(),
@@ -287,13 +294,13 @@ func (t *Teamvault) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "teamvault",
 			Name:      "teamvault",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   t.Cluster.Context,
+			Context:   t.Context,
 			Namespace: "teamvault",
 			Name:      "teamvault",
 			Port:      "http",
@@ -305,7 +312,7 @@ func (t *Teamvault) Children() []world.Configuration {
 func (t *Teamvault) smtp() *container.Smtp {
 	return &container.Smtp{
 		Hostname:     container.SmtpHostname(t.Domain.String()),
-		Context:      t.Cluster.Context,
+		Context:      t.Context,
 		Namespace:    "teamvault",
 		SmtpPassword: t.SmtpPassword,
 		SmtpUsername: t.SmtpUsername,

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,7 +12,7 @@ import (
 )
 
 type KafkaSample struct {
-	Cluster      cluster.Cluster
+	Context      k8s.Context
 	Domain       k8s.IngressHost
 	Requirements []world.Configuration
 }
@@ -21,7 +20,7 @@ type KafkaSample struct {
 func (k *KafkaSample) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		k.Cluster,
+		k.Context,
 		k.Domain,
 	)
 }
@@ -48,12 +47,19 @@ func (k *KafkaSample) sampleApp() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   k.Cluster.Context,
-			Namespace: "kafka-sample",
+		&k8s.NamespaceConfiguration{
+			Context: k.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "kafka-sample",
+					Name:      "kafka-sample",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kafka-sample",
 			Name:      "kafka-sample",
 			Strategy: k8s.DeploymentStrategy{
@@ -111,13 +117,13 @@ func (k *KafkaSample) sampleApp() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kafka-sample",
 			Name:      "kafka-sample",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kafka-sample",
 			Name:      "kafka-sample",
 			Port:      port.Name,

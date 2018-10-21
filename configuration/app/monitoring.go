@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -32,29 +31,36 @@ func (m *MonitoringConfig) Validate(ctx context.Context) error {
 }
 
 type Monitoring struct {
-	Cluster         cluster.Cluster
+	Context         k8s.Context
 	SmtpPassword    deployer.SecretValue
 	GitSyncPassword deployer.SecretValue
 	Configs         []MonitoringConfig
 }
 
-func (w *Monitoring) Validate(ctx context.Context) error {
+func (m *Monitoring) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		w.Cluster,
-		w.SmtpPassword,
-		w.GitSyncPassword,
+		m.Context,
+		m.SmtpPassword,
+		m.GitSyncPassword,
 	)
 }
 
 func (m *Monitoring) Children() []world.Configuration {
 	configurations := []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   m.Cluster.Context,
-			Namespace: "monitoring",
+		&k8s.NamespaceConfiguration{
+			Context: m.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "monitoring",
+					Name:      "monitoring",
+				},
+			},
 		},
 		&deployer.SecretDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "monitoring",
 			Name:      "monitoring",
 			Secrets: deployer.Secrets{
@@ -65,7 +71,7 @@ func (m *Monitoring) Children() []world.Configuration {
 	}
 	for _, config := range m.Configs {
 		configurations = append(configurations, &MonitoringDeployment{
-			Context:    m.Cluster.Context,
+			Context:    m.Context,
 			Name:       config.Name,
 			Subject:    config.Subject,
 			GitRepoUrl: config.GitRepoUrl,

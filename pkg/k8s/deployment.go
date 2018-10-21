@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/pkg/errors"
-
-	"github.com/bborbe/world/pkg/world"
-
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
+	"github.com/pkg/errors"
 )
 
 type DeploymentConfiguration struct {
@@ -117,11 +115,19 @@ func (d DeploymentSpec) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		d.Template,
+		d.Selector,
 	)
 }
 
 type LabelSelector struct {
 	MatchLabels Labels `yaml:"matchLabels,omitempty"`
+}
+
+func (d LabelSelector) Validate(ctx context.Context) error {
+	if len(d.MatchLabels) == 0 {
+		return fmt.Errorf("MatchLabels empty")
+	}
+	return nil
 }
 
 type DeploymentMaxSurge int

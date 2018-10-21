@@ -1,10 +1,9 @@
-package server
+package cluster
 
 import (
 	"context"
 
 	"github.com/bborbe/world/configuration/serivce"
-
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/remote"
@@ -13,15 +12,16 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type Fire struct {
-	Context   k8s.Context
-	ClusterIP dns.IP
+type Nuke struct {
+	Context     k8s.Context
+	ClusterIP   dns.IP
+	DisableRBAC bool
 }
 
-func (f *Fire) Children() []world.Configuration {
+func (n *Nuke) Children() []world.Configuration {
 	ssh := ssh.SSH{
 		Host: ssh.Host{
-			IP:   f.ClusterIP,
+			IP:   n.ClusterIP,
 			Port: 22,
 		},
 		User:           "bborbe",
@@ -34,8 +34,8 @@ func (f *Fire) Children() []world.Configuration {
 				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 				List: []dns.Entry{
 					{
-						Host: "backup.fire.hm.benjamin-borbe.de",
-						IP:   f.ClusterIP,
+						Host: "backup.nuke.hm.benjamin-borbe.de",
+						IP:   n.ClusterIP,
 					},
 				},
 			},
@@ -45,21 +45,22 @@ func (f *Fire) Children() []world.Configuration {
 			Port: 80,
 		}),
 		&service.Kubernetes{
-			SSH:       ssh,
-			Context:   f.Context,
-			ClusterIP: f.ClusterIP,
+			SSH:         ssh,
+			Context:     n.Context,
+			ClusterIP:   n.ClusterIP,
+			DisableRBAC: n.DisableRBAC,
 		},
 	}
 }
 
-func (f *Fire) Applier() (world.Applier, error) {
+func (n *Nuke) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (f *Fire) Validate(ctx context.Context) error {
+func (n *Nuke) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		f.Context,
-		f.ClusterIP,
+		n.Context,
+		n.ClusterIP,
 	)
 }

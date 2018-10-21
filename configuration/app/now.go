@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,7 +12,7 @@ import (
 )
 
 type Now struct {
-	Cluster cluster.Cluster
+	Context k8s.Context
 	Domains k8s.IngressHosts
 	Tag     docker.Tag
 }
@@ -21,7 +20,7 @@ type Now struct {
 func (t *Now) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Domains,
 		t.Tag,
 	)
@@ -38,12 +37,19 @@ func (n *Now) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   n.Cluster.Context,
-			Namespace: "now",
+		&k8s.NamespaceConfiguration{
+			Context: n.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "now",
+					Name:      "now",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   n.Cluster.Context,
+			Context:   n.Context,
 			Namespace: "now",
 			Name:      "now",
 			Strategy: k8s.DeploymentStrategy{
@@ -102,13 +108,13 @@ func (n *Now) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   n.Cluster.Context,
+			Context:   n.Context,
 			Namespace: "now",
 			Name:      "now",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   n.Cluster.Context,
+			Context:   n.Context,
 			Namespace: "now",
 			Name:      "now",
 			Port:      "http",

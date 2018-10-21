@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,16 +12,18 @@ import (
 )
 
 type Webdav struct {
-	Cluster  cluster.Cluster
-	Domains  k8s.IngressHosts
-	Tag      docker.Tag
-	Password deployer.SecretValue
+	Context   k8s.Context
+	NfsServer k8s.PodNfsServer
+	Domains   k8s.IngressHosts
+	Tag       docker.Tag
+	Password  deployer.SecretValue
 }
 
 func (t *Webdav) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
+		t.NfsServer,
 		t.Domains,
 		t.Tag,
 		t.Password,
@@ -40,12 +41,19 @@ func (w *Webdav) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   w.Cluster.Context,
-			Namespace: "webdav",
+		&k8s.NamespaceConfiguration{
+			Context: w.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "webdav",
+					Name:      "webdav",
+				},
+			},
 		},
 		&deployer.SecretDeployer{
-			Context:   w.Cluster.Context,
+			Context:   w.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
 			Secrets: deployer.Secrets{
@@ -53,7 +61,7 @@ func (w *Webdav) Children() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   w.Cluster.Context,
+			Context:   w.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
 			Strategy: k8s.DeploymentStrategy{
@@ -129,19 +137,19 @@ func (w *Webdav) Children() []world.Configuration {
 					Name: "webdav",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/webdav",
-						Server: w.Cluster.NfsServer,
+						Server: w.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   w.Cluster.Context,
+			Context:   w.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   w.Cluster.Context,
+			Context:   w.Context,
 			Namespace: "webdav",
 			Name:      "webdav",
 			Port:      "http",

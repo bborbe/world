@@ -4,26 +4,24 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/pkg/docker"
-
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
 type CoreDns struct {
-	Cluster cluster.Cluster
+	Context     k8s.Context
+	DisableRBAC bool
 }
 
 func (c *CoreDns) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		c.Cluster,
+		c.Context,
 	)
 }
-
 func (c *CoreDns) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/coredns",
@@ -44,10 +42,10 @@ func (c *CoreDns) Children() []world.Configuration {
 		Port:     9153,
 		Protocol: "TCP",
 	}
-	return []world.Configuration{
+	result := []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   c.Cluster.Context,
+				Context:   c.Context,
 				Namespace: "kube-system",
 				Name:      "coredns",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -61,8 +59,19 @@ func (c *CoreDns) Children() []world.Configuration {
 		&build.CoreDns{
 			Image: image,
 		},
+		&k8s.ServiceaccountConfiguration{
+			Context: c.Context,
+			Serviceaccount: k8s.ServiceAccount{
+				ApiVersion: "v1",
+				Kind:       "ServiceAccount",
+				Metadata: k8s.Metadata{
+					Namespace: "kube-system",
+					Name:      "coredns",
+				},
+			},
+		},
 		&k8s.DeploymentConfiguration{
-			Context: c.Cluster.Context,
+			Context: c.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
@@ -94,6 +103,7 @@ func (c *CoreDns) Children() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
+							ServiceAccountName: "coredns",
 							Tolerations: []k8s.Toleration{
 								{
 									Key:    "node-role.kubernetes.io/master",
@@ -119,7 +129,10 @@ func (c *CoreDns) Children() []world.Configuration {
 											Memory: "70Mi",
 										},
 									},
-									Args: []k8s.Arg{"-conf", "/etc/coredns/Corefile"},
+									Args: []k8s.Arg{
+										"-conf",
+										"/etc/coredns/Corefile",
+									},
 									VolumeMounts: []k8s.ContainerMount{
 										{
 											Name:     "config-volume",
@@ -135,8 +148,12 @@ func (c *CoreDns) Children() []world.Configuration {
 									SecurityContext: k8s.SecurityContext{
 										AllowPrivilegeEscalation: false,
 										Capabilities: map[string][]string{
-											"add":  {"NET_BIND_SERVICE"},
-											"drop": {"all"},
+											"add": {
+												"NET_BIND_SERVICE",
+											},
+											"drop": {
+												"all",
+											},
 										},
 										ReadOnlyRootFilesystem: true,
 									},
@@ -174,7 +191,7 @@ func (c *CoreDns) Children() []world.Configuration {
 			},
 		},
 		&k8s.ServiceConfiguration{
-			Context: c.Cluster.Context,
+			Context: c.Context,
 			Service: k8s.Service{
 				ApiVersion: "v1",
 				Kind:       "Service",
@@ -204,6 +221,80 @@ func (c *CoreDns) Children() []world.Configuration {
 			},
 		},
 	}
+	if !c.DisableRBAC {
+		result = append(result,
+			&k8s.ClusterRoleConfiguration{
+				Context: c.Context,
+				ClusterRole: k8s.ClusterRole{
+					ApiVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRole",
+					Metadata: k8s.Metadata{
+						Name: "system:coredns",
+						Labels: k8s.Labels{
+							"kubernetes.io/bootstrapping": "rbac-defaults",
+						},
+						Annotations: k8s.Annotations(nil)},
+					Rules: []k8s.PolicyRule{
+						{
+							ApiGroups: []string{
+								"",
+							},
+							Resources: []string{
+								"endpoints",
+								"services",
+								"pods",
+								"namespaces",
+							},
+							Verbs: []string{
+								"list",
+								"watch",
+							},
+						},
+						{
+							ApiGroups: []string{
+								"",
+							},
+							Resources: []string{
+								"nodes",
+							},
+							Verbs: []string{
+								"get",
+							},
+						},
+					},
+				},
+			},
+			&k8s.ClusterRoleBindingConfiguration{
+				Context: c.Context,
+				ClusterRoleBinding: k8s.ClusterRoleBinding{
+					ApiVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRoleBinding",
+					Metadata: k8s.Metadata{
+						Name: "system:coredns",
+						Labels: k8s.Labels{
+							"kubernetes.io/bootstrapping": "rbac-defaults",
+						},
+						Annotations: k8s.Annotations{
+							"rbac.authorization.kubernetes.io/autoupdate": "true",
+						},
+					},
+					Subjects: []k8s.Subject{
+						{
+							Kind:      "ServiceAccount",
+							Name:      "coredns",
+							Namespace: "kube-system",
+						},
+					},
+					RoleRef: k8s.RoleRef{
+						Kind:     "ClusterRole",
+						Name:     "system:coredns",
+						ApiGroup: "rbac.authorization.k8s.io",
+					},
+				},
+			},
+		)
+	}
+	return result
 }
 
 func (c *CoreDns) Applier() (world.Applier, error) {

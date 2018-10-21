@@ -2,12 +2,11 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
-
-	"encoding/json"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"

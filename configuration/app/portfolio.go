@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -14,7 +13,7 @@ import (
 )
 
 type Portfolio struct {
-	Cluster              cluster.Cluster
+	Context              k8s.Context
 	Domains              k8s.IngressHosts
 	OverlayServerVersion docker.Tag
 	GitSyncPassword      deployer.SecretValue
@@ -23,7 +22,7 @@ type Portfolio struct {
 func (t *Portfolio) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Domains,
 		t.OverlayServerVersion,
 		t.GitSyncPassword,
@@ -41,12 +40,19 @@ func (p *Portfolio) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   p.Cluster.Context,
-			Namespace: "portfolio",
+		&k8s.NamespaceConfiguration{
+			Context: p.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "portfolio",
+					Name:      "portfolio",
+				},
+			},
 		},
 		&deployer.SecretDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
 			Secrets: deployer.Secrets{
@@ -54,7 +60,7 @@ func (p *Portfolio) Children() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
 			Strategy: k8s.DeploymentStrategy{
@@ -156,7 +162,7 @@ func (p *Portfolio) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
 			Ports: []deployer.Port{
@@ -164,7 +170,7 @@ func (p *Portfolio) Children() []world.Configuration {
 			},
 		},
 		&deployer.IngressDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "portfolio",
 			Name:      "portfolio",
 			Port:      "http",

@@ -12,10 +12,11 @@ import (
 )
 
 type Traefik struct {
-	Context   k8s.Context
-	NfsServer k8s.PodNfsServer
-	Domains   k8s.IngressHosts
-	SSL       bool
+	Context     k8s.Context
+	NfsServer   k8s.PodNfsServer
+	Domains     k8s.IngressHosts
+	SSL         bool
+	DisableRBAC bool
 }
 
 func (t *Traefik) Validate(ctx context.Context) error {
@@ -33,11 +34,10 @@ func (t *Traefik) Validate(ctx context.Context) error {
 		t.Domains,
 	)
 }
-
 func (t *Traefik) Children() []world.Configuration {
 	traefikImage := docker.Image{
 		Repository: "bborbe/traefik",
-		Tag:        "1.7.0-alpine",
+		Tag:        "1.7.3-alpine",
 	}
 	httpPort := deployer.Port{
 		Port:     80,
@@ -56,7 +56,7 @@ func (t *Traefik) Children() []world.Configuration {
 		Name:     "dashboard",
 		Protocol: "TCP",
 	}
-	ports := []deployer.Port{
+	ports := deployer.Ports{
 		httpPort,
 		dashboardPort,
 	}
@@ -83,9 +83,27 @@ func (t *Traefik) Children() []world.Configuration {
 		}
 	}
 	result := []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   t.Context,
-			Namespace: "traefik",
+		&k8s.NamespaceConfiguration{
+			Context: t.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "traefik",
+					Name:      "traefik",
+				},
+			},
+		},
+		&k8s.ServiceaccountConfiguration{
+			Context: t.Context,
+			Serviceaccount: k8s.ServiceAccount{
+				ApiVersion: "v1",
+				Kind:       "ServiceAccount",
+				Metadata: k8s.Metadata{
+					Namespace: "traefik",
+					Name:      "traefik",
+				},
+			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
@@ -100,82 +118,108 @@ func (t *Traefik) Children() []world.Configuration {
 				},
 			},
 		),
-		&deployer.DeploymentDeployer{
-			Context:   t.Context,
-			Namespace: "traefik",
-			Name:      "traefik",
-			Strategy: k8s.DeploymentStrategy{
-				Type: "RollingUpdate",
-				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
-					MaxSurge:       1,
-					MaxUnavailable: 1,
+		&build.Traefik{
+			Image: traefikImage,
+		},
+		&k8s.DeploymentConfiguration{
+			Context: t.Context,
+			Deployment: k8s.Deployment{
+				ApiVersion: "apps/v1",
+				Kind:       "Deployment",
+				Metadata: k8s.Metadata{
+					Namespace: "traefik",
+					Name:      "traefik",
 				},
-			},
-			Containers: []deployer.HasContainer{
-				&deployer.DeploymentDeployerContainer{
-					Name:  "traefik",
-					Image: traefikImage,
-					Requirement: &build.Traefik{
-						Image: traefikImage,
-					},
-					Ports: ports,
-					Resources: k8s.Resources{
-						Limits: k8s.ContainerResource{
-							Cpu:    "200m",
-							Memory: "100Mi",
-						},
-						Requests: k8s.ContainerResource{
-							Cpu:    "100m",
-							Memory: "25Mi",
+				Spec: k8s.DeploymentSpec{
+					Replicas: 1,
+					Strategy: k8s.DeploymentStrategy{
+						Type: "RollingUpdate",
+						RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+							MaxUnavailable: 1,
 						},
 					},
-					Args: []k8s.Arg{"--configfile=/config/traefik.toml"},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name: "config",
-							Path: "/config",
-						},
-						{
-							Name: "acme",
-							Path: "/acme",
+					Selector: k8s.LabelSelector{
+						MatchLabels: k8s.Labels{
+							"app": "traefik",
 						},
 					},
-					LivenessProbe: k8s.Probe{
-						TcpSocket: k8s.TcpSocket{
-							Port: httpPort.Port,
+					Template: k8s.PodTemplate{
+						Metadata: k8s.Metadata{
+							Labels: k8s.Labels{
+								"app": "traefik",
+							},
 						},
-						FailureThreshold:    3,
-						InitialDelaySeconds: 10,
-						PeriodSeconds:       10,
-						SuccessThreshold:    1,
-						TimeoutSeconds:      2,
-					},
-					ReadinessProbe: k8s.Probe{
-						TcpSocket: k8s.TcpSocket{
-							Port: httpPort.Port,
-						},
-						FailureThreshold:    1,
-						InitialDelaySeconds: 10,
-						PeriodSeconds:       10,
-						SuccessThreshold:    1,
-						TimeoutSeconds:      2,
-					},
-				},
-			},
-			Volumes: []k8s.PodVolume{
-				{
-					Name: "config",
-					ConfigMap: k8s.PodVolumeConfigMap{
-						Name: "traefik",
-						Items: []k8s.PodConfigMapItem{
-							{
-								Key:  "config",
-								Path: "traefik.toml",
+						Spec: k8s.PodSpec{
+							ServiceAccountName:            "traefik",
+							TerminationGracePeriodSeconds: 60,
+							Containers: []k8s.Container{
+								{
+									Name:  "traefik",
+									Image: k8s.Image(traefikImage.String()),
+									Ports: ports.ContainerPort(),
+									Resources: k8s.Resources{
+										Limits: k8s.ContainerResource{
+											Cpu:    "200m",
+											Memory: "100Mi",
+										},
+										Requests: k8s.ContainerResource{
+											Cpu:    "100m",
+											Memory: "25Mi",
+										},
+									},
+									Args: []k8s.Arg{
+										"--configfile=/config/traefik.toml",
+									},
+									VolumeMounts: []k8s.ContainerMount{
+										{
+											Name: "config",
+											Path: "/config",
+										},
+										{
+											Name: "acme",
+											Path: "/acme",
+										},
+									},
+									LivenessProbe: k8s.Probe{
+										TcpSocket: k8s.TcpSocket{
+											Port: httpPort.Port,
+										},
+										FailureThreshold:    3,
+										InitialDelaySeconds: 10,
+										PeriodSeconds:       10,
+										SuccessThreshold:    1,
+										TimeoutSeconds:      2,
+									},
+									ReadinessProbe: k8s.Probe{
+										TcpSocket: k8s.TcpSocket{
+											Port: httpPort.Port,
+										},
+										FailureThreshold:    1,
+										InitialDelaySeconds: 10,
+										PeriodSeconds:       10,
+										SuccessThreshold:    1,
+										TimeoutSeconds:      2,
+									},
+								},
+							},
+							Volumes: []k8s.PodVolume{
+								{
+									Name: "config",
+									ConfigMap: k8s.PodVolumeConfigMap{
+										Name: "traefik",
+										Items: []k8s.PodConfigMapItem{
+											{
+												Key:  "config",
+												Path: "traefik.toml",
+											},
+										},
+									},
+								},
+								acmeVolume,
 							},
 						},
 					},
 				},
-				acmeVolume,
 			},
 		},
 		&deployer.ServiceDeployer{
@@ -199,72 +243,154 @@ func (t *Traefik) Children() []world.Configuration {
 		},
 	}
 	if t.SSL {
-		result = append(result, &deployer.DeploymentDeployer{
-			Context:   t.Context,
-			Namespace: "traefik",
-			Name:      "traefik-extract",
-			Strategy: k8s.DeploymentStrategy{
-				Type: "RollingUpdate",
-				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
-					MaxSurge:       1,
-					MaxUnavailable: 1,
+		result = append(result,
+			&deployer.DeploymentDeployer{
+				Context:   t.Context,
+				Namespace: "traefik",
+				Name:      "traefik-extract",
+				Strategy: k8s.DeploymentStrategy{
+					Type: "RollingUpdate",
+					RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
+						MaxSurge:       1,
+						MaxUnavailable: 1,
+					},
 				},
-			},
-			Containers: []deployer.HasContainer{
-				&deployer.DeploymentDeployerContainer{
-					Name:  "traefik-extract",
-					Image: exporterImage,
-					Requirement: &build.TraefikCertificateExtractor{
+				Containers: []deployer.HasContainer{
+					&deployer.DeploymentDeployerContainer{
+						Name:  "traefik-extract",
 						Image: exporterImage,
-					},
-					Resources: k8s.Resources{
-						Limits: k8s.ContainerResource{
-							Cpu:    "200m",
-							Memory: "100Mi",
+						Requirement: &build.TraefikCertificateExtractor{
+							Image: exporterImage,
 						},
-						Requests: k8s.ContainerResource{
-							Cpu:    "100m",
-							Memory: "25Mi",
+						Resources: k8s.Resources{
+							Limits: k8s.ContainerResource{
+								Cpu:    "200m",
+								Memory: "100Mi",
+							},
+							Requests: k8s.ContainerResource{
+								Cpu:    "100m",
+								Memory: "25Mi",
+							},
 						},
-					},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name: "acme",
-							Path: "/app/data",
-						},
-						{
-							Name:     "certs",
-							Path:     "/app/certs",
-							ReadOnly: true,
+						Mounts: []k8s.ContainerMount{
+							{
+								Name: "acme",
+								Path: "/app/data",
+							},
+							{
+								Name:     "certs",
+								Path:     "/app/certs",
+								ReadOnly: true,
+							},
 						},
 					},
 				},
-			},
-			Volumes: []k8s.PodVolume{
-				{
-					Name: "acme",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/traefik-acme",
-						Server: t.NfsServer,
+				Volumes: []k8s.PodVolume{
+					{
+						Name: "acme",
+						Nfs: k8s.PodVolumeNfs{
+							Path:   "/data/traefik-acme",
+							Server: t.NfsServer,
+						},
+					},
+					{
+						Name: "certs",
+						Nfs: k8s.PodVolumeNfs{
+							Path:   "/data/traefik-extract",
+							Server: t.NfsServer,
+						},
 					},
 				},
-				{
-					Name: "certs",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/traefik-extract",
-						Server: t.NfsServer,
-					},
-				},
-			},
-		})
+			})
 	}
+
+	if !t.DisableRBAC {
+		result = append(result,
+			&k8s.ClusterRoleConfiguration{
+				Context: t.Context,
+				ClusterRole: k8s.ClusterRole{
+					ApiVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRole",
+					Metadata: k8s.Metadata{
+						Namespace: "",
+						Name:      "traefik",
+					},
+					Rules: []k8s.PolicyRule{
+						{
+							ApiGroups: []string{
+								"",
+							},
+							Resources: []string{
+								"pods",
+								"services",
+								"endpoints",
+								"secrets",
+							},
+							Verbs: []string{
+								"get",
+								"list",
+								"watch",
+							},
+						},
+						{
+							ApiGroups: []string{
+								"extensions",
+							},
+							Resources: []string{
+								"ingresses",
+							},
+							Verbs: []string{
+								"get",
+								"list",
+								"watch",
+							},
+						},
+						{
+							ApiGroups: []string{
+								"extensions",
+							},
+							Resources: []string{
+								"ingresses/status",
+							},
+							Verbs: []string{
+								"update",
+							},
+						},
+					},
+				},
+			},
+			&k8s.ClusterRoleBindingConfiguration{
+				Context: t.Context,
+				ClusterRoleBinding: k8s.ClusterRoleBinding{
+					ApiVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRoleBinding",
+					Metadata: k8s.Metadata{
+						Name: "traefik",
+					},
+					Subjects: []k8s.Subject{
+						{
+							Kind:      "ServiceAccount",
+							Name:      "traefik",
+							Namespace: "traefik",
+						},
+					},
+					RoleRef: k8s.RoleRef{
+						Kind:     "ClusterRole",
+						Name:     "traefik",
+						ApiGroup: "rbac.authorization.k8s.io",
+					},
+				},
+			},
+		)
+	}
+
 	return result
 }
-
-func (t *Traefik) Applier() (world.Applier, error) {
-	return nil, nil
+func (t *Traefik) Applier() (world.Applier,
+	error) {
+	return nil,
+		nil
 }
-
 func (t *Traefik) traefikConfig() string {
 	if t.SSL {
 		return traefikConfigWithHttps
@@ -304,7 +430,6 @@ acmeLogging = true
 [acme.httpChallenge]
 entryPoint = "http"
 `
-
 const traefikConfigWithoutHttps = `graceTimeOut = 10
 debug = false
 logLevel = "INFO"

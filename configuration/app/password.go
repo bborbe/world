@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,7 +12,7 @@ import (
 )
 
 type Password struct {
-	Cluster cluster.Cluster
+	Context k8s.Context
 	Domains k8s.IngressHosts
 	Tag     docker.Tag
 }
@@ -21,7 +20,7 @@ type Password struct {
 func (t *Password) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Domains,
 		t.Tag,
 	)
@@ -38,12 +37,19 @@ func (p *Password) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   p.Cluster.Context,
-			Namespace: "password",
+		&k8s.NamespaceConfiguration{
+			Context: p.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "password",
+					Name:      "password",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "password",
 			Name:      "password",
 			Strategy: k8s.DeploymentStrategy{
@@ -96,13 +102,13 @@ func (p *Password) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "password",
 			Name:      "password",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "password",
 			Name:      "password",
 			Port:      "http",

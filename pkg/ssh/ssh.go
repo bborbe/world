@@ -7,11 +7,9 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/bborbe/world/pkg/dns"
-
-	"github.com/golang/glog"
-
 	"github.com/bborbe/run"
+	"github.com/bborbe/world/pkg/dns"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )

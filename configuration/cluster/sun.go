@@ -1,23 +1,21 @@
-package server
+package cluster
 
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/remote"
-
-	"github.com/bborbe/world/pkg/dns"
-
-	"github.com/bborbe/world/pkg/k8s"
-
 	"github.com/bborbe/world/configuration/serivce"
+	"github.com/bborbe/world/pkg/dns"
+	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
 type Sun struct {
-	Context   k8s.Context
-	ClusterIP dns.IP
+	Context     k8s.Context
+	ClusterIP   dns.IP
+	DisableRBAC bool
 }
 
 func (s *Sun) Children() []world.Configuration {
@@ -47,9 +45,10 @@ func (s *Sun) Children() []world.Configuration {
 			Port: 80,
 		}),
 		&service.Kubernetes{
-			SSH:       ssh,
-			Context:   s.Context,
-			ClusterIP: s.ClusterIP,
+			SSH:         ssh,
+			Context:     s.Context,
+			ClusterIP:   s.ClusterIP,
+			DisableRBAC: s.DisableRBAC,
 		},
 	}
 }

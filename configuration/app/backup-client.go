@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -14,7 +13,8 @@ import (
 )
 
 type BackupClient struct {
-	Cluster         cluster.Cluster
+	Context         k8s.Context
+	NfsServer       k8s.PodNfsServer
 	Domains         k8s.IngressHosts
 	GitSyncPassword deployer.SecretValue
 	BackupSshKey    deployer.SecretValue
@@ -24,7 +24,8 @@ type BackupClient struct {
 func (b *BackupClient) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		b.Cluster,
+		b.Context,
+		b.NfsServer,
 		b.Domains,
 		b.GitSyncPassword,
 		b.BackupSshKey,
@@ -34,9 +35,16 @@ func (b *BackupClient) Validate(ctx context.Context) error {
 
 func (b *BackupClient) Children() []world.Configuration {
 	result := []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   b.Cluster.Context,
-			Namespace: "backup",
+		&k8s.NamespaceConfiguration{
+			Context: b.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "backup",
+					Name:      "backup",
+				},
+			},
 		},
 	}
 	result = append(result, b.rsync()...)
@@ -53,7 +61,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.SecretDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "backup",
 			Secrets: deployer.Secrets{
@@ -62,7 +70,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "rsync",
 			Strategy: k8s.DeploymentStrategy{
@@ -146,7 +154,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 					Name: "backup",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/backup",
-						Server: b.Cluster.NfsServer,
+						Server: b.NfsServer,
 					},
 				},
 				{
@@ -174,7 +182,7 @@ func (b *BackupClient) cleanup() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "cleanup",
 			Strategy: k8s.DeploymentStrategy{
@@ -233,7 +241,7 @@ func (b *BackupClient) cleanup() []world.Configuration {
 					Name: "backup",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/backup",
-						Server: b.Cluster.NfsServer,
+						Server: b.NfsServer,
 					},
 				},
 			},
@@ -253,7 +261,7 @@ func (b *BackupClient) statusServer() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "status-server",
 			Strategy: k8s.DeploymentStrategy{
@@ -326,13 +334,13 @@ func (b *BackupClient) statusServer() []world.Configuration {
 					Name: "backup",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/backup",
-						Server: b.Cluster.NfsServer,
+						Server: b.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "status-server",
 			Ports:     []deployer.Port{port},
@@ -352,7 +360,7 @@ func (b *BackupClient) statusClient() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "status-client",
 			Strategy: k8s.DeploymentStrategy{
@@ -415,13 +423,13 @@ func (b *BackupClient) statusClient() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "status-client",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   b.Cluster.Context,
+			Context:   b.Context,
 			Namespace: "backup",
 			Name:      "status-client",
 			Port:      "http",

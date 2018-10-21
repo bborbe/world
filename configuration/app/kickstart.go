@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -14,15 +13,15 @@ import (
 )
 
 type Kickstart struct {
-	Cluster cluster.Cluster
+	Context k8s.Context
 	Domains k8s.IngressHosts
 }
 
-func (t *Kickstart) Validate(ctx context.Context) error {
+func (k *Kickstart) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
-		t.Domains,
+		k.Context,
+		k.Domains,
 	)
 }
 
@@ -41,12 +40,19 @@ func (k *Kickstart) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   k.Cluster.Context,
-			Namespace: "kickstart",
+		&k8s.NamespaceConfiguration{
+			Context: k.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "kickstart",
+					Name:      "kickstart",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kickstart",
 			Name:      "kickstart",
 			Strategy: k8s.DeploymentStrategy{
@@ -115,13 +121,13 @@ func (k *Kickstart) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kickstart",
 			Name:      "kickstart",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   k.Cluster.Context,
+			Context:   k.Context,
 			Namespace: "kickstart",
 			Name:      "kickstart",
 			Port:      "http",

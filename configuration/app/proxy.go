@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,15 +12,15 @@ import (
 )
 
 type Proxy struct {
-	Cluster  cluster.Cluster
+	Context  k8s.Context
 	Password deployer.SecretValue
 }
 
-func (d *Proxy) Validate(ctx context.Context) error {
+func (p *Proxy) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		d.Cluster,
-		d.Password,
+		p.Context,
+		p.Password,
 	)
 }
 
@@ -46,13 +45,20 @@ func (p *Proxy) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   p.Cluster.Context,
-			Namespace: "proxy",
+		&k8s.NamespaceConfiguration{
+			Context: p.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "proxy",
+					Name:      "proxy",
+				},
+			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   p.Cluster.Context,
+				Context:   p.Context,
 				Namespace: "proxy",
 				Name:      "proxy",
 				ConfigEntryList: deployer.ConfigEntryList{
@@ -68,7 +74,7 @@ func (p *Proxy) Children() []world.Configuration {
 			},
 		),
 		&deployer.SecretDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "proxy",
 			Name:      "proxy",
 			Secrets: deployer.Secrets{
@@ -76,7 +82,7 @@ func (p *Proxy) Children() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "proxy",
 			Name:      "proxy",
 			Strategy: k8s.DeploymentStrategy{
@@ -204,7 +210,7 @@ func (p *Proxy) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "proxy",
 			Name:      "proxy",
 			Ports: []deployer.Port{

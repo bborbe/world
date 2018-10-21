@@ -3,25 +3,25 @@ package app
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/world"
-
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
 )
 
 type Bind struct {
-	Cluster cluster.Cluster
-	Tag     docker.Tag
+	Context   k8s.Context
+	NfsServer k8s.PodNfsServer
+	Tag       docker.Tag
 }
 
 func (t *Bind) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
+		t.NfsServer,
 		t.Tag,
 	)
 }
@@ -44,12 +44,19 @@ func (b *Bind) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   b.Cluster.Context,
-			Namespace: "bind",
+		&k8s.NamespaceConfiguration{
+			Context: b.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "bind",
+					Name:      "bind",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:     b.Cluster.Context,
+			Context:     b.Context,
 			Namespace:   "bind",
 			Name:        "bind",
 			HostNetwork: true,
@@ -109,7 +116,7 @@ func (b *Bind) Children() []world.Configuration {
 					Name: "bind",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/bind",
-						Server: k8s.PodNfsServer(b.Cluster.NfsServer),
+						Server: k8s.PodNfsServer(b.NfsServer),
 					},
 				},
 			},

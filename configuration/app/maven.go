@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,7 +12,8 @@ import (
 )
 
 type Maven struct {
-	Cluster          cluster.Cluster
+	Context          k8s.Context
+	NfsServer        k8s.PodNfsServer
 	Domains          k8s.IngressHosts
 	MavenRepoVersion docker.Tag
 }
@@ -21,7 +21,7 @@ type Maven struct {
 func (t *Maven) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Domains,
 		t.MavenRepoVersion,
 	)
@@ -29,9 +29,16 @@ func (t *Maven) Validate(ctx context.Context) error {
 
 func (m *Maven) Children() []world.Configuration {
 	result := []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   m.Cluster.Context,
-			Namespace: "maven",
+		&k8s.NamespaceConfiguration{
+			Context: m.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "maven",
+					Name:      "maven",
+				},
+			},
 		},
 	}
 	result = append(result, m.public()...)
@@ -51,7 +58,7 @@ func (m *Maven) public() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "maven",
 			Name:      "public",
 			Strategy: k8s.DeploymentStrategy{
@@ -113,19 +120,19 @@ func (m *Maven) public() []world.Configuration {
 					Name: "maven",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/maven",
-						Server: m.Cluster.NfsServer,
+						Server: m.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "maven",
 			Name:      "public",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "maven",
 			Name:      "public",
 			Port:      "http",
@@ -146,7 +153,7 @@ func (m *Maven) api() []world.Configuration {
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "maven",
 			Name:      "api",
 			Strategy: k8s.DeploymentStrategy{
@@ -214,13 +221,13 @@ func (m *Maven) api() []world.Configuration {
 					Name: "maven",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/maven",
-						Server: m.Cluster.NfsServer,
+						Server: m.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "maven",
 			Name:      "api",
 			Ports:     []deployer.Port{port},

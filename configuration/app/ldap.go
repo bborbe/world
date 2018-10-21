@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,16 +12,19 @@ import (
 )
 
 type Ldap struct {
-	Cluster      cluster.Cluster
+	Context      k8s.Context
+	NfsServer    k8s.PodNfsServer
 	Tag          docker.Tag
 	LdapPassword deployer.SecretValue
 }
 
-func (d *Ldap) Validate(ctx context.Context) error {
+func (l *Ldap) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		d.Tag,
-		d.LdapPassword,
+		l.Tag,
+		l.LdapPassword,
+		l.Context,
+		l.NfsServer,
 	)
 }
 
@@ -46,12 +48,19 @@ func (l *Ldap) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   l.Cluster.Context,
-			Namespace: "ldap",
+		&k8s.NamespaceConfiguration{
+			Context: l.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "ldap",
+					Name:      "ldap",
+				},
+			},
 		},
 		&deployer.SecretDeployer{
-			Context:   l.Cluster.Context,
+			Context:   l.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
 			Secrets: deployer.Secrets{
@@ -59,7 +68,7 @@ func (l *Ldap) Children() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   l.Cluster.Context,
+			Context:   l.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
 			Strategy: k8s.DeploymentStrategy{
@@ -133,13 +142,13 @@ func (l *Ldap) Children() []world.Configuration {
 					Name: "ldap",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/ldap",
-						Server: l.Cluster.NfsServer,
+						Server: l.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   l.Cluster.Context,
+			Context:   l.Context,
 			Namespace: "ldap",
 			Name:      "ldap",
 			Ports:     []deployer.Port{ldapPort, ldapsPort},

@@ -1,12 +1,10 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
-	"context"
-
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -15,7 +13,8 @@ import (
 )
 
 type Poste struct {
-	Cluster      cluster.Cluster
+	Context      k8s.Context
+	NfsServer    k8s.PodNfsServer
 	PosteVersion docker.Tag
 	Domains      k8s.IngressHosts
 }
@@ -23,7 +22,8 @@ type Poste struct {
 func (t *Poste) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
+		t.NfsServer,
 		t.PosteVersion,
 		t.Domains,
 	)
@@ -92,12 +92,19 @@ func (p *Poste) Children() []world.Configuration {
 		},
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   p.Cluster.Context,
-			Namespace: "poste",
+		&k8s.NamespaceConfiguration{
+			Context: p.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "poste",
+					Name:      "poste",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "poste",
 			Name:      "poste",
 			Strategy: k8s.DeploymentStrategy{
@@ -142,19 +149,19 @@ func (p *Poste) Children() []world.Configuration {
 					Name: "poste",
 					Nfs: k8s.PodVolumeNfs{
 						Path:   "/data/poste",
-						Server: p.Cluster.NfsServer,
+						Server: p.NfsServer,
 					},
 				},
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "poste",
 			Name:      "poste",
 			Ports:     ports,
 		},
 		&deployer.IngressDeployer{
-			Context:   p.Cluster.Context,
+			Context:   p.Context,
 			Namespace: "poste",
 			Name:      "poste",
 			Port:      "http",

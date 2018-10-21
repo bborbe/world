@@ -11,7 +11,7 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type KafkaLatestVersions struct {
+type KafkaUpdateAvailable struct {
 	Context      k8s.Context
 	Domain       k8s.IngressHost
 	Requirements []world.Configuration
@@ -20,7 +20,7 @@ type KafkaLatestVersions struct {
 	AccessMode   k8s.AccessMode
 }
 
-func (k *KafkaLatestVersions) Validate(ctx context.Context) error {
+func (k *KafkaUpdateAvailable) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		k.Context,
@@ -31,21 +31,21 @@ func (k *KafkaLatestVersions) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KafkaLatestVersions) Applier() (world.Applier, error) {
+func (k *KafkaUpdateAvailable) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (k *KafkaLatestVersions) Children() []world.Configuration {
+func (k *KafkaUpdateAvailable) Children() []world.Configuration {
 	var result []world.Configuration
 	result = append(result, k.Requirements...)
 	result = append(result, k.app()...)
 	return result
 }
 
-func (k *KafkaLatestVersions) app() []world.Configuration {
+func (k *KafkaUpdateAvailable) app() []world.Configuration {
 	image := docker.Image{
-		Repository: "bborbe/kafka-latest-versions",
-		Tag:        "2.1.0",
+		Repository: "bborbe/kafka-update-available",
+		Tag:        "1.0.0",
 	}
 	port := deployer.Port{
 		Port:     8080,
@@ -59,12 +59,12 @@ func (k *KafkaLatestVersions) app() []world.Configuration {
 				ApiVersion: "v1",
 				Kind:       "Namespace",
 				Metadata: k8s.Metadata{
-					Namespace: "kafka-latest-versions",
-					Name:      "kafka-latest-versions",
+					Namespace: "kafka-update-available",
+					Name:      "kafka-update-available",
 				},
 			},
 		},
-		&build.KafkaLatestVersions{
+		&build.KafkaUpdateAvailable{
 			Image: image,
 		},
 		&k8s.StatefulSetConfiguration{
@@ -73,19 +73,19 @@ func (k *KafkaLatestVersions) app() []world.Configuration {
 				ApiVersion: "apps/v1beta1",
 				Kind:       "StatefulSet",
 				Metadata: k8s.Metadata{
-					Namespace: "kafka-latest-versions",
-					Name:      "kafka-latest-versions",
+					Namespace: "kafka-update-available",
+					Name:      "kafka-update-available",
 					Labels: k8s.Labels{
-						"app": "kafka-latest-versions",
+						"app": "kafka-update-available",
 					},
 				},
 				Spec: k8s.StatefulSetSpec{
-					ServiceName: "kafka-latest-versions-headless",
+					ServiceName: "kafka-update-available-headless",
 					Replicas:    k.Replicas,
 					Template: k8s.PodTemplate{
 						Metadata: k8s.Metadata{
 							Labels: k8s.Labels{
-								"app": "kafka-latest-versions",
+								"app": "kafka-update-available",
 							},
 							Annotations: k8s.Annotations{
 								"prometheus.io/path":   "/metrics",
@@ -115,8 +115,8 @@ func (k *KafkaLatestVersions) app() []world.Configuration {
 											Value: "application-version-latest",
 										},
 										{
-											Name:  "KAFKA_AVAILABLE_VERSION_TOPIC",
-											Value: "application-version-available",
+											Name:  "KAFKA_INSTALLED_VERSION_TOPIC",
+											Value: "application-version-installed",
 										},
 										{
 											Name:  "KAFKA_SCHEMA_REGISTRY_URL",
@@ -194,14 +194,14 @@ func (k *KafkaLatestVersions) app() []world.Configuration {
 		},
 		&deployer.ServiceDeployer{
 			Context:   k.Context,
-			Namespace: "kafka-latest-versions",
-			Name:      "kafka-latest-versions",
+			Namespace: "kafka-update-available",
+			Name:      "kafka-update-available",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
 			Context:   k.Context,
-			Namespace: "kafka-latest-versions",
-			Name:      "kafka-latest-versions",
+			Namespace: "kafka-update-available",
+			Name:      "kafka-update-available",
 			Port:      "http",
 			Domains:   k8s.IngressHosts{k.Domain},
 		},

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -14,14 +13,14 @@ import (
 )
 
 type Slideshow struct {
-	Cluster cluster.Cluster
+	Context k8s.Context
 	Domains k8s.IngressHosts
 }
 
 func (t *Slideshow) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Domains,
 	)
 }
@@ -41,12 +40,19 @@ func (s *Slideshow) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   s.Cluster.Context,
-			Namespace: "slideshow",
+		&k8s.NamespaceConfiguration{
+			Context: s.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "slideshow",
+					Name:      "slideshow",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   s.Cluster.Context,
+			Context:   s.Context,
 			Namespace: "slideshow",
 			Name:      "slideshow",
 			Strategy: k8s.DeploymentStrategy{
@@ -115,13 +121,13 @@ func (s *Slideshow) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   s.Cluster.Context,
+			Context:   s.Context,
 			Namespace: "slideshow",
 			Name:      "slideshow",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   s.Cluster.Context,
+			Context:   s.Context,
 			Namespace: "slideshow",
 			Name:      "slideshow",
 			Port:      "http",

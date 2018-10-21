@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,14 +12,14 @@ import (
 )
 
 type Mumble struct {
-	Cluster cluster.Cluster
+	Context k8s.Context
 	Tag     docker.Tag
 }
 
 func (t *Mumble) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Tag,
 	)
 }
@@ -37,12 +36,19 @@ func (m *Mumble) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   m.Cluster.Context,
-			Namespace: "mumble",
+		&k8s.NamespaceConfiguration{
+			Context: m.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "mumble",
+					Name:      "mumble",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "mumble",
 			Name:      "mumble",
 			Strategy: k8s.DeploymentStrategy{
@@ -92,7 +98,7 @@ func (m *Mumble) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   m.Cluster.Context,
+			Context:   m.Context,
 			Namespace: "mumble",
 			Name:      "mumble",
 			Ports:     []deployer.Port{port},

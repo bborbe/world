@@ -33,6 +33,8 @@ func YamlToStruct(reader io.Reader, writer io.Writer) error {
 		"Ingress":             &Ingress{},
 		"Service":             &Service{},
 		"PodDisruptionBudget": &PodDisruptionBudget{},
+		"ClusterRole":         &ClusterRole{},
+		"ClusterRoleBinding":  &ClusterRoleBinding{},
 	}
 
 	s, ok := mapping[kind.(string)]

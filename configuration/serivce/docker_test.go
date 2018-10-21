@@ -5,7 +5,6 @@ import (
 
 	"github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/docker"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

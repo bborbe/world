@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -13,7 +12,7 @@ import (
 )
 
 type HelloWorld struct {
-	Cluster cluster.Cluster
+	Context k8s.Context
 	Domains k8s.IngressHosts
 	Tag     docker.Tag
 }
@@ -21,7 +20,7 @@ type HelloWorld struct {
 func (t *HelloWorld) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Cluster,
+		t.Context,
 		t.Domains,
 		t.Tag,
 	)
@@ -42,12 +41,19 @@ func (h *HelloWorld) Children() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		&deployer.NamespaceDeployer{
-			Context:   h.Cluster.Context,
-			Namespace: "hello-world",
+		&k8s.NamespaceConfiguration{
+			Context: h.Context,
+			Namespace: k8s.Namespace{
+				ApiVersion: "v1",
+				Kind:       "Namespace",
+				Metadata: k8s.Metadata{
+					Namespace: "hello-world",
+					Name:      "hello-world",
+				},
+			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   h.Cluster.Context,
+			Context:   h.Context,
 			Namespace: "hello-world",
 			Name:      "hello-world",
 			Strategy: k8s.DeploymentStrategy{
@@ -99,13 +105,13 @@ func (h *HelloWorld) Children() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   h.Cluster.Context,
+			Context:   h.Context,
 			Namespace: "hello-world",
 			Name:      "hello-world",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   h.Cluster.Context,
+			Context:   h.Context,
 			Namespace: "hello-world",
 			Name:      "hello-world",
 			Port:      "http",
