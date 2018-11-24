@@ -142,6 +142,7 @@ type Probe struct {
 }
 
 type HttpGet struct {
+	Host   string     `yaml:"host,omitempty"`
 	Path   string     `yaml:"path,omitempty"`
 	Port   PortNumber `yaml:"port,omitempty"`
 	Scheme string     `yaml:"scheme,omitempty"`

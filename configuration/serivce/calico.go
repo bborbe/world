@@ -7,8 +7,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/dns"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
@@ -28,6 +30,20 @@ func (c *Calico) Validate(ctx context.Context) error {
 	)
 }
 func (c *Calico) Children() []world.Configuration {
+
+	cniImage := docker.Image{
+		Repository: "bborbe/calico-cni",
+		Tag:        "v3.3.1",
+	}
+	kubeControllersImage := docker.Image{
+		Repository: "bborbe/calico-kube-controllers",
+		Tag:        "v3.3.1",
+	}
+	nodeImage := docker.Image{
+		Repository: "bborbe/calico-node",
+		Tag:        "v3.3.1",
+	}
+
 	return []world.Configuration{
 		&k8s.ClusterRoleConfiguration{
 			Context: c.Context,
@@ -223,6 +239,14 @@ func (c *Calico) Children() []world.Configuration {
 			Secrets:   deployer.Secrets{},
 		},
 		&k8s.DaemonSetConfiguration{
+			Requirements: []world.Configuration{
+				&build.CalicoCNI{
+					Image: cniImage,
+				},
+				&build.CalicoNode{
+					Image: nodeImage,
+				},
+			},
 			Context: c.Context,
 			DaemonSet: k8s.DaemonSet{
 				ApiVersion: "apps/v1",
@@ -267,10 +291,13 @@ func (c *Calico) Children() []world.Configuration {
 									Operator: "Exists",
 								},
 							},
+							TerminationGracePeriodSeconds: 0,
+							HostNetwork:                   true,
+							ServiceAccountName:            "calico-node",
 							Containers: []k8s.Container{
 								{
 									Name:  "calico-node",
-									Image: "quay.io/calico/node:v3.3.1",
+									Image: k8s.Image(nodeImage.String()),
 									Env: []k8s.Env{
 										{
 											Name: "ETCD_ENDPOINTS",
@@ -338,8 +365,13 @@ func (c *Calico) Children() []world.Configuration {
 											Value: "Always",
 										},
 										{
-											Name:  "FELIX_IPINIPMTU",
-											Value: "",
+											Name: "FELIX_IPINIPMTU",
+											ValueFrom: k8s.ValueFrom{
+												ConfigMapKeyRef: k8s.ConfigMapKeyRef{
+													Name: "calico-config",
+													Key:  "veth_mtu",
+												},
+											},
 										},
 										{
 											Name:  "CALICO_IPV4POOL_CIDR",
@@ -411,6 +443,7 @@ func (c *Calico) Children() []world.Configuration {
 									},
 									LivenessProbe: k8s.Probe{
 										HttpGet: k8s.HttpGet{
+											Host: "localhost",
 											Path: "/liveness",
 											Port: 9099,
 										},
@@ -424,7 +457,7 @@ func (c *Calico) Children() []world.Configuration {
 								},
 								{
 									Name:  "install-cni",
-									Image: "quay.io/calico/cni:v3.3.1",
+									Image: k8s.Image(cniImage.String()),
 									Command: []k8s.Command{
 										"/install-cni.sh",
 									},
@@ -531,14 +564,17 @@ func (c *Calico) Children() []world.Configuration {
 									},
 								},
 							},
-							HostNetwork:        true,
-							ServiceAccountName: "calico-node",
 						},
 					},
 				},
 			},
 		},
 		&k8s.DeploymentConfiguration{
+			Requirements: []world.Configuration{
+				&build.CalicoKubeController{
+					Image: kubeControllersImage,
+				},
+			},
 			Context: c.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
@@ -587,7 +623,7 @@ func (c *Calico) Children() []world.Configuration {
 							Containers: []k8s.Container{
 								{
 									Name:  "calico-kube-controllers",
-									Image: "quay.io/calico/kube-controllers:v3.3.1",
+									Image: k8s.Image(kubeControllersImage.String()),
 									Env: []k8s.Env{
 										{
 											Name: "ETCD_ENDPOINTS",
