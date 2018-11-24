@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package remote
 
 import (
@@ -11,7 +15,7 @@ import (
 )
 
 type Chmod struct {
-	SSH ssh.SSH
+	SSH *ssh.SSH
 
 	Path Path
 	Perm Perm

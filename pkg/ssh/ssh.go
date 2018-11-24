@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package ssh
 
 import (
@@ -6,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"sync"
 
 	"github.com/bborbe/run"
 	"github.com/bborbe/world/pkg/dns"
@@ -13,12 +18,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
-
-type SSH struct {
-	Host           Host
-	PrivateKeyPath PrivateKeyPath
-	User           User
-}
 
 type Host struct {
 	IP   dns.IP
@@ -94,7 +93,16 @@ func (p User) String() string {
 	return string(p)
 }
 
-func (s SSH) Validate(ctx context.Context) error {
+type SSH struct {
+	Host           Host
+	PrivateKeyPath PrivateKeyPath
+	User           User
+
+	mux    sync.Mutex
+	client *ssh.Client
+}
+
+func (s *SSH) Validate(ctx context.Context) error {
 	if err := s.Host.Validate(ctx); err != nil {
 		return err
 	}
@@ -107,30 +115,36 @@ func (s SSH) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (s *SSH) client(ctx context.Context) (*ssh.Client, error) {
-	signer, err := s.PrivateKeyPath.Signer()
-	if err != nil {
-		return nil, errors.Wrap(err, "get signer failed")
+func (s *SSH) getClient(ctx context.Context) (*ssh.Client, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	if s.client == nil {
+		signer, err := s.PrivateKeyPath.Signer()
+		if err != nil {
+			return nil, errors.Wrap(err, "get signer failed")
+		}
+		addr, err := s.Host.Address(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get addr from host failed")
+		}
+		s.client, err = ssh.Dial("tcp", addr, &ssh.ClientConfig{
+			User: s.User.String(),
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(signer),
+			},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "connect host failed")
+		}
 	}
-	addr, err := s.Host.Address(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "get addr from host failed")
-	}
-	client, err := ssh.Dial("tcp", addr, &ssh.ClientConfig{
-		User: s.User.String(),
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "connect host failed")
-	}
-	return client, nil
+
+	return s.client, nil
 }
 
 func (s *SSH) createSession(ctx context.Context) (*ssh.Session, error) {
-	client, err := s.client(ctx)
+	client, err := s.getClient(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get client failed")
 	}
@@ -184,8 +198,8 @@ func (s *SSH) RunCommandStdout(ctx context.Context, command string) ([]byte, err
 			if err != nil {
 				return err
 			}
-			io.Copy(b, stdin)
-			return nil
+			_, err = io.Copy(b, stdin)
+			return errors.Wrap(err, "copy failed")
 		},
 	)
 	if err != nil {
@@ -213,4 +227,12 @@ func runWithout(ctx context.Context, session *ssh.Session, cmd string) error {
 	default:
 		return errors.Wrapf(session.Run(command), "run command failed: %s", command)
 	}
+}
+
+func (s *SSH) Close() {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	s.client.Close()
+	s.client = nil
 }
