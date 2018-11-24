@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package service
 
 import (
@@ -11,10 +15,12 @@ import (
 )
 
 type Kubernetes struct {
-	SSH         ssh.SSH
+	SSH         *ssh.SSH
 	Context     k8s.Context
 	ClusterIP   dns.IP
 	DisableRBAC bool
+	DisableCNI  bool
+	ResolvConf  string
 }
 
 func (k *Kubernetes) Children() []world.Configuration {
@@ -24,10 +30,12 @@ func (k *Kubernetes) Children() []world.Configuration {
 		},
 		&Kubelet{
 			SSH:         k.SSH,
-			Version:     "v1.11.2",
+			Version:     "v1.11.4",
 			Context:     k.Context,
 			ClusterIP:   k.ClusterIP,
 			DisableRBAC: k.DisableRBAC,
+			DisableCNI:  k.DisableCNI,
+			ResolvConf:  k.ResolvConf,
 		},
 	}
 }

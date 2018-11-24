@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package k8s
 
 import (
@@ -5,8 +9,35 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bborbe/world/pkg/validation"
+	"github.com/bborbe/world/pkg/world"
 	"github.com/pkg/errors"
 )
+
+type IngresseConfiguration struct {
+	Context      Context
+	Ingress      Ingress
+	Requirements []world.Configuration
+}
+
+func (d *IngresseConfiguration) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		d.Context,
+		d.Ingress,
+	)
+}
+
+func (d *IngresseConfiguration) Applier() (world.Applier, error) {
+	return &IngressApplier{
+		Context: d.Context,
+		Ingress: d.Ingress,
+	}, nil
+}
+
+func (d *IngresseConfiguration) Children() []world.Configuration {
+	return d.Requirements
+}
 
 type IngressApplier struct {
 	Context Context
@@ -43,7 +74,7 @@ func (s Ingress) String() string {
 	return fmt.Sprintf("%s/%s to %s", s.Kind, s.Metadata.Name, s.Metadata.Namespace)
 }
 
-func (s *Ingress) Validate(ctx context.Context) error {
+func (s Ingress) Validate(ctx context.Context) error {
 	if s.ApiVersion != "extensions/v1beta1" {
 		return errors.New("invalid ApiVersion")
 	}

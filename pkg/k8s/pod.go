@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package k8s
 
 import (
@@ -27,7 +31,7 @@ type Toleration struct {
 
 type PodSpec struct {
 	Tolerations                   []Toleration    `yaml:"tolerations,omitempty"`
-	Containers                    []Container     `yaml:"containers"`
+	Containers                    []Container     `yaml:"containers,omitempty"`
 	Volumes                       []PodVolume     `yaml:"volumes,omitempty"`
 	HostNetwork                   PodHostNetwork  `yaml:"hostNetwork,omitempty"`
 	HostPid                       PodHostPID      `yaml:"hostPID,omitempty"`
@@ -35,6 +39,59 @@ type PodSpec struct {
 	SecurityContext               SecurityContext `yaml:"securityContext,omitempty"`
 	ServiceAccountName            string          `yaml:"serviceAccountName,omitempty"`
 	TerminationGracePeriodSeconds int             `yaml:"terminationGracePeriodSeconds,omitempty"`
+	Affinity                      Affinity        `yaml:"affinity,omitempty"`
+}
+
+type Affinity struct {
+	NodeAffinity    NodeAffinity    `yaml:"nodeAffinity,omitempty"`
+	PodAffinity     PodAffinity     `yaml:"podAffinity,omitempty"`
+	PodAntiAffinity PodAntiAffinity `yaml:"podAntiAffinity,omitempty"`
+}
+
+type NodeAffinity struct {
+	PreferredDuringSchedulingIgnoredDuringExecution []PreferredSchedulingTerm `yaml:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	RequiredDuringSchedulingIgnoredDuringExecution  NodeSelector              `yaml:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
+}
+
+type PreferredSchedulingTerm struct {
+	Preference NodeSelectorTerm `yaml:"preference,omitempty"`
+	Weight     int              `yaml:"weight,omitempty"`
+}
+
+type NodeSelector struct {
+	NodeSelectorTerms []NodeSelectorTerm `yaml:"nodeSelectorTerms,omitempty"`
+}
+
+type NodeSelectorTerm struct {
+	MatchExpressions []NodeSelectorRequirement `yaml:"matchExpressions,omitempty"`
+	MatchFields      []NodeSelectorRequirement `yaml:"matchFields,omitempty"`
+}
+
+type NodeSelectorRequirement struct {
+	Key      string   `yaml:"key,omitempty"`
+	Operator string   `yaml:"operator,omitempty"`
+	Values   []string `yaml:"values,omitempty"`
+}
+
+type PodAffinity struct {
+	PreferredDuringSchedulingIgnoredDuringExecution WeightedPodAffinityTerm `yaml:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	RequiredDuringSchedulingIgnoredDuringExecution  PodAffinityTerm         `yaml:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
+}
+
+type PodAntiAffinity struct {
+	PreferredDuringSchedulingIgnoredDuringExecution WeightedPodAffinityTerm `yaml:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	RequiredDuringSchedulingIgnoredDuringExecution  PodAffinityTerm         `yaml:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
+}
+
+type WeightedPodAffinityTerm struct {
+	PodAffinityTerm PodAffinityTerm `yaml:"podAffinityTerm,omitempty"`
+	Weight          int             `yaml:"weight,omitempty"`
+}
+
+type PodAffinityTerm struct {
+	LabelSelector LabelSelector `yaml:"labelSelector,omitempty"`
+	Namespaces    string        `yaml:"namespaces,omitempty"`
+	TopologyKey   string        `yaml:"topologyKey,omitempty"`
 }
 
 func (c PodSpec) Validate(ctx context.Context) error {
@@ -141,16 +198,22 @@ type PodHostNetwork bool
 
 type PodHostPID bool
 
+type ValueFrom struct {
+	SecretKeyRef    SecretKeyRef    `yaml:"secretKeyRef,omitempty"`
+	FieldRef        FieldRef        `yaml:"fieldRef,omitempty"`
+	ConfigMapKeyRef ConfigMapKeyRef `yaml:"configMapKeyRef,omitempty"`
+}
+
+type SecretKeyRef struct {
+	Key  string `yaml:"key"`
+	Name string `yaml:"name"`
+}
+
 type FieldRef struct {
 	FieldPath string `yaml:"fieldPath"`
 }
 
-type ValueFrom struct {
-	SecretKeyRef SecretKeyRef `yaml:"secretKeyRef,omitempty"`
-	FieldRef     FieldRef     `yaml:"fieldRef,omitempty"`
-}
-
-type SecretKeyRef struct {
+type ConfigMapKeyRef struct {
 	Key  string `yaml:"key"`
 	Name string `yaml:"name"`
 }

@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package app
 
 import (
@@ -341,6 +345,22 @@ func (k *Kafka) kafka() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
+							Affinity: k8s.Affinity{
+								NodeAffinity: k8s.NodeAffinity{
+									RequiredDuringSchedulingIgnoredDuringExecution: k8s.NodeSelector{
+										NodeSelectorTerms: []k8s.NodeSelectorTerm{
+											{
+												MatchExpressions: []k8s.NodeSelectorRequirement{
+													{
+														Key:      "cloud.google.com/gke-preemptible",
+														Operator: "DoesNotExist",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 							Containers: []k8s.Container{
 								{
 									Name:  "cp-kafka-broker",
@@ -587,6 +607,22 @@ func (k *Kafka) rest() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
+							Affinity: k8s.Affinity{
+								NodeAffinity: k8s.NodeAffinity{
+									RequiredDuringSchedulingIgnoredDuringExecution: k8s.NodeSelector{
+										NodeSelectorTerms: []k8s.NodeSelectorTerm{
+											{
+												MatchExpressions: []k8s.NodeSelectorRequirement{
+													{
+														Key:      "cloud.google.com/gke-preemptible",
+														Operator: "DoesNotExist",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 							Containers: []k8s.Container{
 								{
 									Name:  "prometheus-jmx-exporter",
@@ -776,6 +812,22 @@ func (k *Kafka) ksql() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
+							Affinity: k8s.Affinity{
+								NodeAffinity: k8s.NodeAffinity{
+									RequiredDuringSchedulingIgnoredDuringExecution: k8s.NodeSelector{
+										NodeSelectorTerms: []k8s.NodeSelectorTerm{
+											{
+												MatchExpressions: []k8s.NodeSelectorRequirement{
+													{
+														Key:      "cloud.google.com/gke-preemptible",
+														Operator: "DoesNotExist",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 							Containers: []k8s.Container{
 								{
 									Name:  "cp-ksql-server",
@@ -982,6 +1034,22 @@ func (k *Kafka) schemaRegistry() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
+							Affinity: k8s.Affinity{
+								NodeAffinity: k8s.NodeAffinity{
+									RequiredDuringSchedulingIgnoredDuringExecution: k8s.NodeSelector{
+										NodeSelectorTerms: []k8s.NodeSelectorTerm{
+											{
+												MatchExpressions: []k8s.NodeSelectorRequirement{
+													{
+														Key:      "cloud.google.com/gke-preemptible",
+														Operator: "DoesNotExist",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 							Containers: []k8s.Container{
 								{
 									Name:  "prometheus-jmx-exporter",
@@ -1239,6 +1307,22 @@ func (k *Kafka) zookeeper() []world.Configuration {
 							},
 						},
 						Spec: k8s.PodSpec{
+							Affinity: k8s.Affinity{
+								NodeAffinity: k8s.NodeAffinity{
+									RequiredDuringSchedulingIgnoredDuringExecution: k8s.NodeSelector{
+										NodeSelectorTerms: []k8s.NodeSelectorTerm{
+											{
+												MatchExpressions: []k8s.NodeSelectorRequirement{
+													{
+														Key:      "cloud.google.com/gke-preemptible",
+														Operator: "DoesNotExist",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 							Containers: []k8s.Container{
 								{
 									Name:  "cp-zookeeper-server",

@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package cluster
 
 import (
@@ -16,10 +20,11 @@ type Sun struct {
 	Context     k8s.Context
 	ClusterIP   dns.IP
 	DisableRBAC bool
+	DisableCNI  bool
 }
 
 func (s *Sun) Children() []world.Configuration {
-	ssh := ssh.SSH{
+	ssh := &ssh.SSH{
 		Host: ssh.Host{
 			IP:   s.ClusterIP,
 			Port: 22,
@@ -49,6 +54,7 @@ func (s *Sun) Children() []world.Configuration {
 			Context:     s.Context,
 			ClusterIP:   s.ClusterIP,
 			DisableRBAC: s.DisableRBAC,
+			DisableCNI:  s.DisableCNI,
 		},
 	}
 }

@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package service
 
 import (
@@ -32,11 +36,13 @@ const clientKey = "client-key.pem"
 const clientCert = "client-cert.pem"
 
 type Kubelet struct {
-	SSH         ssh.SSH
+	SSH         *ssh.SSH
 	Version     docker.Tag
 	Context     k8s.Context
 	ClusterIP   dns.IP
 	DisableRBAC bool
+	DisableCNI  bool
+	ResolvConf  string
 }
 
 func (k *Kubelet) Children() []world.Configuration {
@@ -189,40 +195,53 @@ func (k *Kubelet) Children() []world.Configuration {
 				if err != nil {
 					return nil, errors.Wrap(err, "get ip failed")
 				}
+
+				args := []string{
+					"kubelet",
+					"--fail-swap-on=false",
+					fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
+					"--containerized",
+					"--register-node=true",
+					"--allow-privileged=true",
+					"--pod-manifest-path=/etc/kubernetes/manifests",
+					fmt.Sprintf("--hostname-override=%s", ip.String()),
+					"--cluster-dns=10.103.0.10",
+					"--cluster-domain=cluster.local",
+					"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
+					"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
+					"--v=0",
+				}
+				if k.ResolvConf != "" {
+					args = append(args, fmt.Sprintf("--resolv-conf=%s", k.ResolvConf))
+				}
+				if !k.DisableCNI {
+					args = append(args, "--network-plugin=cni", "--cni-conf-dir=/etc/cni/net.d", "--cni-bin-dir=/opt/cni/bin")
+				}
+				volumes := []string{
+					"/:/rootfs:ro",
+					"/sys:/sys:ro",
+					"/var/log/:/var/log:rw",
+					"/var/lib/docker/:/var/lib/docker:rw",
+					"/var/lib/kubelet/:/var/lib/kubelet:rw,rslave",
+					"/run:/run:rw",
+					"/var/run:/var/run:rw",
+					"/etc/kubernetes:/etc/kubernetes",
+					"/srv/kubernetes:/srv/kubernetes",
+				}
+				if !k.DisableCNI {
+					volumes = append(volumes, "/etc/cni/net.d:/etc/cni/net.d", "/opt/cni/bin:/opt/cni/bin", "/var/lib/calico:/var/lib/calico")
+				}
+
 				return &DockerServiceContent{
 					Name:       "kubelet",
 					Memory:     2048,
 					HostNet:    true,
 					HostPid:    true,
 					Privileged: true,
-					Volumes: []string{
-						"/:/rootfs:ro",
-						"/sys:/sys:ro",
-						"/var/log/:/var/log:rw",
-						"/var/lib/docker/:/var/lib/docker:rw",
-						"/var/lib/kubelet/:/var/lib/kubelet:rw,rslave",
-						"/run:/run:rw",
-						"/var/run:/var/run:rw",
-						"/etc/kubernetes:/etc/kubernetes",
-						"/srv/kubernetes:/srv/kubernetes",
-					},
-					Image:   k.hyperkubeImage(),
-					Command: "/hyperkube",
-					Args: []string{
-						"kubelet",
-						"--fail-swap-on=false",
-						fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
-						"--containerized",
-						"--register-node=true",
-						"--allow-privileged=true",
-						"--pod-manifest-path=/etc/kubernetes/manifests",
-						fmt.Sprintf("--hostname-override=%s", ip.String()),
-						"--cluster-dns=10.103.0.10",
-						"--cluster-domain=cluster.local",
-						"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
-						"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
-						"--v=0",
-					},
+					Volumes:    volumes,
+					Image:      k.hyperkubeImage(),
+					Command:    "/hyperkube",
+					Args:       args,
 				}, nil
 			},
 		},
@@ -306,7 +325,7 @@ spec:
     - --service-cluster-ip-range=10.103.0.0/16
     - --secure-port=6443
     - --advertise-address={{.ClusterIP}}
-    - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,DefaultStorageClass,ResourceQuota
+    - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
     - --tls-cert-file=/etc/kubernetes/ssl/node.pem
     - --tls-private-key-file=/etc/kubernetes/ssl/node-key.pem
     - --client-ca-file=/etc/kubernetes/ssl/ca.pem

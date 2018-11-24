@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package docker
 
 import (
@@ -25,7 +29,7 @@ func TestUploaderCallsUrl(t *testing.T) {
 			Tag:        "1.0.6",
 		},
 	}
-	u.Satisfied(context.Background())
+	_, _ = u.Satisfied(context.Background())
 	if !called {
 		t.Fatal("get not called")
 	}

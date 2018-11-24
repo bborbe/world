@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package docker
 
 import (
@@ -34,7 +38,7 @@ type GolangBuilder struct {
 func (g *GolangBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("building golang docker image %s ...", g.Name)
 	tmpl, err := template.New("template").Parse(`
-FROM golang:1.10 AS build
+FROM golang:1.11.1 AS build
 RUN git clone --branch {{.Tag}} --single-branch --depth 1 {{.GitRepo}} ./src/{{.SourceDirectory}} 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o /{{.Name}} ./src/{{.Package}}
 

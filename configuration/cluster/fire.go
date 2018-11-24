@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package cluster
 
 import (
@@ -16,10 +20,11 @@ type Fire struct {
 	Context     k8s.Context
 	ClusterIP   dns.IP
 	DisableRBAC bool
+	DisableCNI  bool
 }
 
 func (f *Fire) Children() []world.Configuration {
-	ssh := ssh.SSH{
+	ssh := &ssh.SSH{
 		Host: ssh.Host{
 			IP:   f.ClusterIP,
 			Port: 22,
@@ -49,6 +54,8 @@ func (f *Fire) Children() []world.Configuration {
 			Context:     f.Context,
 			ClusterIP:   f.ClusterIP,
 			DisableRBAC: f.DisableRBAC,
+			DisableCNI:  f.DisableCNI,
+			ResolvConf:  "/run/systemd/resolve/resolv.conf",
 		},
 	}
 }

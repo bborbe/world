@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package service
 
 import (
@@ -11,7 +15,7 @@ import (
 )
 
 type Etcd struct {
-	SSH ssh.SSH
+	SSH *ssh.SSH
 }
 
 func (e *Etcd) Children() []world.Configuration {

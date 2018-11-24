@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package hetzner
 
 import (
@@ -13,7 +17,9 @@ func TestUserData(t *testing.T) {
 	tempFile, err := ioutil.TempFile("", "")
 	tempFile.WriteString("hello world")
 	tempFile.Close()
-	defer os.Remove(tempFile.Name())
+	defer func() {
+		_ = os.Remove(tempFile.Name())
+	}()
 	s := Server{
 		User:          ssh.User("tester"),
 		PublicKeyPath: ssh.PublicKeyPath(tempFile.Name()),

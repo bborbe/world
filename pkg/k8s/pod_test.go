@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package k8s_test
 
 import (
@@ -25,8 +29,7 @@ var _ = Describe("Pod", func() {
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(p)
 		Expect(err).To(BeNil())
-		Expect(b.String()).To(Equal(`containers: []
-volumes:
+		Expect(b.String()).To(Equal(`volumes:
 - name: foo
   emptyDir: {}
 `))
@@ -46,8 +49,7 @@ volumes:
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(p)
 		Expect(err).To(BeNil())
-		Expect(b.String()).To(Equal(`containers: []
-volumes:
+		Expect(b.String()).To(Equal(`volumes:
 - name: foo
   nfs:
     path: /path
@@ -74,8 +76,7 @@ volumes:
 		b := &bytes.Buffer{}
 		err := yaml.NewEncoder(b).Encode(p)
 		Expect(err).To(BeNil())
-		Expect(b.String()).To(Equal(`containers: []
-volumes:
+		Expect(b.String()).To(Equal(`volumes:
 - name: foo
   configMap:
     name: source
@@ -104,6 +105,37 @@ volumes:
 requests:
   cpu: "3"
   memory: "4"
+`))
+	})
+	It("encode affinity", func() {
+		p := k8s.PodSpec{
+			Affinity: k8s.Affinity{
+				NodeAffinity: k8s.NodeAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: k8s.NodeSelector{
+						NodeSelectorTerms: []k8s.NodeSelectorTerm{
+							{
+								MatchExpressions: []k8s.NodeSelectorRequirement{
+									{
+										Key:      "cloud.google.com/gke-preemptible",
+										Operator: "DoesNotExist",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		b := &bytes.Buffer{}
+		err := yaml.NewEncoder(b).Encode(p)
+		Expect(err).To(BeNil())
+		Expect(b.String()).To(Equal(`affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: cloud.google.com/gke-preemptible
+          operator: DoesNotExist
 `))
 	})
 })

@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package world
 
 import (
@@ -15,7 +19,7 @@ type ApplierBuilder struct {
 func (a *ApplierBuilder) Satisfied(ctx context.Context) (bool, error) {
 	applier, err := a.Build(ctx)
 	if err != nil {
-		errors.Wrap(err, "build applier failed")
+		return false, errors.Wrap(err, "build applier failed")
 	}
 	return applier.Satisfied(ctx)
 }
@@ -23,7 +27,7 @@ func (a *ApplierBuilder) Satisfied(ctx context.Context) (bool, error) {
 func (a *ApplierBuilder) Apply(ctx context.Context) error {
 	applier, err := a.Build(ctx)
 	if err != nil {
-		errors.Wrap(err, "build applier failed")
+		return errors.Wrap(err, "build applier failed")
 	}
 	return applier.Apply(ctx)
 }

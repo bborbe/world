@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package app
 
 import (
@@ -45,7 +49,7 @@ func (k *KafkaLatestVersions) Children() []world.Configuration {
 func (k *KafkaLatestVersions) app() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/kafka-latest-versions",
-		Tag:        "2.1.0",
+		Tag:        "2.3.0",
 	}
 	port := deployer.Port{
 		Port:     8080,
@@ -145,18 +149,18 @@ func (k *KafkaLatestVersions) app() []world.Configuration {
 									},
 									LivenessProbe: k8s.Probe{
 										HttpGet: k8s.HttpGet{
-											Path:   "/",
+											Path:   "/healthz",
 											Port:   port.Port,
 											Scheme: "HTTP",
 										},
-										InitialDelaySeconds: 60,
+										InitialDelaySeconds: 10,
 										SuccessThreshold:    1,
 										FailureThreshold:    5,
 										TimeoutSeconds:      5,
 									},
 									ReadinessProbe: k8s.Probe{
 										HttpGet: k8s.HttpGet{
-											Path:   "/",
+											Path:   "/readiness",
 											Port:   port.Port,
 											Scheme: "HTTP",
 										},

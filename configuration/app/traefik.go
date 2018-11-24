@@ -1,3 +1,7 @@
+// Copyright (c) 2018 Benjamin Borbe All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package app
 
 import (
@@ -65,7 +69,7 @@ func (t *Traefik) Children() []world.Configuration {
 	}
 	exporterImage := docker.Image{
 		Repository: "bborbe/traefik-certificate-extractor",
-		Tag:        "latest",
+		Tag:        "v1.2.2",
 	}
 	var acmeVolume k8s.PodVolume
 	if t.SSL {
@@ -274,13 +278,13 @@ func (t *Traefik) Children() []world.Configuration {
 						},
 						Mounts: []k8s.ContainerMount{
 							{
-								Name: "acme",
-								Path: "/app/data",
+								Name:     "acme",
+								Path:     "/app/data",
+								ReadOnly: true,
 							},
 							{
-								Name:     "certs",
-								Path:     "/app/certs",
-								ReadOnly: true,
+								Name: "certs",
+								Path: "/app/certs",
 							},
 						},
 					},

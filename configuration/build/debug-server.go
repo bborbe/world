@@ -12,31 +12,33 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type TraefikCertificateExtractor struct {
+type DebugServer struct {
 	Image docker.Image
 }
 
-func (t *TraefikCertificateExtractor) Validate(ctx context.Context) error {
+func (t *DebugServer) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Image,
 	)
 }
 
-func (t *TraefikCertificateExtractor) Children() []world.Configuration {
+func (p *DebugServer) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
-			&docker.Builder{
-				GitRepo:   "https://github.com/DanielHuisman/traefik-certificate-extractor.git",
-				GitBranch: docker.GitBranch(t.Image.Tag),
-				Image:     t.Image,
+			&docker.GolangBuilder{
+				Name:            "debug-server",
+				GitRepo:         "https://github.com/bborbe/debug-server.git",
+				SourceDirectory: "github.com/bborbe/debug-server",
+				Package:         "github.com/bborbe/debug-server",
+				Image:           p.Image,
 			},
 		},
 	}
 }
 
-func (t *TraefikCertificateExtractor) Applier() (world.Applier, error) {
+func (p *DebugServer) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: t.Image,
+		Image: p.Image,
 	}, nil
 }
