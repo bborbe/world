@@ -618,7 +618,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"now": &app.Now{
 			Context: context,
-			Tag:     "1.2.1",
+			Tag:     "1.3.0",
 			Domains: k8s.IngressHosts{
 				"now.benjamin-borbe.de",
 			},
