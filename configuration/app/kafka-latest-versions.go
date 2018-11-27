@@ -49,7 +49,7 @@ func (k *KafkaLatestVersions) Children() []world.Configuration {
 func (k *KafkaLatestVersions) app() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/kafka-latest-versions",
-		Tag:        "2.3.0",
+		Tag:        "2.4.1",
 	}
 	port := deployer.Port{
 		Port:     8080,
