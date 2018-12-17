@@ -7,6 +7,8 @@ package deployer
 import (
 	"context"
 	"encoding/base64"
+	"io/ioutil"
+	"os"
 
 	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world/pkg/k8s"
@@ -194,4 +196,22 @@ func (i *SecretDeployer) secret() (*k8s.Secret, error) {
 		secret.Data[k] = base64.StdEncoding.EncodeToString(value)
 	}
 	return secret, nil
+}
+
+type SecretFromFile struct {
+	Path string
+}
+
+func (s SecretFromFile) Validate(ctx context.Context) error {
+	if s.Path == "" {
+		return errors.New("Path missing")
+	}
+	if _, err := os.Stat(s.Path); os.IsNotExist(err) {
+		return errors.Errorf("file not found %s", s.Path)
+	}
+	return nil
+}
+
+func (s *SecretFromFile) Value() ([]byte, error) {
+	return ioutil.ReadFile(s.Path)
 }
