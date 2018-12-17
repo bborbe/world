@@ -128,6 +128,7 @@ func (w *World) hetzner() map[AppName]world.Configuration {
 }
 func (w *World) clusterOne() map[AppName]world.Configuration {
 	context := k8s.Context("gke_smedia-kubernetes_europe-west1-d_cluster-1")
+	nfsServer := k8s.PodNfsServer("10.15.48.11")
 	return map[AppName]world.Configuration{
 		"kafka": &app.Kafka{
 			AccessMode:        "ReadWriteOnce",
@@ -139,6 +140,7 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 			StorageClass:      "standard",
 			ZookeeperReplicas: 1,
 			ZookeeperStorage:  "5Gi",
+			Version:           "5.0.0",
 		},
 		"kafka-sample": &app.KafkaSample{
 			Context: context,
@@ -169,6 +171,7 @@ func (w *World) clusterTwo() map[AppName]world.Configuration {
 			StorageClass:      "standard",
 			ZookeeperReplicas: 1,
 			ZookeeperStorage:  "5Gi",
+			Version:           "5.0.0",
 		},
 	}
 }
@@ -336,6 +339,27 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				),
 			},
 		},
+		"metabase": &app.Metabase{
+			Context:          context,
+			NfsServer:        nfsServer,
+			NfsPrefix:        "/data",
+			Domain:           "metabase.benjamin-borbe.de",
+			DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: dns.Host("metabase.benjamin-borbe.de"),
+								IP:   dns.IPStatic(ip.String()),
+							},
+						},
+					},
+				),
+			},
+		},
 		"grafana": &app.Grafana{
 			Context:      context,
 			NfsServer:    nfsServer,
@@ -376,6 +400,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			StorageClass:      "hostpath",
 			ZookeeperReplicas: 1,
 			ZookeeperStorage:  "5Gi",
+			Version:           "5.1.0",
 		},
 		"kafka-latest-versions": &app.KafkaLatestVersions{
 			Context:      context,
@@ -529,6 +554,11 @@ func (w *World) netcup() map[AppName]world.Configuration {
 					Subject:    "Monitoring Result: HM",
 					GitRepoUrl: "https://bborbereadonly@bitbucket.org/bborbe/monitoring_hm.git",
 				},
+				{
+					Name:       "work",
+					Subject:    "Monitoring Result: Work",
+					GitRepoUrl: "https://bborbereadonly@bitbucket.org/bborbe/monitoring_work.git",
+				},
 			},
 		},
 		//"proxy": &app.Proxy{
@@ -560,7 +590,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"poste": &app.Poste{
 			Context:      context,
 			NfsServer:    nfsServer,
-			PosteVersion: "2.0.18",
+			PosteVersion: "2.0.20",
 			Domains: k8s.IngressHosts{
 				"mail.benjamin-borbe.de",
 			},

@@ -26,6 +26,7 @@ type Kafka struct {
 	StorageClass      k8s.StorageClassName
 	ZookeeperReplicas k8s.Replicas
 	ZookeeperStorage  k8s.Storage
+	Version           docker.Tag
 }
 
 func (k *Kafka) Validate(ctx context.Context) error {
@@ -36,6 +37,7 @@ func (k *Kafka) Validate(ctx context.Context) error {
 		k.AccessMode,
 		k.ZookeeperReplicas,
 		k.KafkaReplicas,
+		k.Version,
 	)
 }
 func (k *Kafka) Children() []world.Configuration {
@@ -68,7 +70,7 @@ func (k *Kafka) Children() []world.Configuration {
 func (k *Kafka) connect() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-kafka-connect",
-		Tag:        "5.0.0",
+		Tag:        k.Version,
 	}
 	return []world.Configuration{
 		&build.CpKafkaConnect{
@@ -302,7 +304,7 @@ func (k *Kafka) connect() []world.Configuration {
 func (k *Kafka) kafka() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-kafka",
-		Tag:        "5.0.0",
+		Tag:        k.Version,
 	}
 	return []world.Configuration{
 		&build.CpKafka{
@@ -570,7 +572,7 @@ func (k *Kafka) kafka() []world.Configuration {
 func (k *Kafka) rest() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-kafka-rest",
-		Tag:        "5.0.0",
+		Tag:        k.Version,
 	}
 	return []world.Configuration{
 		&build.CpKafkaRest{
@@ -770,7 +772,7 @@ func (k *Kafka) rest() []world.Configuration {
 func (k *Kafka) ksql() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-ksql-server",
-		Tag:        "5.0.0",
+		Tag:        k.Version,
 	}
 	return []world.Configuration{
 		&build.CpKafkaKsql{
@@ -992,7 +994,7 @@ func (k *Kafka) ksql() []world.Configuration {
 func (k *Kafka) schemaRegistry() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-schema-registry",
-		Tag:        "5.0.0",
+		Tag:        k.Version,
 	}
 	return []world.Configuration{
 		&build.CpKafkaSchemaRegistry{
@@ -1200,7 +1202,7 @@ func (k *Kafka) schemaRegistry() []world.Configuration {
 func (k *Kafka) zookeeper() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-zookeeper",
-		Tag:        "5.0.0",
+		Tag:        k.Version,
 	}
 	var zookeeperServerLists []string
 	for i := k8s.Replicas(0); i < k.ZookeeperReplicas; i++ {
@@ -1549,6 +1551,7 @@ func (k *Kafka) zookeeper() []world.Configuration {
 		},
 	}
 }
+
 func (k *Kafka) Applier() (world.Applier, error) {
 	return nil, nil
 }
