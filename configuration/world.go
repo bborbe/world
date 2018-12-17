@@ -148,6 +148,12 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 			Context: context,
 			Domain:  "debug.lab.seibert-media.net",
 		},
+		"metabase": &app.Metabase{
+			Context:          context,
+			NfsServer:        nfsServer,
+			Domain:           "metabase.lab.seibert-media.net",
+			DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
+		},
 	}
 }
 func (w *World) clusterTwo() map[AppName]world.Configuration {
