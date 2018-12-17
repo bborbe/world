@@ -311,7 +311,7 @@ func (p *Postgres) Children() []world.Configuration {
 				{
 					Name: "backup",
 					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/confluence-postgres-backup",
+						Path:   k8s.PodNfsPath(p.BackupNfsPath),
 						Server: k8s.PodNfsServer(p.DataNfsServer),
 					},
 				},
