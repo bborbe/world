@@ -30,7 +30,7 @@ func (k *Kubernetes) Children() []world.Configuration {
 		},
 		&Kubelet{
 			SSH:         k.SSH,
-			Version:     "v1.11.4",
+			Version:     "v1.11.5",
 			Context:     k.Context,
 			ClusterIP:   k.ClusterIP,
 			DisableRBAC: k.DisableRBAC,
