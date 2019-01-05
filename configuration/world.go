@@ -9,7 +9,7 @@ import (
 
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/cluster"
-	"github.com/bborbe/world/configuration/serivce"
+	service "github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
@@ -145,6 +145,11 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 		"kafka-sample": &app.KafkaSample{
 			Context: context,
 			Domain:  "kafka-sample.lab.seibert-media.net",
+		},
+		"kafka-status": &app.KafkaStatus{
+			Context:  context,
+			Replicas: 1,
+			Domain:   "kafka-status.lab.seibert-media.net",
 		},
 		"debug": &app.Debug{
 			Context: context,
@@ -402,6 +407,25 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			ZookeeperStorage:  "5Gi",
 			Version:           "5.1.0",
 		},
+		"kafka-status": &app.KafkaStatus{
+			Context:  context,
+			Replicas: 1,
+			Domain:   "kafka-status.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: dns.Host("kafka-status.benjamin-borbe.de"),
+								IP:   dns.IPStatic(ip.String()),
+							},
+						},
+					},
+				),
+			},
+		},
 		"kafka-latest-versions": &app.KafkaLatestVersions{
 			Context:      context,
 			Replicas:     2,
@@ -590,7 +614,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"poste": &app.Poste{
 			Context:      context,
 			NfsServer:    nfsServer,
-			PosteVersion: "2.0.20",
+			PosteVersion: "2.0.23", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				"mail.benjamin-borbe.de",
 			},
