@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/configuration/serivce"
+	service "github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"

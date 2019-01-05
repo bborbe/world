@@ -7,7 +7,7 @@ package cluster
 import (
 	"context"
 
-	"github.com/bborbe/world/configuration/serivce"
+	service "github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/remote"

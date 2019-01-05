@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/bborbe/http/client_builder"
-	"github.com/bborbe/teamvault-utils"
+	teamvault "github.com/bborbe/teamvault-utils"
 	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
 	"github.com/bborbe/world/configuration"
 	"github.com/bborbe/world/pkg/k8s"

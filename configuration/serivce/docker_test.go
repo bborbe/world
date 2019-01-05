@@ -7,7 +7,7 @@ package service_test
 import (
 	"context"
 
-	"github.com/bborbe/world/configuration/serivce"
+	service "github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/docker"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

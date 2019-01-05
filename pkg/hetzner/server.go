@@ -16,7 +16,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type ApiKey string
