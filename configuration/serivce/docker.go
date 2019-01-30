@@ -65,30 +65,47 @@ func (d *Docker) Validate(ctx context.Context) error {
 }
 
 type DockerServiceContent struct {
-	Name       remote.ServiceName
-	Ports      []int
-	Volumes    []string
-	Image      docker.Image
-	Command    string
-	Args       []string
-	Memory     Memory
-	HostNet    bool
-	Privileged bool
-	HostPid    bool
+	Name            remote.ServiceName
+	Ports           []int
+	Volumes         []string
+	Image           docker.Image
+	Command         string
+	Args            []string
+	Memory          Memory
+	HostNet         bool
+	Privileged      bool
+	HostPid         bool
+	Requires        []remote.ServiceName
+	Before          []remote.ServiceName
+	After           []remote.ServiceName
+	TimeoutStartSec string
+	TimeoutStopSec  string
 }
 
 func (d *DockerServiceContent) Content(ctx context.Context) ([]byte, error) {
 	b := &bytes.Buffer{}
 	fmt.Fprintf(b, "[Unit]\n")
 	fmt.Fprintf(b, "Description=%s\n", d.Name)
-	fmt.Fprintf(b, "Requires=docker.service\n")
-	fmt.Fprintf(b, "After=docker.service\n")
+	for _, service := range d.Requires {
+		fmt.Fprintf(b, "Requires=%s\n", service)
+	}
+	for _, service := range d.After {
+		fmt.Fprintf(b, "After=%s\n", service)
+	}
+	for _, service := range d.Before {
+		fmt.Fprintf(b, "Before=%s\n", service)
+	}
 	fmt.Fprintf(b, "\n")
 	fmt.Fprintf(b, "[Service]\n")
+	fmt.Fprintf(b, "EnvironmentFile=/etc/environment\n")
 	fmt.Fprintf(b, "Restart=always\n")
 	fmt.Fprintf(b, "RestartSec=20s\n")
-	fmt.Fprintf(b, "EnvironmentFile=/etc/environment\n")
-	fmt.Fprintf(b, "TimeoutStartSec=0\n")
+	if d.TimeoutStartSec != "" {
+		fmt.Fprintf(b, "TimeoutStartSec=%s\n", d.TimeoutStartSec)
+	}
+	if d.TimeoutStopSec != "" {
+		fmt.Fprintf(b, "TimeoutStopSec=%s\n", d.TimeoutStopSec)
+	}
 	fmt.Fprintf(b, "ExecStartPre=-/usr/bin/docker kill %s\n", d.Name)
 	fmt.Fprintf(b, "ExecStartPre=-/usr/bin/docker rm %s\n", d.Name)
 	fmt.Fprintf(b, "ExecStart=/usr/bin/docker run \\\n")

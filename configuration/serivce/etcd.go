@@ -7,6 +7,8 @@ package service
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/remote"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/ssh"
@@ -21,7 +23,7 @@ type Etcd struct {
 func (e *Etcd) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/etcd",
-		Tag:        "v3.3.1",
+		Tag:        "v3.3.11",
 	}
 	return []world.Configuration{
 		&build.Etcd{
@@ -56,6 +58,15 @@ func (e *Etcd) Children() []world.Configuration {
 						"--listen-peer-urls http://0.0.0.0:2380",
 						"--name kubernetes",
 					},
+					Requires: []remote.ServiceName{
+						"docker.service",
+					},
+					After: []remote.ServiceName{
+						"docker.service",
+					},
+					Before:          nil,
+					TimeoutStartSec: "20s",
+					TimeoutStopSec:  "20s",
 				}, nil
 			},
 		},

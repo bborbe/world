@@ -231,7 +231,6 @@ func (k *Kubelet) Children() []world.Configuration {
 				if !k.DisableCNI {
 					volumes = append(volumes, "/etc/cni/net.d:/etc/cni/net.d", "/opt/cni/bin:/opt/cni/bin", "/var/lib/calico:/var/lib/calico")
 				}
-
 				return &DockerServiceContent{
 					Name:       "kubelet",
 					Memory:     2048,
@@ -242,6 +241,15 @@ func (k *Kubelet) Children() []world.Configuration {
 					Image:      k.hyperkubeImage(),
 					Command:    "/hyperkube",
 					Args:       args,
+					Requires: []remote.ServiceName{
+						"etcd.service",
+					},
+					After: []remote.ServiceName{
+						"etcd.service",
+					},
+					Before:          nil,
+					TimeoutStartSec: "20s",
+					TimeoutStopSec:  "20s",
 				}, nil
 			},
 		},

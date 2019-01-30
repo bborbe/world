@@ -7,6 +7,8 @@ package service_test
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/remote"
+
 	service "github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/docker"
 	. "github.com/onsi/ginkgo"
@@ -36,19 +38,32 @@ var _ = Describe("Docker", func() {
 				"--listen-peer-urls http://0.0.0.0:2380",
 				"--name kubernetes",
 			},
+			Requires: []remote.ServiceName{
+				"requires.service",
+			},
+			After: []remote.ServiceName{
+				"after.service",
+			},
+			Before: []remote.ServiceName{
+				"before.service",
+			},
+			TimeoutStartSec: "30s",
+			TimeoutStopSec:  "10s",
 		}
 		bytes, err := service.Content(context.Background())
 		Expect(err).To(BeNil())
 		Expect(string(bytes)).To(Equal(`[Unit]
 Description=etcd
-Requires=docker.service
-After=docker.service
+Requires=requires.service
+After=after.service
+Before=before.service
 
 [Service]
+EnvironmentFile=/etc/environment
 Restart=always
 RestartSec=20s
-EnvironmentFile=/etc/environment
-TimeoutStartSec=0
+TimeoutStartSec=30s
+TimeoutStopSec=10s
 ExecStartPre=-/usr/bin/docker kill etcd
 ExecStartPre=-/usr/bin/docker rm etcd
 ExecStart=/usr/bin/docker run \
