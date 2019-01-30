@@ -55,6 +55,7 @@ func (s *Sun) Children() []world.Configuration {
 			ClusterIP:   s.ClusterIP,
 			DisableRBAC: s.DisableRBAC,
 			DisableCNI:  s.DisableCNI,
+			ResolvConf:  "/run/systemd/resolve/resolv.conf",
 		},
 	}
 }
