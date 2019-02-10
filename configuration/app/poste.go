@@ -120,11 +120,11 @@ func (p *Poste) Children() []world.Configuration {
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
 							Cpu:    "1500m",
-							Memory: "750Mi",
+							Memory: "1000Mi",
 						},
 						Requests: k8s.ContainerResource{
-							Cpu:    "100m",
-							Memory: "100Mi",
+							Cpu:    "250m",
+							Memory: "500Mi",
 						},
 					},
 					Image: image,
