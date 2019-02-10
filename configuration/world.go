@@ -63,11 +63,11 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 		"sun":       w.sun(),
 		"fire":      w.fire(),
 		"nuke":      w.nuke(),
-		"hetzner":   w.hetzner(),
+		"hetzner-1": w.hetzner1(),
 	}
 }
 
-func (w *World) hetzner() map[AppName]world.Configuration {
+func (w *World) hetzner1() map[AppName]world.Configuration {
 	context := k8s.Context("hetzner-1")
 	apiKey := w.TeamvaultSecrets.Password("kLolmq")
 	ip := &hetzner.IP{
@@ -76,9 +76,10 @@ func (w *World) hetzner() map[AppName]world.Configuration {
 	}
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Hetzner{
-			Context: context,
-			ApiKey:  apiKey,
-			IP:      ip,
+			Context:    context,
+			ApiKey:     apiKey,
+			IP:         ip,
+			ServerType: "cx11",
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: context,
