@@ -72,16 +72,17 @@ type HasContainer interface {
 }
 
 type DeploymentDeployer struct {
-	Context      k8s.Context
-	Namespace    k8s.NamespaceName
-	Name         k8s.MetadataName
-	Containers   []HasContainer
-	Volumes      []k8s.PodVolume
-	HostNetwork  k8s.PodHostNetwork
-	Requirements []world.Configuration
-	DnsPolicy    k8s.PodDnsPolicy
-	Labels       k8s.Labels
-	Strategy     k8s.DeploymentStrategy
+	Context            k8s.Context
+	Namespace          k8s.NamespaceName
+	Name               k8s.MetadataName
+	Containers         []HasContainer
+	Volumes            []k8s.PodVolume
+	HostNetwork        k8s.PodHostNetwork
+	Requirements       []world.Configuration
+	DnsPolicy          k8s.PodDnsPolicy
+	Labels             k8s.Labels
+	Strategy           k8s.DeploymentStrategy
+	ServiceAccountName string
 }
 
 func (w *DeploymentDeployer) Validate(ctx context.Context) error {
@@ -183,10 +184,11 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 					},
 				},
 				Spec: k8s.PodSpec{
-					Containers:  d.containers(),
-					Volumes:     d.Volumes,
-					HostNetwork: d.HostNetwork,
-					DnsPolicy:   d.DnsPolicy,
+					Containers:         d.containers(),
+					Volumes:            d.Volumes,
+					HostNetwork:        d.HostNetwork,
+					DnsPolicy:          d.DnsPolicy,
+					ServiceAccountName: d.ServiceAccountName,
 				},
 			},
 		},
