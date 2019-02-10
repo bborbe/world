@@ -57,8 +57,8 @@ func (w *World) Validate(ctx context.Context) error {
 
 func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration {
 	return map[ClusterName]map[AppName]world.Configuration{
-		"cluster-1": w.clusterOne(),
-		"cluster-2": w.clusterTwo(),
+		"cluster-1": w.cluster1(),
+		"cluster-2": w.cluster2(),
 		"netcup":    w.netcup(),
 		"sun":       w.sun(),
 		"fire":      w.fire(),
@@ -127,7 +127,8 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		},
 	}
 }
-func (w *World) clusterOne() map[AppName]world.Configuration {
+
+func (w *World) cluster1() map[AppName]world.Configuration {
 	context := k8s.Context("gke_smedia-kubernetes_europe-west1-d_cluster-1")
 	nfsServer := k8s.PodNfsServer("10.15.48.11")
 	return map[AppName]world.Configuration{
@@ -141,7 +142,7 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 			StorageClass:      "standard",
 			ZookeeperReplicas: 1,
 			ZookeeperStorage:  "5Gi",
-			Version:           "5.0.0",
+			Version:           "5.0.1",
 		},
 		"kafka-sample": &app.KafkaSample{
 			Context: context,
@@ -164,7 +165,8 @@ func (w *World) clusterOne() map[AppName]world.Configuration {
 		},
 	}
 }
-func (w *World) clusterTwo() map[AppName]world.Configuration {
+
+func (w *World) cluster2() map[AppName]world.Configuration {
 	context := k8s.Context("gke_smedia-kubernetes_europe-west1-d_cluster-2")
 	return map[AppName]world.Configuration{
 		"kafka": &app.Kafka{
@@ -177,10 +179,11 @@ func (w *World) clusterTwo() map[AppName]world.Configuration {
 			StorageClass:      "standard",
 			ZookeeperReplicas: 1,
 			ZookeeperStorage:  "5Gi",
-			Version:           "5.0.0",
+			Version:           "5.0.1",
 		},
 	}
 }
+
 func (w *World) fire() map[AppName]world.Configuration {
 	context := k8s.Context("fire")
 	nfsServer := k8s.PodNfsServer("192.168.178.3")
@@ -218,6 +221,7 @@ func (w *World) fire() map[AppName]world.Configuration {
 		},
 	}
 }
+
 func (w *World) nuke() map[AppName]world.Configuration {
 	context := k8s.Context("nuke")
 	nfsServer := k8s.PodNfsServer("192.168.178.5")
@@ -255,9 +259,10 @@ func (w *World) nuke() map[AppName]world.Configuration {
 		},
 	}
 }
+
 func (w *World) sun() map[AppName]world.Configuration {
 	context := k8s.Context("sun")
-	nfsServer := k8s.PodNfsServer("172.16.72.1")
+	nfsServer := k8s.PodNfsServer("192.168.2.3")
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Sun{
 			Context:   context,
@@ -314,18 +319,22 @@ func (w *World) sun() map[AppName]world.Configuration {
 		},
 	}
 }
+
 func (w *World) netcup() map[AppName]world.Configuration {
 	context := k8s.Context("netcup")
 	nfsServer := k8s.PodNfsServer("185.170.112.48")
-	ip := k8s.ClusterIP("185.170.112.48")
+	ip := dns.IPStatic("185.170.112.48")
 	return map[AppName]world.Configuration{
-		"cluster": &cluster.Netcup{},
+		"cluster": &cluster.Netcup{
+			Context: context,
+			IP:      ip,
+		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: context,
 		},
 		"calico": &service.Calico{
 			Context:   context,
-			ClusterIP: dns.IPStatic("185.170.112.48"),
+			ClusterIP: ip,
 		},
 		"debug": &app.Debug{
 			Context: context,
@@ -338,7 +347,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("debug.benjamin-borbe.de"),
-								IP:   dns.IPStatic(ip.String()),
+								IP:   ip,
 							},
 						},
 					},
@@ -359,7 +368,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("metabase.benjamin-borbe.de"),
-								IP:   dns.IPStatic(ip.String()),
+								IP:   ip,
 							},
 						},
 					},
@@ -380,7 +389,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("grafana.benjamin-borbe.de"),
-								IP:   dns.IPStatic(ip.String()),
+								IP:   ip,
 							},
 						},
 					},
@@ -420,7 +429,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("kafka-status.benjamin-borbe.de"),
-								IP:   dns.IPStatic(ip.String()),
+								IP:   ip,
 							},
 						},
 					},
@@ -441,7 +450,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("versions.benjamin-borbe.de"),
-								IP:   dns.IPStatic(ip.String()),
+								IP:   ip,
 							},
 						},
 					},
@@ -462,7 +471,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("updates.benjamin-borbe.de"),
-								IP:   dns.IPStatic(ip.String()),
+								IP:   ip,
 							},
 						},
 					},
@@ -511,7 +520,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: dns.Host("kafka-sample.benjamin-borbe.de"),
-								IP:   dns.IPStatic(ip.String()),
+								IP:   ip,
 							},
 						},
 					},
@@ -666,7 +675,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"ip": &app.Ip{
 			Context: context,
-			IP:      dns.IPStatic(ip.String()),
+			IP:      ip,
 			Tag:     "1.1.0",
 			Domain:  "ip.benjamin-borbe.de",
 		},

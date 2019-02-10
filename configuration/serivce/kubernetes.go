@@ -7,6 +7,8 @@ package service
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/docker"
+
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/ssh"
@@ -21,16 +23,21 @@ type Kubernetes struct {
 	DisableRBAC bool
 	DisableCNI  bool
 	ResolvConf  string
+	Version     docker.Tag
 }
 
 func (k *Kubernetes) Children() []world.Configuration {
+	version := k.Version
+	if version == "" {
+		version = "v1.13.3"
+	}
 	return []world.Configuration{
 		&Etcd{
 			SSH: k.SSH,
 		},
 		&Kubelet{
 			SSH:         k.SSH,
-			Version:     "v1.11.7",
+			Version:     version,
 			Context:     k.Context,
 			ClusterIP:   k.ClusterIP,
 			DisableRBAC: k.DisableRBAC,
