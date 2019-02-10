@@ -593,7 +593,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Context:          context,
 			NfsServer:        nfsServer,
 			Domain:           "confluence.benjamin-borbe.de",
-			Version:          "6.12.1",
+			Version:          "6.13.2",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
@@ -602,7 +602,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Context:          context,
 			NfsServer:        nfsServer,
 			Domain:           "jira.benjamin-borbe.de",
-			Version:          "7.12.3",
+			Version:          "7.13.1",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
@@ -614,7 +614,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"poste": &app.Poste{
 			Context:      context,
 			NfsServer:    nfsServer,
-			PosteVersion: "2.0.23", // https://hub.docker.com/r/analogic/poste.io/tags
+			PosteVersion: "2.1.0", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				"mail.benjamin-borbe.de",
 			},
