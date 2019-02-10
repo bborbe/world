@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/pkg/docker"
+
 	"github.com/bborbe/world/configuration/deployer"
 	service "github.com/bborbe/world/configuration/serivce"
 	"github.com/bborbe/world/pkg/dns"
@@ -19,11 +21,13 @@ import (
 )
 
 type Hetzner struct {
-	Context     k8s.Context
-	ApiKey      deployer.SecretValue
-	IP          dns.IP
-	DisableRBAC bool
-	DisableCNI  bool
+	Context           k8s.Context
+	ApiKey            deployer.SecretValue
+	IP                dns.IP
+	DisableRBAC       bool
+	DisableCNI        bool
+	KubernetesVersion docker.Tag
+	ServerType        hetzner.ServerType
 }
 
 func (h *Hetzner) Children() []world.Configuration {
@@ -34,6 +38,7 @@ func (h *Hetzner) Children() []world.Configuration {
 			Name:          h.Context,
 			User:          user,
 			PublicKeyPath: "/Users/bborbe/.ssh/id_rsa.pub",
+			ServerType:    h.ServerType,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(
 			&dns.Server{
@@ -61,6 +66,7 @@ func (h *Hetzner) Children() []world.Configuration {
 			DisableRBAC: h.DisableRBAC,
 			DisableCNI:  h.DisableCNI,
 			ResolvConf:  "/run/systemd/resolve/resolv.conf",
+			Version:     h.KubernetesVersion,
 		},
 	}
 }
