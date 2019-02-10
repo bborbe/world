@@ -548,7 +548,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"ldap": &app.Ldap{
 			Context:      context,
 			NfsServer:    nfsServer,
-			Tag:          "1.1.0",
+			Tag:          "1.3.0",
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"teamvault": &app.Teamvault{
