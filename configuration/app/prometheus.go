@@ -77,6 +77,83 @@ func (p *Prometheus) prometheus() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
+		&k8s.ServiceaccountConfiguration{
+			Context: p.Context,
+			Serviceaccount: k8s.ServiceAccount{
+				ApiVersion: "v1",
+				Kind:       "ServiceAccount",
+				Metadata: k8s.Metadata{
+					Namespace: "prometheus",
+					Name:      "prometheus",
+				},
+			},
+		},
+		&k8s.ClusterRoleConfiguration{
+			Context: p.Context,
+			ClusterRole: k8s.ClusterRole{
+				ApiVersion: "rbac.authorization.k8s.io/v1",
+				Kind:       "ClusterRole",
+				Metadata: k8s.Metadata{
+					Namespace: "",
+					Name:      "prometheus",
+				},
+				Rules: []k8s.PolicyRule{
+					{
+						ApiGroups: []string{""},
+						Resources: []string{
+							"nodes",
+							"services",
+							"endpoints",
+							"pods",
+						},
+						Verbs: []string{
+							"get",
+							"list",
+							"watch",
+						},
+					},
+					{
+						ApiGroups: []string{""},
+						Resources: []string{
+							"configmaps",
+						},
+						Verbs: []string{
+							"get",
+						},
+					},
+					{
+						NonResourceURLs: []string{
+							"/metrics",
+						},
+						Verbs: []string{
+							"get",
+						},
+					},
+				},
+			},
+		},
+		&k8s.ClusterRoleBindingConfiguration{
+			Context: p.Context,
+			ClusterRoleBinding: k8s.ClusterRoleBinding{
+				ApiVersion: "rbac.authorization.k8s.io/v1",
+				Kind:       "ClusterRoleBinding",
+				Metadata: k8s.Metadata{
+					Name: "prometheus",
+				},
+				Subjects: []k8s.Subject{
+					{
+						Kind:      "ServiceAccount",
+						Name:      "prometheus",
+						Namespace: "prometheus",
+					},
+				},
+				RoleRef: k8s.RoleRef{
+					Kind:     "ClusterRole",
+					Name:     "prometheus",
+					ApiGroup: "rbac.authorization.k8s.io",
+				},
+			},
+		},
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:   p.Context,
@@ -101,6 +178,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 			Strategy: k8s.DeploymentStrategy{
 				Type: "Recreate",
 			},
+			ServiceAccountName: "prometheus",
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
 					Name:  "prometheus",
