@@ -19,6 +19,28 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+type ServerType string
+
+func (a ServerType) String() string {
+	return string(a)
+}
+
+func (a ServerType) Validate(ctx context.Context) error {
+	if a == "" {
+		return errors.New("ServerType missing")
+	}
+	switch a.String() {
+	case "cx11":
+	case "cx21":
+	case "cx31":
+	case "cx41":
+	case "cx51":
+	default:
+		return errors.New("ServerType invalid")
+	}
+	return nil
+}
+
 type ApiKey string
 
 func (a ApiKey) String() string {
@@ -41,6 +63,7 @@ type Server struct {
 	Name          k8s.Context
 	PublicKeyPath ssh.PublicKeyPath
 	User          ssh.User
+	ServerType    ServerType
 }
 
 func (s *Server) Validate(ctx context.Context) error {
@@ -49,6 +72,7 @@ func (s *Server) Validate(ctx context.Context) error {
 		s.Name,
 		s.User,
 		s.PublicKeyPath,
+		s.ServerType,
 	)
 }
 
@@ -79,7 +103,7 @@ func (s *Server) Apply(ctx context.Context) error {
 		return errors.Wrap(err, "get datacenter 2 failed")
 	}
 
-	serverType, _, err := client.ServerType.GetByName(ctx, "cx11")
+	serverType, _, err := client.ServerType.GetByName(ctx, s.ServerType.String())
 	if err != nil {
 		return errors.Wrap(err, "get server type cx11 failed")
 	}
@@ -130,6 +154,7 @@ type User struct {
 	Name              string   `yaml:"name"`
 	Sudo              string   `yaml:"sudo"`
 	SshAuthorizedKeys []string `yaml:"ssh_authorized_keys"`
+	Shell             string   `yaml:"shell"`
 }
 
 func (s *Server) userdata() (string, error) {
@@ -146,6 +171,7 @@ func (s *Server) userdata() (string, error) {
 				SshAuthorizedKeys: []string{
 					string(key),
 				},
+				Shell: "/bin/bash",
 			},
 		},
 	})

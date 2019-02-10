@@ -34,6 +34,7 @@ users:
   sudo: ALL=(ALL) NOPASSWD:ALL
   ssh_authorized_keys:
   - hello world
+  shell: /bin/bash
 ` {
 		t.Fatal(fmt.Sprintf("invalid content %s", userdata))
 	}
