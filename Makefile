@@ -21,7 +21,7 @@ ensure:
 
 addlicense:
 	@go get github.com/google/addlicense
-	@addlicense -c "Benjamin Borbe" -y 2018 -l bsd ./*.go ./pkg/*/*.go ./configuration/*.go  ./configuration/*/*.go
+	@addlicense -c "Benjamin Borbe" -y 2019 -l bsd ./*.go ./pkg/*/*.go ./configuration/*.go  ./configuration/*/*.go
 
 test:
 	go test -cover -race $(shell go list ./... | grep -v /vendor/)
