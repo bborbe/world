@@ -20,7 +20,6 @@ import (
 
 type Confluence struct {
 	Context          k8s.Context
-	NfsServer        k8s.PodNfsServer
 	Domain           k8s.IngressHost
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
@@ -28,21 +27,20 @@ type Confluence struct {
 	SmtpUsername     deployer.SecretValue
 }
 
-func (t *Confluence) Validate(ctx context.Context) error {
+func (c *Confluence) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.NfsServer,
-		t.Domain,
-		t.Version,
-		t.DatabasePassword,
-		t.SmtpPassword,
-		t.SmtpUsername,
+		c.Context,
+		c.Domain,
+		c.Version,
+		c.DatabasePassword,
+		c.SmtpPassword,
+		c.SmtpUsername,
 	)
 }
 
 func (c *Confluence) Children() []world.Configuration {
-	var buildVersion docker.GitBranch = "1.3.0"
+	var buildVersion docker.GitBranch = "1.4.2"
 	image := docker.Image{
 		Repository: "bborbe/atlassian-confluence",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", c.Version, buildVersion)),
@@ -67,10 +65,8 @@ func (c *Confluence) Children() []world.Configuration {
 		&component.Postgres{
 			Context:              c.Context,
 			Namespace:            "confluence",
-			DataNfsPath:          "/data/confluence-postgres",
-			DataNfsServer:        c.NfsServer,
-			BackupNfsPath:        "/data/confluence-postgres-backup",
-			BackupNfsServer:      c.NfsServer,
+			DataPath:             "/data/confluence-postgres",
+			BackupPath:           "/data/confluence-postgres-backup",
 			PostgresVersion:      "9.5.14",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "confluence",
@@ -153,9 +149,8 @@ func (c *Confluence) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "data",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/confluence-data",
-						Server: k8s.PodNfsServer(c.NfsServer),
+					Host: k8s.PodVolumeHost{
+						Path: "/data/confluence-data",
 					},
 				},
 			},

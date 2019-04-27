@@ -16,24 +16,20 @@ import (
 )
 
 type Bind struct {
-	Context   k8s.Context
-	NfsServer k8s.PodNfsServer
-	Tag       docker.Tag
+	Context k8s.Context
 }
 
-func (t *Bind) Validate(ctx context.Context) error {
+func (b *Bind) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.NfsServer,
-		t.Tag,
+		b.Context,
 	)
 }
 
 func (b *Bind) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/bind",
-		Tag:        b.Tag,
+		Tag:        "1.1.0",
 	}
 	udpPort := deployer.Port{
 		Name:     "dns-udp",
@@ -118,9 +114,8 @@ func (b *Bind) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "bind",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/bind",
-						Server: k8s.PodNfsServer(b.NfsServer),
+					Host: k8s.PodVolumeHost{
+						Path: "/data/bind",
 					},
 				},
 			},

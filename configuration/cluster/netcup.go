@@ -7,7 +7,7 @@ package cluster
 import (
 	"context"
 
-	service "github.com/bborbe/world/configuration/serivce"
+	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -24,33 +24,35 @@ type Netcup struct {
 	KubernetesVersion docker.Tag
 }
 
-func (h *Netcup) Children() []world.Configuration {
-	user := ssh.User("bborbe")
+func (n *Netcup) Children() []world.Configuration {
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   n.IP,
+			Port: 22,
+		},
+		User:           ssh.User("bborbe"),
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
 	return []world.Configuration{
+		&service.SecurityUpdates{
+			SSH: ssh,
+		},
 		&service.Kubernetes{
-			SSH: &ssh.SSH{
-				Host: ssh.Host{
-					IP:   h.IP,
-					Port: 22,
-				},
-				User:           user,
-				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-			},
-			Context:     h.Context,
-			ClusterIP:   h.IP,
-			DisableRBAC: h.DisableRBAC,
-			DisableCNI:  h.DisableCNI,
-			ResolvConf:  "/run/systemd/resolve/resolv.conf",
-			Version:     h.KubernetesVersion,
+			SSH:         ssh,
+			Context:     n.Context,
+			ClusterIP:   n.IP,
+			DisableRBAC: n.DisableRBAC,
+			DisableCNI:  n.DisableCNI,
+			Version:     n.KubernetesVersion,
 		},
 	}
 }
 
-func (r *Netcup) Applier() (world.Applier, error) {
+func (n *Netcup) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (r *Netcup) Validate(ctx context.Context) error {
+func (n *Netcup) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 	)

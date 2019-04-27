@@ -19,7 +19,6 @@ import (
 
 type Prometheus struct {
 	Context            k8s.Context
-	NfsServer          k8s.PodNfsServer
 	PrometheusDomain   k8s.IngressHost
 	AlertmanagerDomain k8s.IngressHost
 	Secret             deployer.SecretValue
@@ -27,16 +26,15 @@ type Prometheus struct {
 	LdapPassword       deployer.SecretValue
 }
 
-func (t *Prometheus) Validate(ctx context.Context) error {
+func (p *Prometheus) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.NfsServer,
-		t.PrometheusDomain,
-		t.AlertmanagerDomain,
-		t.Secret,
-		t.LdapUsername,
-		t.LdapPassword,
+		p.Context,
+		p.PrometheusDomain,
+		p.AlertmanagerDomain,
+		p.Secret,
+		p.LdapUsername,
+		p.LdapPassword,
 	)
 }
 
@@ -269,9 +267,8 @@ func (p *Prometheus) prometheus() []world.Configuration {
 				},
 				{
 					Name: "prometheus",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/prometheus",
-						Server: k8s.PodNfsServer(p.NfsServer),
+					Host: k8s.PodVolumeHost{
+						Path: "/data/prometheus",
 					},
 				},
 			},
@@ -410,9 +407,8 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "alertmanager",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/alertmanager",
-						Server: k8s.PodNfsServer(p.NfsServer),
+					Host: k8s.PodVolumeHost{
+						Path: "/data/alertmanager",
 					},
 				},
 				{

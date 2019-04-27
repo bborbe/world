@@ -16,20 +16,16 @@ import (
 )
 
 type Webdav struct {
-	Context   k8s.Context
-	NfsServer k8s.PodNfsServer
-	Domains   k8s.IngressHosts
-	Tag       docker.Tag
-	Password  deployer.SecretValue
+	Context  k8s.Context
+	Domains  k8s.IngressHosts
+	Password deployer.SecretValue
 }
 
 func (t *Webdav) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Context,
-		t.NfsServer,
 		t.Domains,
-		t.Tag,
 		t.Password,
 	)
 }
@@ -37,7 +33,7 @@ func (t *Webdav) Validate(ctx context.Context) error {
 func (w *Webdav) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/webdav",
-		Tag:        w.Tag,
+		Tag:        "1.0.2",
 	}
 	port := deployer.Port{
 		Port:     80,
@@ -139,9 +135,8 @@ func (w *Webdav) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "webdav",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/webdav",
-						Server: w.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/webdav",
 					},
 				},
 			},

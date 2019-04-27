@@ -16,15 +16,13 @@ import (
 )
 
 type BackupServer struct {
-	Context   k8s.Context
-	NfsServer k8s.PodNfsServer
+	Context k8s.Context
 }
 
 func (b *BackupServer) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		b.Context,
-		b.NfsServer,
 	)
 }
 
@@ -115,16 +113,14 @@ func (b *BackupServer) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "backup",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data",
-						Server: b.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data",
 					},
 				},
 				{
 					Name: "ssh",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/backup-ssh",
-						Server: b.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/backup-ssh",
 					},
 				},
 			},

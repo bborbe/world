@@ -20,7 +20,6 @@ import (
 
 type Teamvault struct {
 	Context          k8s.Context
-	NfsServer        k8s.PodNfsServer
 	Domain           k8s.IngressHost
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
@@ -35,7 +34,6 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Context,
-		t.NfsServer,
 		t.Domain,
 		t.DatabasePassword,
 		t.SmtpPassword,
@@ -72,10 +70,8 @@ func (t *Teamvault) Children() []world.Configuration {
 		&component.Postgres{
 			Context:              t.Context,
 			Namespace:            "teamvault",
-			DataNfsPath:          "/data/teamvault-postgres",
-			DataNfsServer:        t.NfsServer,
-			BackupNfsPath:        "/data/teamvault-postgres-backup",
-			BackupNfsServer:      t.NfsServer,
+			DataPath:             "/data/teamvault-postgres",
+			BackupPath:           "/data/teamvault-postgres-backup",
 			PostgresVersion:      "10.5",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "teamvault",

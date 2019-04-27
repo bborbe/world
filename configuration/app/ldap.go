@@ -17,7 +17,6 @@ import (
 
 type Ldap struct {
 	Context      k8s.Context
-	NfsServer    k8s.PodNfsServer
 	Tag          docker.Tag
 	LdapPassword deployer.SecretValue
 }
@@ -28,7 +27,6 @@ func (l *Ldap) Validate(ctx context.Context) error {
 		l.Tag,
 		l.LdapPassword,
 		l.Context,
-		l.NfsServer,
 	)
 }
 
@@ -144,9 +142,8 @@ func (l *Ldap) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "ldap",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/ldap",
-						Server: l.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/ldap",
 					},
 				},
 			},

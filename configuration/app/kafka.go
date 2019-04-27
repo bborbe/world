@@ -21,6 +21,7 @@ type Kafka struct {
 	Context           k8s.Context
 	DisableConnect    bool
 	DisableRest       bool
+	DisableKSQL       bool
 	KafkaReplicas     k8s.Replicas
 	KafkaStorage      k8s.Storage
 	StorageClass      k8s.StorageClassName
@@ -56,14 +57,10 @@ func (k *Kafka) Children() []world.Configuration {
 	}
 	result = append(result, k.zookeeper()...)
 	result = append(result, k.kafka()...)
-	result = append(result, k.ksql()...)
 	result = append(result, k.schemaRegistry()...)
-	if !k.DisableConnect {
-		result = append(result, k.connect()...)
-	}
-	if !k.DisableRest {
-		result = append(result, k.rest()...)
-	}
+	result = append(result, k.ksql()...)
+	result = append(result, k.connect()...)
+	result = append(result, k.rest()...)
 	return result
 }
 
@@ -71,6 +68,10 @@ func (k *Kafka) connect() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/cp-kafka-connect",
 		Tag:        k.Version,
+	}
+	var replicas k8s.Replicas = 1
+	if k.DisableConnect {
+		replicas = 0
 	}
 	return []world.Configuration{
 		&build.CpKafkaConnect{
@@ -89,7 +90,7 @@ func (k *Kafka) connect() []world.Configuration {
 					},
 				},
 				Spec: k8s.DeploymentSpec{
-					Replicas: 1,
+					Replicas: replicas,
 					Selector: k8s.LabelSelector{
 						MatchLabels: k8s.Labels{
 							"app": "cp-kafka-connect",
@@ -574,6 +575,10 @@ func (k *Kafka) rest() []world.Configuration {
 		Repository: "bborbe/cp-kafka-rest",
 		Tag:        k.Version,
 	}
+	var replicas k8s.Replicas = 1
+	if k.DisableRest {
+		replicas = 0
+	}
 	return []world.Configuration{
 		&build.CpKafkaRest{
 			Image: image,
@@ -591,7 +596,7 @@ func (k *Kafka) rest() []world.Configuration {
 					},
 				},
 				Spec: k8s.DeploymentSpec{
-					Replicas:             1,
+					Replicas:             replicas,
 					RevisionHistoryLimit: 0,
 					Selector: k8s.LabelSelector{
 						MatchLabels: k8s.Labels{
@@ -774,6 +779,10 @@ func (k *Kafka) ksql() []world.Configuration {
 		Repository: "bborbe/cp-ksql-server",
 		Tag:        k.Version,
 	}
+	var replicas k8s.Replicas = 1
+	if k.DisableKSQL {
+		replicas = 0
+	}
 	return []world.Configuration{
 		&build.CpKafkaKsql{
 			Image: image,
@@ -791,7 +800,7 @@ func (k *Kafka) ksql() []world.Configuration {
 					},
 				},
 				Spec: k8s.DeploymentSpec{
-					Replicas:             1,
+					Replicas:             replicas,
 					RevisionHistoryLimit: 0,
 					Selector: k8s.LabelSelector{
 						MatchLabels: k8s.Labels{

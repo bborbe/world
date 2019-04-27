@@ -20,7 +20,6 @@ import (
 
 type Jira struct {
 	Context          k8s.Context
-	NfsServer        k8s.PodNfsServer
 	Domain           k8s.IngressHost
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
@@ -32,7 +31,6 @@ func (t *Jira) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Context,
-		t.NfsServer,
 		t.Domain,
 		t.Version,
 		t.DatabasePassword,
@@ -42,7 +40,7 @@ func (t *Jira) Validate(ctx context.Context) error {
 }
 
 func (j *Jira) Children() []world.Configuration {
-	var buildVersion docker.GitBranch = "1.2.1"
+	var buildVersion docker.GitBranch = "1.3.2"
 	image := docker.Image{
 		Repository: "bborbe/atlassian-jira-software",
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", j.Version, buildVersion)),
@@ -67,10 +65,8 @@ func (j *Jira) Children() []world.Configuration {
 		&component.Postgres{
 			Context:              j.Context,
 			Namespace:            "jira",
-			DataNfsPath:          "/data/jira-postgres",
-			DataNfsServer:        j.NfsServer,
-			BackupNfsPath:        "/data/jira-postgres-backup",
-			BackupNfsServer:      j.NfsServer,
+			DataPath:             "/data/jira-postgres",
+			BackupPath:           "/data/jira-postgres-backup",
 			PostgresVersion:      "9.6-alpine",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=POSIX.UTF-8 --lc-ctype=POSIX.UTF-8 -T",
 			PostgresDatabaseName: "jira",
@@ -153,9 +149,8 @@ func (j *Jira) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "data",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/jira-data",
-						Server: j.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/jira-data",
 					},
 				},
 			},

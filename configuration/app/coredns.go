@@ -29,7 +29,7 @@ func (c *CoreDns) Validate(ctx context.Context) error {
 func (c *CoreDns) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/coredns",
-		Tag:        "1.2.2",
+		Tag:        "1.5.0",
 	}
 	udpPort := deployer.Port{
 		Name:     "dns",
@@ -314,7 +314,7 @@ const corefileConfig = `.:53 {
       fallthrough in-addr.arpa ip6.arpa
     }
     prometheus :9153
-    proxy . /etc/resolv.conf
+    forward . /etc/resolv.conf
     cache 30
     loop
     reload

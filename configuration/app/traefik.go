@@ -17,7 +17,6 @@ import (
 
 type Traefik struct {
 	Context     k8s.Context
-	NfsServer   k8s.PodNfsServer
 	Domains     k8s.IngressHosts
 	SSL         bool
 	DisableRBAC bool
@@ -29,7 +28,6 @@ func (t *Traefik) Validate(ctx context.Context) error {
 			ctx,
 			t.Context,
 			t.Domains,
-			t.NfsServer,
 		)
 	}
 	return validation.Validate(
@@ -41,7 +39,7 @@ func (t *Traefik) Validate(ctx context.Context) error {
 func (t *Traefik) Children() []world.Configuration {
 	traefikImage := docker.Image{
 		Repository: "bborbe/traefik",
-		Tag:        "1.7.8-alpine",
+		Tag:        "1.7.10-alpine",
 	}
 	httpPort := deployer.Port{
 		Port:     80,
@@ -75,9 +73,8 @@ func (t *Traefik) Children() []world.Configuration {
 	if t.SSL {
 		acmeVolume = k8s.PodVolume{
 			Name: "acme",
-			Nfs: k8s.PodVolumeNfs{
-				Path:   "/data/traefik-acme",
-				Server: t.NfsServer,
+			Host: k8s.PodVolumeHost{
+				Path: "/data/traefik-acme",
 			},
 		}
 	} else {
@@ -173,6 +170,7 @@ func (t *Traefik) Children() []world.Configuration {
 									},
 									Args: []k8s.Arg{
 										"--configfile=/config/traefik.toml",
+										"--logLevel=INFO", // "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
 									},
 									VolumeMounts: []k8s.ContainerMount{
 										{
@@ -292,16 +290,14 @@ func (t *Traefik) Children() []world.Configuration {
 				Volumes: []k8s.PodVolume{
 					{
 						Name: "acme",
-						Nfs: k8s.PodVolumeNfs{
-							Path:   "/data/traefik-acme",
-							Server: t.NfsServer,
+						Host: k8s.PodVolumeHost{
+							Path: "/data/traefik-acme",
 						},
 					},
 					{
 						Name: "certs",
-						Nfs: k8s.PodVolumeNfs{
-							Path:   "/data/traefik-extract",
-							Server: t.NfsServer,
+						Host: k8s.PodVolumeHost{
+							Path: "/data/traefik-extract",
 						},
 					},
 				},

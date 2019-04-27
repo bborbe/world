@@ -7,57 +7,58 @@ package app
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/k8s"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
-	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
-type Download struct {
-	Context k8s.Context
-	Domains k8s.IngressHosts
+type KafkaDockerhubVersionCollector struct {
+	Context      k8s.Context
+	Repositories docker.Repositories
 }
 
-func (d *Download) Validate(ctx context.Context) error {
+func (k *KafkaDockerhubVersionCollector) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		d.Context,
-		d.Domains,
+		k.Context,
+		k.Repositories,
 	)
 }
 
-func (d *Download) Applier() (world.Applier, error) {
+func (k *KafkaDockerhubVersionCollector) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (d *Download) Children() []world.Configuration {
+func (k *KafkaDockerhubVersionCollector) Children() []world.Configuration {
 	image := docker.Image{
-		Repository: "bborbe/nginx-autoindex",
-		Tag:        "latest",
+		Repository: "bborbe/kafka-dockerhub-version-collector",
+		Tag:        "2.0.0",
 	}
 	port := deployer.Port{
-		Port:     80,
+		Port:     8080,
 		Name:     "http",
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
 		&k8s.NamespaceConfiguration{
-			Context: d.Context,
+			Context: k.Context,
 			Namespace: k8s.Namespace{
 				ApiVersion: "v1",
 				Kind:       "Namespace",
 				Metadata: k8s.Metadata{
-					Namespace: "download",
-					Name:      "download",
+					Namespace: "kafka-dockerhub-version-collector",
+					Name:      "kafka-dockerhub-version-collector",
 				},
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   d.Context,
-			Namespace: "download",
-			Name:      "download",
+			Context:   k.Context,
+			Namespace: "kafka-dockerhub-version-collector",
+			Name:      "kafka-dockerhub-version-collector",
 			Strategy: k8s.DeploymentStrategy{
 				Type: "RollingUpdate",
 				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
@@ -67,9 +68,36 @@ func (d *Download) Children() []world.Configuration {
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
-					Name:  "nginx",
+					Name: "collector",
+					Args: []k8s.Arg{"-v=2"},
+					Env: []k8s.Env{
+						{
+							Name:  "PORT",
+							Value: port.Port.String(),
+						},
+						{
+							Name:  "KAFKA_BROKERS",
+							Value: "kafka-cp-kafka-headless.kafka.svc.cluster.local:9092",
+						},
+						{
+							Name:  "KAFKA_TOPIC",
+							Value: "application-version-available",
+						},
+						{
+							Name:  "KAFKA_SCHEMA_REGISTRY_URL",
+							Value: "http://kafka-cp-schema-registry.kafka.svc.cluster.local:8081",
+						},
+						{
+							Name:  "PORT",
+							Value: port.Port.String(),
+						},
+						{
+							Name:  "REPOSITORIES",
+							Value: k.Repositories.String(),
+						},
+					},
 					Image: image,
-					Requirement: &build.NginxAutoindex{
+					Requirement: &build.KafkaDockerhubVersionCollector{
 						Image: image,
 					},
 					Ports: []deployer.Port{port},
@@ -81,13 +109,6 @@ func (d *Download) Children() []world.Configuration {
 						Requests: k8s.ContainerResource{
 							Cpu:    "10m",
 							Memory: "10Mi",
-						},
-					},
-					Mounts: []k8s.ContainerMount{
-						{
-							Name:     "download",
-							Path:     "/usr/share/nginx/html",
-							ReadOnly: true,
 						},
 					},
 					LivenessProbe: k8s.Probe{
@@ -112,27 +133,6 @@ func (d *Download) Children() []world.Configuration {
 					},
 				},
 			},
-			Volumes: []k8s.PodVolume{
-				{
-					Name: "download",
-					Host: k8s.PodVolumeHost{
-						Path: "/data/download",
-					},
-				},
-			},
-		},
-		&deployer.ServiceDeployer{
-			Context:   d.Context,
-			Namespace: "download",
-			Name:      "download",
-			Ports:     []deployer.Port{port},
-		},
-		&deployer.IngressDeployer{
-			Context:   d.Context,
-			Namespace: "download",
-			Name:      "download",
-			Port:      "http",
-			Domains:   d.Domains,
 		},
 	}
 }

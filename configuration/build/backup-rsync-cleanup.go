@@ -12,30 +12,32 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type BackupRsyncServer struct {
+type BackupRsyncCleanup struct {
 	Image docker.Image
 }
 
-func (t *BackupRsyncServer) Validate(ctx context.Context) error {
+func (t *BackupRsyncCleanup) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Image,
 	)
 }
 
-func (b *BackupRsyncServer) Children() []world.Configuration {
+func (b *BackupRsyncCleanup) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
-			&docker.Builder{
-				GitRepo:   "https://github.com/bborbe/backup-rsync-server.git",
-				Image:     b.Image,
-				GitBranch: docker.GitBranch(b.Image.Tag),
+			&docker.GolangBuilder{
+				Name:            "backup-cleanup",
+				GitRepo:         "https://github.com/bborbe/backup.git",
+				SourceDirectory: "github.com/bborbe/backup",
+				Package:         "github.com/bborbe/backup/cmd/backup-cleanup",
+				Image:           b.Image,
 			},
 		},
 	}
 }
 
-func (b *BackupRsyncServer) Applier() (world.Applier, error) {
+func (b *BackupRsyncCleanup) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: b.Image,
 	}, nil

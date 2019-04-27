@@ -18,7 +18,6 @@ import (
 
 type Poste struct {
 	Context      k8s.Context
-	NfsServer    k8s.PodNfsServer
 	PosteVersion docker.Tag
 	Domains      k8s.IngressHosts
 }
@@ -27,7 +26,6 @@ func (t *Poste) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Context,
-		t.NfsServer,
 		t.PosteVersion,
 		t.Domains,
 	)
@@ -151,9 +149,8 @@ func (p *Poste) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "poste",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/poste",
-						Server: p.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/poste",
 					},
 				},
 			},

@@ -7,7 +7,7 @@ package cluster
 import (
 	"context"
 
-	service "github.com/bborbe/world/configuration/serivce"
+	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/remote"
@@ -49,13 +49,15 @@ func (s *Sun) Children() []world.Configuration {
 			SSH:  ssh,
 			Port: 80,
 		}),
+		&service.SecurityUpdates{
+			SSH: ssh,
+		},
 		&service.Kubernetes{
 			SSH:         ssh,
 			Context:     s.Context,
 			ClusterIP:   s.ClusterIP,
 			DisableRBAC: s.DisableRBAC,
 			DisableCNI:  s.DisableCNI,
-			ResolvConf:  "/run/systemd/resolve/resolv.conf",
 		},
 	}
 }

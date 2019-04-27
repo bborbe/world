@@ -57,10 +57,10 @@ func (a *Auth) Requirements() []world.Configuration {
 	}
 }
 
-func (g *Auth) image() docker.Image {
+func (a *Auth) image() docker.Image {
 	return docker.Image{
 		Repository: "bborbe/auth-http-proxy",
-		Tag:        "2.1.3",
+		Tag:        "3.2.1",
 	}
 }
 
@@ -94,7 +94,7 @@ func (a *Auth) Container() k8s.Container {
 			},
 			{
 				Name:  "TARGET_ADDRESS",
-				Value: fmt.Sprintf("localhost:%d", a.TargetPort),
+				Value: fmt.Sprintf("127.0.0.1:%d", a.TargetPort),
 			},
 			{
 				Name: "SECRET",

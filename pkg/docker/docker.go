@@ -5,6 +5,7 @@
 package docker
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
@@ -46,8 +47,8 @@ func (g GitBranch) String() string {
 	return string(g)
 }
 
-func (w GitBranch) Validate(ctx context.Context) error {
-	if w == "" {
+func (g GitBranch) Validate(ctx context.Context) error {
+	if g == "" {
 		return errors.New("GitBranch empty")
 	}
 	return nil
@@ -61,20 +62,49 @@ func (r Registry) String() string {
 	return string(r)
 }
 
+type Repositories []Repository
+
+func (r Repositories) Validate(ctx context.Context) error {
+	for _, r := range r {
+		if err := r.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r Repositories) String() string {
+	buf := &bytes.Buffer{}
+	for i, repo := range r {
+		if i != 0 {
+			buf.WriteString(",")
+		}
+		buf.WriteString(repo.String())
+	}
+	return buf.String()
+}
+
 type Repository string
 
-func (i Repository) String() string {
-	return string(i)
+func (r Repository) String() string {
+	return string(r)
+}
+
+func (r Repository) Validate(ctx context.Context) error {
+	if r == "" {
+		return errors.New("Repository empty")
+	}
+	return nil
 }
 
 type Tag string
 
-func (v Tag) String() string {
-	return string(v)
+func (t Tag) String() string {
+	return string(t)
 }
 
-func (w Tag) Validate(ctx context.Context) error {
-	if w == "" {
+func (t Tag) Validate(ctx context.Context) error {
+	if t == "" {
 		return errors.New("Tag empty")
 	}
 	return nil

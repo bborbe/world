@@ -33,10 +33,8 @@ func (d DatabaseName) Validate(ctx context.Context) error {
 type Postgres struct {
 	Context              k8s.Context
 	Namespace            k8s.NamespaceName
-	DataNfsPath          k8s.PodNfsPath
-	DataNfsServer        k8s.PodNfsServer
-	BackupNfsPath        k8s.PodNfsPath
-	BackupNfsServer      k8s.PodNfsServer
+	DataPath             k8s.PodHostPath
+	BackupPath           k8s.PodHostPath
 	PostgresVersion      docker.Tag
 	PostgresDatabaseName DatabaseName
 	PostgresInitDbArgs   string
@@ -49,10 +47,8 @@ func (t *Postgres) Validate(ctx context.Context) error {
 		ctx,
 		t.Context,
 		t.Namespace,
-		t.DataNfsPath,
-		t.DataNfsServer,
-		t.BackupNfsPath,
-		t.BackupNfsServer,
+		t.DataPath,
+		t.BackupPath,
 		t.PostgresVersion,
 		t.PostgresDatabaseName,
 		t.PostgresUsername,
@@ -159,9 +155,8 @@ func (p *Postgres) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "data",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   k8s.PodNfsPath(p.DataNfsPath),
-						Server: k8s.PodNfsServer(p.DataNfsServer),
+					Host: k8s.PodVolumeHost{
+						Path: p.DataPath,
 					},
 				},
 			},
@@ -310,9 +305,8 @@ func (p *Postgres) Children() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "backup",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   k8s.PodNfsPath(p.BackupNfsPath),
-						Server: k8s.PodNfsServer(p.DataNfsServer),
+					Host: k8s.PodVolumeHost{
+						Path: p.BackupPath,
 					},
 				},
 			},

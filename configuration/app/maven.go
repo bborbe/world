@@ -17,7 +17,6 @@ import (
 
 type Maven struct {
 	Context          k8s.Context
-	NfsServer        k8s.PodNfsServer
 	Domains          k8s.IngressHosts
 	MavenRepoVersion docker.Tag
 }
@@ -122,9 +121,8 @@ func (m *Maven) public() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "maven",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/maven",
-						Server: m.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/maven",
 					},
 				},
 			},
@@ -223,9 +221,8 @@ func (m *Maven) api() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "maven",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/maven",
-						Server: m.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/maven",
 					},
 				},
 			},

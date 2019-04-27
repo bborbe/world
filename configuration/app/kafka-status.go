@@ -45,7 +45,7 @@ func (k *KafkaStatus) Children() []world.Configuration {
 func (k *KafkaStatus) app() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/kafka-status",
-		Tag:        "1.2.0",
+		Tag:        "1.3.1",
 	}
 	port := deployer.Port{
 		Port:     8080,

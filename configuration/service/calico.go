@@ -30,20 +30,19 @@ func (c *Calico) Validate(ctx context.Context) error {
 	)
 }
 func (c *Calico) Children() []world.Configuration {
-
+	var version docker.Tag = "v3.6.1"
 	cniImage := docker.Image{
 		Repository: "bborbe/calico-cni",
-		Tag:        "v3.3.1",
+		Tag:        version,
 	}
 	kubeControllersImage := docker.Image{
 		Repository: "bborbe/calico-kube-controllers",
-		Tag:        "v3.3.1",
+		Tag:        version,
 	}
 	nodeImage := docker.Image{
 		Repository: "bborbe/calico-node",
-		Tag:        "v3.3.1",
+		Tag:        version,
 	}
-
 	return []world.Configuration{
 		&k8s.ClusterRoleConfiguration{
 			Context: c.Context,

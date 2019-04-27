@@ -18,7 +18,6 @@ import (
 
 type BackupClient struct {
 	Context         k8s.Context
-	NfsServer       k8s.PodNfsServer
 	Domains         k8s.IngressHosts
 	GitSyncPassword deployer.SecretValue
 	BackupSshKey    deployer.SecretValue
@@ -29,7 +28,6 @@ func (b *BackupClient) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		b.Context,
-		b.NfsServer,
 		b.Domains,
 		b.GitSyncPassword,
 		b.BackupSshKey,
@@ -61,7 +59,7 @@ func (b *BackupClient) Children() []world.Configuration {
 func (b *BackupClient) rsync() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/backup-rsync-client",
-		Tag:        "1.2.1",
+		Tag:        "1.1.0",
 	}
 	return []world.Configuration{
 		&deployer.SecretDeployer{
@@ -88,7 +86,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 				&deployer.DeploymentDeployerContainer{
 					Name:  "rsync",
 					Image: image,
-					Requirement: &build.BackupStatusServer{
+					Requirement: &build.BackupRsyncClient{
 						Image: image,
 					},
 					Resources: k8s.Resources{
@@ -156,9 +154,8 @@ func (b *BackupClient) rsync() []world.Configuration {
 				},
 				{
 					Name: "backup",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/backup",
-						Server: b.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/backup",
 					},
 				},
 				{
@@ -182,7 +179,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 func (b *BackupClient) cleanup() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/backup-rsync-cleanup",
-		Tag:        "1.3.1",
+		Tag:        "2.0.0",
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
@@ -200,7 +197,7 @@ func (b *BackupClient) cleanup() []world.Configuration {
 				&deployer.DeploymentDeployerContainer{
 					Name:  "cleanup",
 					Image: image,
-					Requirement: &build.BackupStatusServer{
+					Requirement: &build.BackupRsyncCleanup{
 						Image: image,
 					},
 					Resources: k8s.Resources{
@@ -243,9 +240,8 @@ func (b *BackupClient) cleanup() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "backup",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/backup",
-						Server: b.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/backup",
 					},
 				},
 			},
@@ -261,7 +257,7 @@ func (b *BackupClient) statusServer() []world.Configuration {
 	}
 	image := docker.Image{
 		Repository: "bborbe/backup-status-server",
-		Tag:        "1.2.3",
+		Tag:        "2.0.0",
 	}
 	return []world.Configuration{
 		&deployer.DeploymentDeployer{
@@ -336,9 +332,8 @@ func (b *BackupClient) statusServer() []world.Configuration {
 			Volumes: []k8s.PodVolume{
 				{
 					Name: "backup",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/backup",
-						Server: b.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/backup",
 					},
 				},
 			},

@@ -38,14 +38,17 @@ type GolangBuilder struct {
 func (g *GolangBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("building golang docker image %s ...", g.Name)
 	tmpl, err := template.New("template").Parse(`
-FROM golang:1.11.1 AS build
+FROM golang:1.12.0 AS build
 RUN git clone --branch {{.Tag}} --single-branch --depth 1 {{.GitRepo}} ./src/{{.SourceDirectory}} 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o /{{.Name}} ./src/{{.Package}}
+
+FROM alpine:3.9 as alpine
+RUN apk --no-cache add ca-certificates
 
 FROM scratch
 MAINTAINER Benjamin Borbe <bborbe@rocketnews.de>
 COPY --from=build /{{.Name}} /{{.Name}}
-ADD https://curl.haxx.se/ca/cacert.pem /etc/ssl/certs/ca-certificates.crt
+COPY --from=alpine /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENTRYPOINT ["/{{.Name}}"]
 `)
 	if err != nil {

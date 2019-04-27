@@ -20,7 +20,6 @@ import (
 
 type Grafana struct {
 	Context      k8s.Context
-	NfsServer    k8s.PodNfsServer
 	Domain       k8s.IngressHost
 	LdapUsername deployer.SecretValue
 	LdapPassword deployer.SecretValue
@@ -31,7 +30,6 @@ func (g *Grafana) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		g.Context,
-		g.NfsServer,
 		g.Domain,
 		g.LdapPassword,
 		g.LdapUsername,
@@ -207,9 +205,8 @@ func (g *Grafana) grafana() []world.Configuration {
 				},
 				{
 					Name: "data",
-					Nfs: k8s.PodVolumeNfs{
-						Path:   "/data/grafana",
-						Server: g.NfsServer,
+					Host: k8s.PodVolumeHost{
+						Path: "/data/grafana",
 					},
 				},
 			},

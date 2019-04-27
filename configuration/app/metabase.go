@@ -18,31 +18,28 @@ import (
 
 type Metabase struct {
 	Context          k8s.Context
-	NfsServer        k8s.PodNfsServer
 	Domain           k8s.IngressHost
 	DatabasePassword deployer.SecretValue
 	Requirements     []world.Configuration
-	NfsPrefix        string
 }
 
-func (t *Metabase) Validate(ctx context.Context) error {
+func (m *Metabase) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.NfsServer,
-		t.Domain,
-		t.DatabasePassword,
+		m.Context,
+		m.Domain,
+		m.DatabasePassword,
 	)
 }
 
-func (g *Metabase) Children() []world.Configuration {
+func (m *Metabase) Children() []world.Configuration {
 	var result []world.Configuration
-	result = append(result, g.Requirements...)
-	result = append(result, g.metabase()...)
+	result = append(result, m.Requirements...)
+	result = append(result, m.metabase()...)
 	return result
 }
 
-func (t *Metabase) metabase() []world.Configuration {
+func (m *Metabase) metabase() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/metabase",
 		Tag:        "v0.31.1",
@@ -54,7 +51,7 @@ func (t *Metabase) metabase() []world.Configuration {
 	}
 	return []world.Configuration{
 		&k8s.NamespaceConfiguration{
-			Context: t.Context,
+			Context: m.Context,
 			Namespace: k8s.Namespace{
 				ApiVersion: "v1",
 				Kind:       "Namespace",
@@ -65,30 +62,28 @@ func (t *Metabase) metabase() []world.Configuration {
 			},
 		},
 		&component.Postgres{
-			Context:              t.Context,
+			Context:              m.Context,
 			Namespace:            "metabase",
-			DataNfsPath:          k8s.PodNfsPath(t.NfsPrefix + "/metabase-postgres"),
-			DataNfsServer:        t.NfsServer,
-			BackupNfsPath:        k8s.PodNfsPath(t.NfsPrefix + "/metabase-postgres-backup"),
-			BackupNfsServer:      t.NfsServer,
+			DataPath:             "/data/metabase-postgres",
+			BackupPath:           "/data/metabase-postgres-backup",
 			PostgresVersion:      "10.5",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "metabase",
 			PostgresUsername: &deployer.SecretValueStatic{
 				Content: []byte("metabase"),
 			},
-			PostgresPassword: t.DatabasePassword,
+			PostgresPassword: m.DatabasePassword,
 		},
 		&deployer.SecretDeployer{
-			Context:   t.Context,
+			Context:   m.Context,
 			Namespace: "metabase",
 			Name:      "metabase",
 			Secrets: deployer.Secrets{
-				"database-password": t.DatabasePassword,
+				"database-password": m.DatabasePassword,
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   t.Context,
+			Context:   m.Context,
 			Namespace: "metabase",
 			Name:      "metabase",
 			Strategy: k8s.DeploymentStrategy{
@@ -175,21 +170,21 @@ func (t *Metabase) metabase() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   t.Context,
+			Context:   m.Context,
 			Namespace: "metabase",
 			Name:      "metabase",
 			Ports:     []deployer.Port{port},
 		},
 		&deployer.IngressDeployer{
-			Context:   t.Context,
+			Context:   m.Context,
 			Namespace: "metabase",
 			Name:      "metabase",
 			Port:      "http",
-			Domains:   k8s.IngressHosts{t.Domain},
+			Domains:   k8s.IngressHosts{m.Domain},
 		},
 	}
 }
 
-func (t *Metabase) Applier() (world.Applier, error) {
+func (m *Metabase) Applier() (world.Applier, error) {
 	return nil, nil
 }

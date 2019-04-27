@@ -12,22 +12,25 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type BackupRsyncServer struct {
+type BackupRsyncClient struct {
 	Image docker.Image
 }
 
-func (t *BackupRsyncServer) Validate(ctx context.Context) error {
+func (t *BackupRsyncClient) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Image,
 	)
 }
 
-func (b *BackupRsyncServer) Children() []world.Configuration {
+func (b *BackupRsyncClient) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.Builder{
-				GitRepo:   "https://github.com/bborbe/backup-rsync-server.git",
+				GitRepo: "https://github.com/bborbe/backup-rsync-client.git",
+				BuildArgs: docker.BuildArgs{
+					"VENDOR_VERSION": "2.0.0",
+				},
 				Image:     b.Image,
 				GitBranch: docker.GitBranch(b.Image.Tag),
 			},
@@ -35,7 +38,7 @@ func (b *BackupRsyncServer) Children() []world.Configuration {
 	}
 }
 
-func (b *BackupRsyncServer) Applier() (world.Applier, error) {
+func (b *BackupRsyncClient) Applier() (world.Applier, error) {
 	return &docker.Uploader{
 		Image: b.Image,
 	}, nil

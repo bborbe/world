@@ -11,7 +11,7 @@ import (
 	"github.com/bborbe/world/pkg/docker"
 
 	"github.com/bborbe/world/configuration/deployer"
-	service "github.com/bborbe/world/configuration/serivce"
+	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
@@ -32,6 +32,14 @@ type Hetzner struct {
 
 func (h *Hetzner) Children() []world.Configuration {
 	user := ssh.User("bborbe")
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   h.IP,
+			Port: 22,
+		},
+		User:           user,
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(&hetzner.Server{
 			ApiKey:        h.ApiKey,
@@ -52,20 +60,15 @@ func (h *Hetzner) Children() []world.Configuration {
 				},
 			},
 		),
+		&service.SecurityUpdates{
+			SSH: ssh,
+		},
 		&service.Kubernetes{
-			SSH: &ssh.SSH{
-				Host: ssh.Host{
-					IP:   h.IP,
-					Port: 22,
-				},
-				User:           user,
-				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-			},
+			SSH:         ssh,
 			Context:     h.Context,
 			ClusterIP:   h.IP,
 			DisableRBAC: h.DisableRBAC,
 			DisableCNI:  h.DisableCNI,
-			ResolvConf:  "/run/systemd/resolve/resolv.conf",
 			Version:     h.KubernetesVersion,
 		},
 	}
