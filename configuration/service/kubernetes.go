@@ -29,7 +29,7 @@ type Kubernetes struct {
 func (k *Kubernetes) Children() []world.Configuration {
 	version := k.Version
 	if version == "" {
-		version = "v1.13.5"
+		version = "v1.13.12"
 	}
 	return []world.Configuration{
 		&Etcd{

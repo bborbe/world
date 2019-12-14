@@ -38,7 +38,7 @@ type GolangBuilder struct {
 func (g *GolangBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("building golang docker image %s ...", g.Name)
 	tmpl, err := template.New("template").Parse(`
-FROM golang:1.12.0 AS build
+FROM golang:1.13.4 AS build
 RUN git clone --branch {{.Tag}} --single-branch --depth 1 {{.GitRepo}} ./src/{{.SourceDirectory}} 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o /{{.Name}} ./src/{{.Package}}
 

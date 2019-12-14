@@ -13,30 +13,31 @@ import (
 )
 
 type Bind struct {
-	Image docker.Image
+	Image     docker.Image
+	GitBranch docker.GitBranch
 }
 
-func (w *Bind) Validate(ctx context.Context) error {
+func (b *Bind) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		w.Image,
+		b.Image,
 	)
 }
 
-func (o *Bind) Children() []world.Configuration {
+func (b *Bind) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/bind.git",
-				Image:     o.Image,
-				GitBranch: docker.GitBranch(o.Image.Tag),
+				GitBranch: b.GitBranch,
+				Image:     b.Image,
 			},
 		},
 	}
 }
 
-func (o *Bind) Applier() (world.Applier, error) {
+func (b *Bind) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: o.Image,
+		Image: b.Image,
 	}, nil
 }

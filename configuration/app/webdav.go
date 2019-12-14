@@ -6,6 +6,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
@@ -21,19 +22,20 @@ type Webdav struct {
 	Password deployer.SecretValue
 }
 
-func (t *Webdav) Validate(ctx context.Context) error {
+func (w *Webdav) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
-		t.Password,
+		w.Context,
+		w.Domains,
+		w.Password,
 	)
 }
 
 func (w *Webdav) Children() []world.Configuration {
+	version := "1.0.2"
 	image := docker.Image{
 		Repository: "bborbe/webdav",
-		Tag:        "1.0.2",
+		Tag:        docker.TagWithTime(version, time.Now()),
 	}
 	port := deployer.Port{
 		Port:     80,
@@ -76,7 +78,8 @@ func (w *Webdav) Children() []world.Configuration {
 					Name:  "webdav",
 					Image: image,
 					Requirement: &build.Webdav{
-						Image: image,
+						GitBranch: docker.GitBranch(version),
+						Image:     image,
 					},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{

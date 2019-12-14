@@ -34,6 +34,9 @@ func (n *Netcup) Children() []world.Configuration {
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
 	return []world.Configuration{
+		&service.DisablePostfix{
+			SSH: ssh,
+		},
 		&service.SecurityUpdates{
 			SSH: ssh,
 		},

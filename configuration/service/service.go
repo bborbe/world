@@ -34,7 +34,7 @@ func (s *Service) Children() []world.Configuration {
 			SSH:     s.SSH,
 			Command: "systemctl daemon-reload",
 		}),
-		world.NewConfiguraionBuilder().WithApplier(&remote.Service{
+		world.NewConfiguraionBuilder().WithApplier(&remote.ServiceStart{
 			SSH:  s.SSH,
 			Name: s.Name,
 		}),

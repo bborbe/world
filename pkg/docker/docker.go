@@ -9,6 +9,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -95,6 +96,10 @@ func (r Repository) Validate(ctx context.Context) error {
 		return errors.New("Repository empty")
 	}
 	return nil
+}
+
+func TagWithTime(version string, now time.Time) Tag {
+	return Tag(version + "-" + now.Format("200601"))
 }
 
 type Tag string

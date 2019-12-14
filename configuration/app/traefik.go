@@ -39,7 +39,7 @@ func (t *Traefik) Validate(ctx context.Context) error {
 func (t *Traefik) Children() []world.Configuration {
 	traefikImage := docker.Image{
 		Repository: "bborbe/traefik",
-		Tag:        "1.7.10-alpine",
+		Tag:        "1.7.19-alpine", // https://hub.docker.com/_/traefik?tab=tags
 	}
 	httpPort := deployer.Port{
 		Port:     80,

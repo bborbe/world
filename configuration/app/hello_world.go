@@ -21,12 +21,12 @@ type HelloWorld struct {
 	Tag     docker.Tag
 }
 
-func (t *HelloWorld) Validate(ctx context.Context) error {
+func (h *HelloWorld) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
-		t.Tag,
+		h.Context,
+		h.Domains,
+		h.Tag,
 	)
 }
 

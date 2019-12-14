@@ -13,7 +13,8 @@ import (
 )
 
 type Teamvault struct {
-	Image docker.Image
+	Image   docker.Image
+	Version string
 }
 
 func (t *Teamvault) Validate(ctx context.Context) error {
@@ -23,14 +24,14 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *Teamvault) Children() []world.Configuration {
+func (t *Teamvault) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/teamvault.git",
-				Image:   p.Image,
+				Image:   t.Image,
 				BuildArgs: docker.BuildArgs{
-					"VERSION": p.Image.Tag.String(),
+					"VERSION": t.Version,
 				},
 				GitBranch: "master",
 			},
@@ -38,8 +39,8 @@ func (p *Teamvault) Children() []world.Configuration {
 	}
 }
 
-func (p *Teamvault) Applier() (world.Applier, error) {
+func (t *Teamvault) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: p.Image,
+		Image: t.Image,
 	}, nil
 }

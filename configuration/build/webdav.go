@@ -13,7 +13,8 @@ import (
 )
 
 type Webdav struct {
-	Image docker.Image
+	Image     docker.Image
+	GitBranch docker.GitBranch
 }
 
 func (w *Webdav) Validate(ctx context.Context) error {
@@ -22,20 +23,20 @@ func (w *Webdav) Validate(ctx context.Context) error {
 		w.Image,
 	)
 }
-func (o *Webdav) Children() []world.Configuration {
+func (w *Webdav) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/webdav.git",
-				Image:     o.Image,
-				GitBranch: docker.GitBranch(o.Image.Tag),
+				Image:     w.Image,
+				GitBranch: w.GitBranch,
 			},
 		},
 	}
 }
 
-func (o *Webdav) Applier() (world.Applier, error) {
+func (w *Webdav) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: o.Image,
+		Image: w.Image,
 	}, nil
 }

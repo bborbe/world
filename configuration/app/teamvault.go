@@ -7,6 +7,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/component"
@@ -46,9 +47,10 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 }
 
 func (t *Teamvault) Children() []world.Configuration {
+	version := "0.7.3"
 	image := docker.Image{
 		Repository: "bborbe/teamvault",
-		Tag:        "0.7.3",
+		Tag:        docker.TagWithTime(version, time.Now()),
 	}
 	port := deployer.Port{
 		Port:     8000,
@@ -109,7 +111,8 @@ func (t *Teamvault) Children() []world.Configuration {
 					Name:  "teamvault",
 					Image: image,
 					Requirement: &build.Teamvault{
-						Image: image,
+						Image:   image,
+						Version: version,
 					},
 					Ports: []deployer.Port{port},
 					Resources: k8s.Resources{
@@ -267,6 +270,10 @@ func (t *Teamvault) Children() []world.Configuration {
 						{
 							Name:  "LDAP_ATTR_LAST_NAME",
 							Value: "sn",
+						},
+						{
+							Name:  "LDAP_CACHE_TIMEOUT",
+							Value: "60",
 						},
 					},
 					LivenessProbe: k8s.Probe{

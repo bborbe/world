@@ -7,6 +7,8 @@ package service
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/apt"
+
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -23,6 +25,10 @@ func (d *DockerEngine) Children() []world.Configuration {
 			SSH:     d.SSH,
 			Command: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -",
 		}),
+		world.NewConfiguraionBuilder().WithApplier(&apt.Install{
+			SSH:     d.SSH,
+			Package: "software-properties-common",
+		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     d.SSH,
 			Command: `add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"`,
@@ -33,13 +39,13 @@ func (d *DockerEngine) Children() []world.Configuration {
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     d.SSH,
-			Command: `apt-get --quiet --yes --no-install-recommends install docker-ce`,
+			Command: `apt-get --quiet --yes --no-install-recommends install docker-ce docker-ce-cli containerd.io`,
 		}),
 	}
 }
 
 func (d *DockerEngine) Applier() (world.Applier, error) {
-	return &remote.Service{
+	return &remote.ServiceStart{
 		SSH:  d.SSH,
 		Name: "docker",
 	}, nil

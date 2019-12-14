@@ -23,7 +23,7 @@ type Etcd struct {
 func (e *Etcd) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/etcd",
-		Tag:        "v3.3.12",
+		Tag:        "v3.3.15",
 	}
 	return []world.Configuration{
 		&build.Etcd{

@@ -6,6 +6,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
@@ -27,9 +28,10 @@ func (b *Bind) Validate(ctx context.Context) error {
 }
 
 func (b *Bind) Children() []world.Configuration {
+	version := "1.1.0"
 	image := docker.Image{
 		Repository: "bborbe/bind",
-		Tag:        "1.1.0",
+		Tag:        docker.TagWithTime(version, time.Now()),
 	}
 	udpPort := deployer.Port{
 		Name:     "dns-udp",
@@ -68,7 +70,8 @@ func (b *Bind) Children() []world.Configuration {
 					Name:  "bind",
 					Image: image,
 					Requirement: &build.Bind{
-						Image: image,
+						Image:     image,
+						GitBranch: docker.GitBranch(version),
 					},
 					Ports: []deployer.Port{tcpPort, udpPort},
 					Resources: k8s.Resources{

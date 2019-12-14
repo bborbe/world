@@ -58,8 +58,6 @@ func (w *World) Validate(ctx context.Context) error {
 
 func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration {
 	return map[ClusterName]map[AppName]world.Configuration{
-		"cluster-1": w.cluster1(),
-		"cluster-2": w.cluster2(),
 		"netcup":    w.netcup(),
 		"sun":       w.sun(),
 		"fire":      w.fire(),
@@ -126,53 +124,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			IP:      ip,
 			Domain:  "openfaas.hetzner-1.benjamin-borbe.de",
 		},
-	}
-}
-
-func (w *World) cluster1() map[AppName]world.Configuration {
-	//k8sContext := k8s.Context("gke_smedia-kubernetes_europe-west1-d_cluster-1")
-	return map[AppName]world.Configuration{
-		//"kafka": &app.Kafka{
-		//	AccessMode:        "ReadWriteOnce",
-		//	Context:           k8sContext,
-		//	DisableConnect:    true,
-		//	DisableRest:       true,
-		//	KafkaReplicas:     1,
-		//	KafkaStorage:      "20Gi",
-		//	StorageClass:      "standard",
-		//	ZookeeperReplicas: 1,
-		//	ZookeeperStorage:  "5Gi",
-		//	Version:           "5.2.1",
-		//},
-		//"kafka-status": &app.KafkaStatus{
-		//	Context:  k8sContext,
-		//	Replicas: 1,
-		//	Domain:   "kafka-status.lab.seibert-media.net",
-		//},
-		//"metabase": &app.Metabase{
-		//	Context:          k8sContext,
-		//	NfsServer:        nfsServer,
-		//	Domain:           "metabase.lab.seibert-media.net",
-		//	DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
-		//},
-	}
-}
-
-func (w *World) cluster2() map[AppName]world.Configuration {
-	//context := k8s.Context("gke_smedia-kubernetes_europe-west1-d_cluster-2")
-	return map[AppName]world.Configuration{
-		//"kafka": &app.Kafka{
-		//	AccessMode:        "ReadWriteOnce",
-		//	Context:           context,
-		//	DisableConnect:    true,
-		//	DisableRest:       true,
-		//	KafkaReplicas:     1,
-		//	KafkaStorage:      "20Gi",
-		//	StorageClass:      "standard",
-		//	ZookeeperReplicas: 1,
-		//	ZookeeperStorage:  "5Gi",
-		//	Version:           "5.2.1",
-		//},
 	}
 }
 
@@ -308,8 +259,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 	ip := dns.IPStatic("185.170.112.48")
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Netcup{
-			Context: k8sContext,
-			IP:      ip,
+			Context:     k8sContext,
+			IP:          ip,
+			DisableCNI:  true,
+			DisableRBAC: true,
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
@@ -390,7 +343,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			StorageClass:      "hostpath",
 			ZookeeperReplicas: 1,
 			ZookeeperStorage:  "5Gi",
-			Version:           "5.2.1",
+			Version:           "5.2.3", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
 		},
 		"kafka-status": &app.KafkaStatus{
 			Context:  k8sContext,
@@ -585,7 +538,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"confluence": &app.Confluence{
 			Context:          k8sContext,
 			Domain:           "confluence.benjamin-borbe.de",
-			Version:          "6.15.2",
+			Version:          "6.15.9",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
@@ -593,7 +546,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"jira": &app.Jira{
 			Context:          k8sContext,
 			Domain:           "jira.benjamin-borbe.de",
-			Version:          "7.13.2",
+			Version:          "7.13.6",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
@@ -603,7 +556,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"poste": &app.Poste{
 			Context:      k8sContext,
-			PosteVersion: "2.1.1", // https://hub.docker.com/r/analogic/poste.io/tags
+			PosteVersion: "2.2.0", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				"mail.benjamin-borbe.de",
 			},
