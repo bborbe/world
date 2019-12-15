@@ -47,7 +47,7 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 }
 
 func (t *Teamvault) Children() []world.Configuration {
-	version := "0.7.3"
+	version := "0.8.4"
 	image := docker.Image{
 		Repository: "bborbe/teamvault",
 		Tag:        docker.TagWithTime(version, time.Now()),
