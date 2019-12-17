@@ -62,7 +62,7 @@ func (p *Prometheus) Children() []world.Configuration {
 func (p *Prometheus) prometheus() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/prometheus",
-		Tag:        "v2.4.2",
+		Tag:        "v2.14.0", // https://quay.io/repository/prometheus/prometheus?tag=latest&tab=tags
 	}
 	prometheusPort := deployer.Port{
 		Port:     9090,
@@ -301,7 +301,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 func (p *Prometheus) alertmanager() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/prometheus-alertmanager",
-		Tag:        "v0.15.2",
+		Tag:        "v0.20.0", // https://quay.io/repository/prometheus/alertmanager?tag=latest&tab=tags
 	}
 	alertmanagerPort := deployer.Port{
 		Port:     9093,
