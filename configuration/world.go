@@ -538,7 +538,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"confluence": &app.Confluence{
 			Context:          k8sContext,
 			Domain:           "confluence.benjamin-borbe.de",
-			Version:          "6.15.9",
+			Version:          "6.15.10",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
@@ -546,7 +546,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"jira": &app.Jira{
 			Context:          k8sContext,
 			Domain:           "jira.benjamin-borbe.de",
-			Version:          "7.13.6",
+			Version:          "7.13.11",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
