@@ -447,7 +447,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 func (p *Prometheus) nodeExporter() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/prometheus-node-exporter",
-		Tag:        "v0.16.0",
+		Tag:        "v0.18.1", // https://quay.io/repository/prometheus/node-exporter?tag=latest&tab=tags
 	}
 	return []world.Configuration{
 		&k8s.DaemonSetConfiguration{

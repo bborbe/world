@@ -16,29 +16,29 @@ type PrometheusNodeExporter struct {
 	Image docker.Image
 }
 
-func (t *PrometheusNodeExporter) Validate(ctx context.Context) error {
+func (p *PrometheusNodeExporter) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		p.Image,
 	)
 }
 
-func (n *PrometheusNodeExporter) Children() []world.Configuration {
+func (p *PrometheusNodeExporter) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "quay.io/prometheus/node-exporter",
-					Tag:        n.Image.Tag,
+					Tag:        p.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: p.Image,
 			},
 		},
 	}
 }
 
-func (n *PrometheusNodeExporter) Applier() (world.Applier, error) {
+func (p *PrometheusNodeExporter) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: p.Image,
 	}, nil
 }
