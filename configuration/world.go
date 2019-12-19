@@ -343,7 +343,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			StorageClass:      "hostpath",
 			ZookeeperReplicas: 1,
 			ZookeeperStorage:  "5Gi",
-			Version:           "5.2.3", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
+			Version:           "5.3.1", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
 		},
 		"kafka-status": &app.KafkaStatus{
 			Context:  k8sContext,
