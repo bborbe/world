@@ -21,12 +21,12 @@ type Now struct {
 	Tag     docker.Tag
 }
 
-func (t *Now) Validate(ctx context.Context) error {
+func (n *Now) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
-		t.Tag,
+		n.Context,
+		n.Domains,
+		n.Tag,
 	)
 }
 
