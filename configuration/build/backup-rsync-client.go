@@ -16,10 +16,10 @@ type BackupRsyncClient struct {
 	Image docker.Image
 }
 
-func (t *BackupRsyncClient) Validate(ctx context.Context) error {
+func (b *BackupRsyncClient) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		b.Image,
 	)
 }
 
