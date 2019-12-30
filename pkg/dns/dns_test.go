@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/bborbe/world/pkg/dns"
+	"github.com/bborbe/world/pkg/network"
 )
 
 func TestApply(t *testing.T) {
@@ -18,7 +19,7 @@ func TestApply(t *testing.T) {
 		List: []dns.Entry{
 			{
 				Host: "now.benjamin-borbe.de",
-				IP:   dns.IPStatic("185.170.112.48"),
+				IP:   network.IPStatic("185.170.112.48"),
 			},
 		},
 	}
@@ -35,7 +36,7 @@ func TestValidateSuccess(t *testing.T) {
 		List: []dns.Entry{
 			{
 				Host: "now.benjamin-borbe.de",
-				IP:   dns.IPStatic("185.170.112.48"),
+				IP:   network.IPStatic("185.170.112.48"),
 			},
 		},
 	}
@@ -52,7 +53,7 @@ func TestValidateFailure(t *testing.T) {
 		List: []dns.Entry{
 			{
 				Host: "now.benjamin-borbe.de",
-				IP:   dns.IPStatic("2001:db8::68"),
+				IP:   network.IPStatic("2001:db8::68"),
 			},
 		},
 	}

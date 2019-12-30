@@ -13,11 +13,11 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type SecurityUpdates struct {
+type UbuntuUnattendedUpgrades struct {
 	SSH *ssh.SSH
 }
 
-func (f *SecurityUpdates) Children() []world.Configuration {
+func (f *UbuntuUnattendedUpgrades) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(&apt.Update{
 			SSH: f.SSH,
@@ -35,11 +35,11 @@ func (f *SecurityUpdates) Children() []world.Configuration {
 	}
 }
 
-func (f *SecurityUpdates) Applier() (world.Applier, error) {
+func (f *UbuntuUnattendedUpgrades) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (f *SecurityUpdates) Validate(ctx context.Context) error {
+func (f *UbuntuUnattendedUpgrades) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		f.SSH,

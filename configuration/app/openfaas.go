@@ -9,6 +9,7 @@ import (
 
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
@@ -16,7 +17,7 @@ import (
 type OpenFaas struct {
 	Context k8s.Context
 	Domain  k8s.IngressHost
-	IP      dns.IP
+	IP      network.IP
 }
 
 func (o *OpenFaas) Validate(ctx context.Context) error {

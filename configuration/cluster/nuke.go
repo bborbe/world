@@ -10,6 +10,7 @@ import (
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -18,7 +19,7 @@ import (
 
 type Nuke struct {
 	Context     k8s.Context
-	ClusterIP   dns.IP
+	ClusterIP   network.IP
 	DisableRBAC bool
 	DisableCNI  bool
 }
@@ -49,7 +50,7 @@ func (n *Nuke) Children() []world.Configuration {
 			SSH:  ssh,
 			Port: 80,
 		}),
-		&service.SecurityUpdates{
+		&service.UbuntuUnattendedUpgrades{
 			SSH: ssh,
 		},
 		&service.Kubernetes{

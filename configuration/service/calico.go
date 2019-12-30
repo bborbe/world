@@ -9,9 +9,9 @@ import (
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
-	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 	"github.com/pkg/errors"
@@ -19,7 +19,7 @@ import (
 
 type Calico struct {
 	Context   k8s.Context
-	ClusterIP dns.IP
+	ClusterIP network.IP
 }
 
 func (c *Calico) Validate(ctx context.Context) error {

@@ -12,6 +12,7 @@ import (
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
@@ -20,7 +21,7 @@ type Ip struct {
 	Context k8s.Context
 	Domain  k8s.IngressHost
 	Tag     docker.Tag
-	IP      dns.IP
+	IP      network.IP
 }
 
 func (t *Ip) Validate(ctx context.Context) error {

@@ -14,6 +14,7 @@ import (
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
@@ -96,7 +97,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 				List: []dns.Entry{
 					{
-						Host: dns.Host("kubeless.hetzner-1.benjamin-borbe.de"),
+						Host: "kubeless.hetzner-1.benjamin-borbe.de",
 						IP:   ip,
 					},
 				},
@@ -132,14 +133,14 @@ func (w *World) fire() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Fire{
 			Context:   k8sContext,
-			ClusterIP: dns.IPStatic("192.168.178.3"),
+			ClusterIP: network.IPStatic("192.168.178.3"),
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
 		},
 		"calico": &service.Calico{
 			Context:   k8sContext,
-			ClusterIP: dns.IPStatic("192.168.178.3"),
+			ClusterIP: network.IPStatic("192.168.178.3"),
 		},
 		"dns": &app.CoreDns{
 			Context: k8sContext,
@@ -167,14 +168,14 @@ func (w *World) nuke() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Nuke{
 			Context:   k8sContext,
-			ClusterIP: dns.IPStatic("192.168.178.5"),
+			ClusterIP: network.IPStatic("192.168.178.5"),
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
 		},
 		"calico": &service.Calico{
 			Context:   k8sContext,
-			ClusterIP: dns.IPStatic("192.168.178.5"),
+			ClusterIP: network.IPStatic("192.168.178.5"),
 		},
 		"dns": &app.CoreDns{
 			Context: k8sContext,
@@ -202,14 +203,14 @@ func (w *World) sun() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Sun{
 			Context:   k8sContext,
-			ClusterIP: dns.IPStatic("192.168.2.3"),
+			ClusterIP: network.IPStatic("192.168.2.3"),
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
 		},
 		"calico": &service.Calico{
 			Context:   k8sContext,
-			ClusterIP: dns.IPStatic("192.168.2.3"),
+			ClusterIP: network.IPStatic("192.168.2.3"),
 		},
 		"dns": &app.CoreDns{
 			Context: k8sContext,
@@ -256,7 +257,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 
 func (w *World) netcup() map[AppName]world.Configuration {
 	k8sContext := k8s.Context("netcup")
-	ip := dns.IPStatic("185.170.112.48")
+	ip := network.IPStatic("185.170.112.48")
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Netcup{
 			Context:     k8sContext,
@@ -288,6 +289,15 @@ func (w *World) netcup() map[AppName]world.Configuration {
 					},
 				),
 			},
+		},
+		"mqtt-kafka-connector-co2mon": &app.MqttKafkaConnector{
+			Context:      k8sContext,
+			MqttBroker:   "tcp://rasp.hm.benjamin-borbe.de:1883",
+			MqttUser:     w.TeamvaultSecrets.Username("9qNx3O"),
+			MqttPassword: w.TeamvaultSecrets.Password("9qNx3O"),
+			MqttTopic:    "co2mon",
+			KafkaBrokers: []string{"kafka-cp-kafka-headless.kafka.svc.cluster.local:9092"},
+			KafkaTopic:   "co2mon",
 		},
 		"metabase": &app.Metabase{
 			Context:          k8sContext,

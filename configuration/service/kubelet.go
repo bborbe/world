@@ -5,20 +5,18 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/local"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -39,7 +37,7 @@ type Kubelet struct {
 	SSH         *ssh.SSH
 	Version     docker.Tag
 	Context     k8s.Context
-	ClusterIP   dns.IP
+	ClusterIP   network.IP
 	DisableRBAC bool
 	DisableCNI  bool
 	ResolvConf  string
@@ -595,18 +593,6 @@ func (k *Kubelet) pauseImage() docker.Image {
 		Repository: "bborbe/pause",
 		Tag:        "3.1",
 	}
-}
-
-func render(content string, data interface{}) ([]byte, error) {
-	tpl, err := template.New("template").Parse(content)
-	if err != nil {
-		return nil, err
-	}
-	b := &bytes.Buffer{}
-	if err := tpl.Execute(b, data); err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
 }
 
 func (k *Kubelet) certDirectory() (string, error) {

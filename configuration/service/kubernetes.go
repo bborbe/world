@@ -8,9 +8,8 @@ import (
 	"context"
 
 	"github.com/bborbe/world/pkg/docker"
-
-	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
@@ -19,7 +18,7 @@ import (
 type Kubernetes struct {
 	SSH         *ssh.SSH
 	Context     k8s.Context
-	ClusterIP   dns.IP
+	ClusterIP   network.IP
 	DisableRBAC bool
 	DisableCNI  bool
 	ResolvConf  string

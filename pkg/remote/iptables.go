@@ -19,18 +19,18 @@ type Iptables struct {
 	Port k8s.PortNumber
 }
 
-func (f *Iptables) Satisfied(ctx context.Context) (bool, error) {
-	return f.SSH.RunCommand(ctx, fmt.Sprintf("iptables -C INPUT -p tcp -m state --state NEW -m tcp --dport %d -j ACCEPT", f.Port)) == nil, nil
+func (i *Iptables) Satisfied(ctx context.Context) (bool, error) {
+	return i.SSH.RunCommand(ctx, fmt.Sprintf("iptables -C INPUT -p tcp -m state --state NEW -m tcp --dport %d -j ACCEPT", i.Port)) == nil, nil
 }
 
-func (f *Iptables) Apply(ctx context.Context) error {
-	return errors.Wrap(f.SSH.RunCommand(ctx, fmt.Sprintf("iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport %d -j ACCEPT", f.Port)), "iptables failed")
+func (i *Iptables) Apply(ctx context.Context) error {
+	return errors.Wrap(i.SSH.RunCommand(ctx, fmt.Sprintf("iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport %d -j ACCEPT", i.Port)), "iptables failed")
 }
 
-func (f *Iptables) Validate(ctx context.Context) error {
+func (i *Iptables) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		f.SSH,
-		f.Port,
+		i.SSH,
+		i.Port,
 	)
 }

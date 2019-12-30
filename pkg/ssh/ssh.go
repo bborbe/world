@@ -13,14 +13,14 @@ import (
 	"sync"
 
 	"github.com/bborbe/run"
-	"github.com/bborbe/world/pkg/dns"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
 
 type Host struct {
-	IP   dns.IP
+	IP   network.IP
 	Port int
 }
 

@@ -8,10 +8,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 
+	"github.com/bborbe/world/pkg/network"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -30,33 +30,7 @@ func (k KeyPath) String() string {
 
 type Entry struct {
 	Host Host
-	IP   IP
-}
-
-type IP interface {
-	IP(ctx context.Context) (net.IP, error)
-	Validate(ctx context.Context) error
-}
-
-type IPStatic string
-
-func (i IPStatic) IP(ctx context.Context) (net.IP, error) {
-	return net.ParseIP(i.String()), nil
-}
-
-func (i IPStatic) String() string {
-	return string(i)
-}
-
-func (i IPStatic) Validate(ctx context.Context) error {
-	ip, err := i.IP(ctx)
-	if err != nil {
-		return err
-	}
-	if !ip.To4().Equal(ip) {
-		return fmt.Errorf("ip '%s' is not a ipv4 addr", i.String())
-	}
-	return nil
+	IP   network.IP
 }
 
 type Server struct {

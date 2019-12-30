@@ -8,9 +8,9 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/service"
-	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
@@ -18,7 +18,7 @@ import (
 
 type Netcup struct {
 	Context           k8s.Context
-	IP                dns.IP
+	IP                network.IP
 	DisableRBAC       bool
 	DisableCNI        bool
 	KubernetesVersion docker.Tag
@@ -37,7 +37,7 @@ func (n *Netcup) Children() []world.Configuration {
 		&service.DisablePostfix{
 			SSH: ssh,
 		},
-		&service.SecurityUpdates{
+		&service.UbuntuUnattendedUpgrades{
 			SSH: ssh,
 		},
 		&service.Kubernetes{
