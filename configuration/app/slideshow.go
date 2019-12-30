@@ -21,11 +21,11 @@ type Slideshow struct {
 	Domains k8s.IngressHosts
 }
 
-func (t *Slideshow) Validate(ctx context.Context) error {
+func (s *Slideshow) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
+		s.Context,
+		s.Domains,
 	)
 }
 
