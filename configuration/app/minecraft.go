@@ -65,11 +65,7 @@ func (m *Minecraft) Children() []world.Configuration {
 			Namespace: "minecraft",
 			Name:      "minecraft",
 			Strategy: k8s.DeploymentStrategy{
-				Type: "RollingUpdate",
-				RollingUpdate: k8s.DeploymentStrategyRollingUpdate{
-					MaxSurge:       1,
-					MaxUnavailable: 1,
-				},
+				Type: "Recreate",
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
@@ -90,8 +86,8 @@ func (m *Minecraft) Children() []world.Configuration {
 					},
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
-							Cpu:    "1000m",
-							Memory: "1000Mi",
+							Cpu:    "2000m",
+							Memory: "2000Mi",
 						},
 						Requests: k8s.ContainerResource{
 							Cpu:    "500m",
@@ -106,7 +102,7 @@ func (m *Minecraft) Children() []world.Configuration {
 								"ping",
 							},
 						},
-						InitialDelaySeconds: 60,
+						InitialDelaySeconds: 240,
 						SuccessThreshold:    1,
 						FailureThreshold:    5,
 						TimeoutSeconds:      5,
@@ -119,7 +115,7 @@ func (m *Minecraft) Children() []world.Configuration {
 								"ping",
 							},
 						},
-						InitialDelaySeconds: 3,
+						InitialDelaySeconds: 120,
 						TimeoutSeconds:      5,
 					},
 					Mounts: []k8s.ContainerMount{
