@@ -224,6 +224,9 @@ func (w *World) sun() map[AppName]world.Configuration {
 		"dns": &app.CoreDns{
 			Context: k8sContext,
 		},
+		"minecraft": &app.Minecraft{
+			Context: k8sContext,
+			F},
 		"monitoring": &app.Monitoring{
 			Context:         k8sContext,
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
