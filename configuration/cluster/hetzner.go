@@ -6,9 +6,11 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/service"
+	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
@@ -39,36 +41,36 @@ func (h *Hetzner) Children() []world.Configuration {
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
 	return []world.Configuration{
-		//world.NewConfiguraionBuilder().WithApplier(&hetzner.Server{
-		//	ApiKey:        h.ApiKey,
-		//	Name:          h.Context,
-		//	User:          user,
-		//	PublicKeyPath: "/Users/bborbe/.ssh/id_rsa.pub",
-		//	ServerType:    h.ServerType,
-		//}),
-		//world.NewConfiguraionBuilder().WithApplier(
-		//	&dns.Server{
-		//		Host:    "ns.rocketsource.de",
-		//		KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-		//		List: []dns.Entry{
-		//			{
-		//				Host: dns.Host(fmt.Sprintf("%s.benjamin-borbe.de", h.Context.String())),
-		//				IP:   h.IP,
-		//			},
-		//		},
-		//	},
-		//),
-		//&service.UbuntuUnattendedUpgrades{
-		//	SSH: ssh,
-		//},
-		//&service.Kubernetes{
-		//	SSH:         ssh,
-		//	Context:     h.Context,
-		//	ClusterIP:   h.IP,
-		//	DisableRBAC: h.DisableRBAC,
-		//	DisableCNI:  h.DisableCNI,
-		//	Version:     h.KubernetesVersion,
-		//},
+		world.NewConfiguraionBuilder().WithApplier(&hetzner.Server{
+			ApiKey:        h.ApiKey,
+			Name:          h.Context,
+			User:          user,
+			PublicKeyPath: "/Users/bborbe/.ssh/id_rsa.pub",
+			ServerType:    h.ServerType,
+		}),
+		world.NewConfiguraionBuilder().WithApplier(
+			&dns.Server{
+				Host:    "ns.rocketsource.de",
+				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+				List: []dns.Entry{
+					{
+						Host: network.Host(fmt.Sprintf("%s.benjamin-borbe.de", h.Context.String())),
+						IP:   h.IP,
+					},
+				},
+			},
+		),
+		&service.UbuntuUnattendedUpgrades{
+			SSH: ssh,
+		},
+		&service.Kubernetes{
+			SSH:         ssh,
+			Context:     h.Context,
+			ClusterIP:   h.IP,
+			DisableRBAC: h.DisableRBAC,
+			DisableCNI:  h.DisableCNI,
+			Version:     h.KubernetesVersion,
+		},
 		&service.OpenvpnServer{
 			ServerName: "hetzner",
 			SSH:        ssh,

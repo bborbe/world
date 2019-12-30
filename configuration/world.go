@@ -64,6 +64,7 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 		"fire":      w.fire(),
 		"nuke":      w.nuke(),
 		"hetzner-1": w.hetzner1(),
+		"nova":      w.nova(),
 	}
 }
 
@@ -128,6 +129,14 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 	}
 }
 
+func (w *World) nova() map[AppName]world.Configuration {
+	return map[AppName]world.Configuration{
+		"cluster": &cluster.Nova{
+			IP:   network.IPStatic("192.168.178.122"),
+			Host: "nova.hm.benjamin-borbe.de",
+		},
+	}
+}
 func (w *World) fire() map[AppName]world.Configuration {
 	k8sContext := k8s.Context("fire")
 	return map[AppName]world.Configuration{
@@ -282,7 +291,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: dns.Host("debug.benjamin-borbe.de"),
+								Host: network.Host("debug.benjamin-borbe.de"),
 								IP:   ip,
 							},
 						},
@@ -310,7 +319,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: dns.Host("metabase.benjamin-borbe.de"),
+								Host: network.Host("metabase.benjamin-borbe.de"),
 								IP:   ip,
 							},
 						},
@@ -330,7 +339,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: dns.Host("grafana.benjamin-borbe.de"),
+								Host: network.Host("grafana.benjamin-borbe.de"),
 								IP:   ip,
 							},
 						},
@@ -366,7 +375,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: dns.Host("kafka-status.benjamin-borbe.de"),
+								Host: network.Host("kafka-status.benjamin-borbe.de"),
 								IP:   ip,
 							},
 						},
@@ -387,7 +396,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: dns.Host("versions.benjamin-borbe.de"),
+								Host: network.Host("versions.benjamin-borbe.de"),
 								IP:   ip,
 							},
 						},
@@ -408,7 +417,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: dns.Host("updates.benjamin-borbe.de"),
+								Host: network.Host("updates.benjamin-borbe.de"),
 								IP:   ip,
 							},
 						},
@@ -481,7 +490,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: dns.Host("kafka-sample.benjamin-borbe.de"),
+								Host: network.Host("kafka-sample.benjamin-borbe.de"),
 								IP:   ip,
 							},
 						},

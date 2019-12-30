@@ -41,7 +41,7 @@ func (o *OpenFaas) Children() []world.Configuration {
 				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 				List: []dns.Entry{
 					{
-						Host: dns.Host(o.Domain.String()),
+						Host: network.Host(o.Domain.String()),
 						IP:   o.IP,
 					},
 				},

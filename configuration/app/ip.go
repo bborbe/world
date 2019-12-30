@@ -55,7 +55,7 @@ func (i *Ip) Children() []world.Configuration {
 				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 				List: []dns.Entry{
 					{
-						Host: dns.Host(i.Domain.String()),
+						Host: network.Host(i.Domain.String()),
 						IP:   i.IP,
 					},
 				},

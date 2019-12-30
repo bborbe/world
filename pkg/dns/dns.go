@@ -16,12 +16,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Host string
-
-func (h Host) String() string {
-	return string(h)
-}
-
 type KeyPath string
 
 func (k KeyPath) String() string {
@@ -29,12 +23,12 @@ func (k KeyPath) String() string {
 }
 
 type Entry struct {
-	Host Host
+	Host network.Host
 	IP   network.IP
 }
 
 type Server struct {
-	Host    Host
+	Host    network.Host
 	KeyPath KeyPath
 	List    []Entry
 }
