@@ -45,7 +45,7 @@ func (m *Minecraft) Children() []world.Configuration {
 	rconPort := deployer.Port{
 		Port:     25575,
 		HostPort: 25575,
-		Name:     "server",
+		Name:     "rcon",
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
@@ -74,7 +74,6 @@ func (m *Minecraft) Children() []world.Configuration {
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{
 					Name: "server",
-					Args: []k8s.Arg{"-v=2"},
 					Env: []k8s.Env{
 						{
 							Name:  "EULA",

@@ -49,6 +49,10 @@ func (p PortNumber) String() string {
 
 type PortProtocol string
 
+func (p PortProtocol) String() string {
+	return string(p)
+}
+
 func (p PortProtocol) Validate(ctx context.Context) error {
 	if p != "TCP" && p != "UDP" {
 		return errors.New("Protocol missing")

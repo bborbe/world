@@ -6,6 +6,8 @@ package k8s
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
@@ -59,6 +61,25 @@ func (r Resources) Validate(ctx context.Context) error {
 	)
 }
 
+type ContainerPorts []ContainerPort
+
+func (c ContainerPorts) Validate(ctx context.Context) error {
+	containerPorts := make(map[string]struct{})
+	for _, port := range c {
+		protocol := strings.ToUpper(port.Protocol.String())
+		if protocol == "" {
+			protocol = "TCP"
+		}
+		key := fmt.Sprint(protocol, port.ContainerPort)
+		_, ok := containerPorts[key]
+		if ok {
+			return errors.Errorf("duplicate container port %s %s", port.Protocol, port.ContainerPort)
+		}
+		containerPorts[key] = struct{}{}
+	}
+	return nil
+}
+
 type ContainerPort struct {
 	ContainerPort PortNumber   `yaml:"containerPort,omitempty"`
 	HostPort      PortNumber   `yaml:"hostPort,omitempty"`
@@ -103,7 +124,7 @@ type Container struct {
 	Command         []Command        `yaml:"command,omitempty"`
 	Args            []Arg            `yaml:"args,omitempty"`
 	Env             []Env            `yaml:"env,omitempty"`
-	Ports           []ContainerPort  `yaml:"ports,omitempty"`
+	Ports           ContainerPorts   `yaml:"ports,omitempty"`
 	Resources       Resources        `yaml:"resources,omitempty"`
 	VolumeMounts    []ContainerMount `yaml:"volumeMounts,omitempty"`
 	ReadinessProbe  Probe            `yaml:"readinessProbe,omitempty"`
@@ -116,6 +137,7 @@ func (c Container) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		c.Resources,
+		c.Ports,
 	)
 }
 
