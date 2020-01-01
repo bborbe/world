@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/deployer"
@@ -144,6 +145,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 	for _, target := range b.BackupTargets {
 		buf := &bytes.Buffer{}
 		for _, exclude := range target.Excludes {
+			exclude = strings.ReplaceAll(exclude, ` `, `\ `)
 			fmt.Fprintf(buf, "- %s\n", exclude)
 		}
 		configValues[fmt.Sprintf("%s.exclude", target.Host)] = deployer.ConfigValueStatic(buf.String())
