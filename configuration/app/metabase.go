@@ -69,19 +69,19 @@ func (m *Metabase) metabase() []world.Configuration {
 			PostgresVersion:      "10.5",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "metabase",
-			PostgresUsername: &deployer.SecretValueStatic{
-				Content: []byte("metabase"),
-			},
-			PostgresPassword: m.DatabasePassword,
+			PostgresUsername:     deployer.SecretValueStatic([]byte("metabase")),
+			PostgresPassword:     m.DatabasePassword,
 		},
-		&deployer.SecretDeployer{
-			Context:   m.Context,
-			Namespace: "metabase",
-			Name:      "metabase",
-			Secrets: deployer.Secrets{
-				"database-password": m.DatabasePassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   m.Context,
+				Namespace: "metabase",
+				Name:      "metabase",
+				Secrets: deployer.Secrets{
+					"database-password": m.DatabasePassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   m.Context,
 			Namespace: "metabase",

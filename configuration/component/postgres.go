@@ -77,15 +77,17 @@ func (p *Postgres) Children() []world.Configuration {
 		},
 	}
 	return []world.Configuration{
-		&deployer.SecretDeployer{
-			Context:   p.Context,
-			Namespace: p.Namespace,
-			Name:      "postgres",
-			Secrets: deployer.Secrets{
-				"username": p.PostgresUsername,
-				"password": p.PostgresPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   p.Context,
+				Namespace: p.Namespace,
+				Name:      "postgres",
+				Secrets: deployer.Secrets{
+					"username": p.PostgresUsername,
+					"password": p.PostgresPassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   p.Context,
 			Namespace: p.Namespace,

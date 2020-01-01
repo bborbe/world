@@ -61,14 +61,16 @@ func (l *Ldap) Children() []world.Configuration {
 				},
 			},
 		},
-		&deployer.SecretDeployer{
-			Context:   l.Context,
-			Namespace: "ldap",
-			Name:      "ldap",
-			Secrets: deployer.Secrets{
-				"secret": l.LdapPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   l.Context,
+				Namespace: "ldap",
+				Name:      "ldap",
+				Secrets: deployer.Secrets{
+					"secret": l.LdapPassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   l.Context,
 			Namespace: "ldap",

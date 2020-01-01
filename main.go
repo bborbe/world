@@ -14,9 +14,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bborbe/world/pkg/hetzner"
+
 	"github.com/bborbe/http/client_builder"
-	teamvault "github.com/bborbe/teamvault-utils"
-	teamvaultconnector "github.com/bborbe/teamvault-utils/connector"
+	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world/configuration"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
@@ -139,13 +140,19 @@ func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error
 
 	builder := world.Builder{
 		Configuration: &configuration.World{
-			App:     configuration.AppName(appName),
-			Cluster: configuration.ClusterName(clusterName),
+			HetznerClient: hetzner.NewClient(),
+			App:           configuration.AppName(appName),
+			Cluster:       configuration.ClusterName(clusterName),
 			TeamvaultSecrets: &secret.Teamvault{
-				TeamvaultConnector: teamvaultconnector.NewCache(
-					&teamvaultconnector.DiskFallback{
-						Connector: teamvaultconnector.NewRemote(client_builder.New().WithTimeout(5*time.Second).Build().Do, teamvaultConfig.Url, teamvaultConfig.User, teamvaultConfig.Password),
-					},
+				TeamvaultConnector: teamvault.NewCache(
+					teamvault.NewDiskFallbackConnector(
+						teamvault.NewRemoteConnector(
+							client_builder.New().WithTimeout(5*time.Second).Build().Do,
+							teamvaultConfig.Url,
+							teamvaultConfig.User,
+							teamvaultConfig.Password,
+						),
+					),
 				),
 			},
 		},

@@ -80,11 +80,8 @@ func (e *ErpNext) redisCache() []world.Configuration {
 				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "redis-cache",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "redis.conf",
-						Value: redisCacheConf,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"redis.conf": deployer.ConfigValueStatic(redisCacheConf),
 				},
 			},
 		),
@@ -182,11 +179,8 @@ func (e *ErpNext) redisQueue() []world.Configuration {
 				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "redis-queue",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "redis.conf",
-						Value: redisQueueConf,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"redis.conf": deployer.ConfigValueStatic(redisQueueConf),
 				},
 			},
 		),
@@ -284,11 +278,8 @@ func (e *ErpNext) redisSocketio() []world.Configuration {
 				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "redis-socketio",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "redis.conf",
-						Value: redisSocketioConf,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"redis.conf": deployer.ConfigValueStatic(redisSocketioConf),
 				},
 			},
 		),
@@ -386,36 +377,26 @@ func (e *ErpNext) mariadb() []world.Configuration {
 				Context:   e.Context,
 				Namespace: "erpnext",
 				Name:      "mariadb",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "my.cnf",
-						Value: mariadbMyCnf,
-					},
-					deployer.ConfigEntry{
-						Key:   "mysql.cnf",
-						Value: mariadbMysqlCnf,
-					},
-					deployer.ConfigEntry{
-						Key:   "mysqld_safe_syslog.cnf",
-						Value: mariadbMysqldSafeSyslogCnf,
-					},
-					deployer.ConfigEntry{
-						Key:   "mysqldump.cnf",
-						Value: mariadbMysqldumpCnf,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"my.cnf":                 deployer.ConfigValueStatic(mariadbMyCnf),
+					"mysql.cnf":              deployer.ConfigValueStatic(mariadbMysqlCnf),
+					"mysqld_safe_syslog.cnf": deployer.ConfigValueStatic(mariadbMysqldSafeSyslogCnf),
+					"mysqldump.cnf":          deployer.ConfigValueStatic(mariadbMysqldumpCnf),
 				},
 			},
 		),
-		&deployer.SecretDeployer{
-			Context:   e.Context,
-			Namespace: "erpnext",
-			Name:      "mariadb",
-			Secrets: deployer.Secrets{
-				"root-password": e.DatabaseRootPassword,
-				"db-name":       e.DatabaseName,
-				"db-password":   e.DatabasePassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   e.Context,
+				Namespace: "erpnext",
+				Name:      "mariadb",
+				Secrets: deployer.Secrets{
+					"root-password": e.DatabaseRootPassword,
+					"db-name":       e.DatabaseName,
+					"db-password":   e.DatabasePassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   e.Context,
 			Namespace: "erpnext",
@@ -584,16 +565,18 @@ func (e *ErpNext) erpnext() []world.Configuration {
 		fileWatcherPort,
 	}
 	return []world.Configuration{
-		&deployer.SecretDeployer{
-			Context:   e.Context,
-			Namespace: "erpnext",
-			Name:      "erpnext",
-			Secrets: deployer.Secrets{
-				"db-name":        e.DatabaseName,
-				"db-password":    e.DatabasePassword,
-				"admin-password": e.AdminPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   e.Context,
+				Namespace: "erpnext",
+				Name:      "erpnext",
+				Secrets: deployer.Secrets{
+					"db-name":        e.DatabaseName,
+					"db-password":    e.DatabasePassword,
+					"admin-password": e.AdminPassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   e.Context,
 			Namespace: "erpnext",

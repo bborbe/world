@@ -70,10 +70,8 @@ func (j *Jira) Children() []world.Configuration {
 			PostgresVersion:      "9.6-alpine",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=POSIX.UTF-8 --lc-ctype=POSIX.UTF-8 -T",
 			PostgresDatabaseName: "jira",
-			PostgresUsername: &deployer.SecretValueStatic{
-				Content: []byte("jira"),
-			},
-			PostgresPassword: j.DatabasePassword,
+			PostgresUsername:     deployer.SecretValueStatic([]byte("jira")),
+			PostgresPassword:     j.DatabasePassword,
 		},
 		&deployer.DeploymentDeployer{
 			Context:      j.Context,

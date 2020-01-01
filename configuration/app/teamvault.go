@@ -77,23 +77,23 @@ func (t *Teamvault) Children() []world.Configuration {
 			PostgresVersion:      "10.5",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "teamvault",
-			PostgresUsername: &deployer.SecretValueStatic{
-				Content: []byte("teamvault"),
-			},
-			PostgresPassword: t.DatabasePassword,
+			PostgresUsername:     deployer.SecretValueStatic([]byte("teamvault")),
+			PostgresPassword:     t.DatabasePassword,
 		},
-		&deployer.SecretDeployer{
-			Context:   t.Context,
-			Namespace: "teamvault",
-			Name:      "teamvault",
-			Secrets: deployer.Secrets{
-				"database-password": t.DatabasePassword,
-				"secret-key":        t.SecretKey,
-				"fernet-key":        t.FernetKey,
-				"salt":              t.Salt,
-				"ldap-password":     t.LdapPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   t.Context,
+				Namespace: "teamvault",
+				Name:      "teamvault",
+				Secrets: deployer.Secrets{
+					"database-password": t.DatabasePassword,
+					"secret-key":        t.SecretKey,
+					"fernet-key":        t.FernetKey,
+					"salt":              t.Salt,
+					"ldap-password":     t.LdapPassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:      t.Context,
 			Namespace:    "teamvault",

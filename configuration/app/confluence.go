@@ -70,10 +70,8 @@ func (c *Confluence) Children() []world.Configuration {
 			PostgresVersion:      "9.5.14",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "confluence",
-			PostgresUsername: &deployer.SecretValueStatic{
-				Content: []byte("confluence"),
-			},
-			PostgresPassword: c.DatabasePassword,
+			PostgresUsername:     deployer.SecretValueStatic([]byte("confluence")),
+			PostgresPassword:     c.DatabasePassword,
 		},
 		&deployer.DeploymentDeployer{
 			Context:      c.Context,

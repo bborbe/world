@@ -63,15 +63,17 @@ func (m *Monitoring) Children() []world.Configuration {
 				},
 			},
 		},
-		&deployer.SecretDeployer{
-			Context:   m.Context,
-			Namespace: "monitoring",
-			Name:      "monitoring",
-			Secrets: deployer.Secrets{
-				"git-sync-password": m.GitSyncPassword,
-				"smtp-password":     m.SmtpPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   m.Context,
+				Namespace: "monitoring",
+				Name:      "monitoring",
+				Secrets: deployer.Secrets{
+					"git-sync-password": m.GitSyncPassword,
+					"smtp-password":     m.SmtpPassword,
+				},
 			},
-		},
+		),
 	}
 	for _, config := range m.Configs {
 		configurations = append(configurations, &MonitoringDeployment{

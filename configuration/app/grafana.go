@@ -74,15 +74,9 @@ func (g *Grafana) grafana() []world.Configuration {
 				Context:   g.Context,
 				Namespace: "grafana",
 				Name:      "config",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "grafana.ini",
-						Value: grafanaIni,
-					},
-					deployer.ConfigEntry{
-						Key:       "ldap.toml",
-						ValueFrom: g.generateLdapToml,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"grafana.ini": deployer.ConfigValueStatic(grafanaIni),
+					"ldap.toml":   deployer.ConfigValueFunc(g.generateLdapToml),
 				},
 			},
 		),
@@ -91,11 +85,8 @@ func (g *Grafana) grafana() []world.Configuration {
 				Context:   g.Context,
 				Namespace: "grafana",
 				Name:      "datasources",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "all.yml",
-						Value: datasourceYaml,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"all.yml": deployer.ConfigValueStatic(datasourceYaml),
 				},
 			},
 		),
@@ -233,11 +224,11 @@ func (g *Grafana) generateLdapToml(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "parse ldap toml failed")
 	}
 	b := &bytes.Buffer{}
-	user, err := g.LdapUsername.Value()
+	user, err := g.LdapUsername.Value(ctx)
 	if err != nil {
 		return "", errors.Wrap(err, "get ldap username failed")
 	}
-	password, err := g.LdapPassword.Value()
+	password, err := g.LdapPassword.Value(ctx)
 	if err != nil {
 		return "", errors.Wrap(err, "get ldap password failed")
 	}

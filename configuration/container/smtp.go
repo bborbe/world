@@ -50,15 +50,17 @@ func (s *Smtp) Validate(ctx context.Context) error {
 
 func (s *Smtp) Requirements() []world.Configuration {
 	return []world.Configuration{
-		&deployer.SecretDeployer{
-			Context:   s.Context,
-			Namespace: s.Namespace,
-			Name:      "smtp",
-			Secrets: deployer.Secrets{
-				"username": s.SmtpUsername,
-				"password": s.SmtpPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   s.Context,
+				Namespace: s.Namespace,
+				Name:      "smtp",
+				Secrets: deployer.Secrets{
+					"username": s.SmtpUsername,
+					"password": s.SmtpPassword,
+				},
 			},
-		},
+		),
 	}
 }
 

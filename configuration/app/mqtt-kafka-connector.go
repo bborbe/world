@@ -61,15 +61,17 @@ func (m *MqttKafkaConnector) Children() []world.Configuration {
 				},
 			},
 		},
-		&deployer.SecretDeployer{
-			Context:   m.Context,
-			Namespace: "mqtt-kafka-connector",
-			Name:      "mqtt",
-			Secrets: deployer.Secrets{
-				"user":     m.MqttUser,
-				"password": m.MqttPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   m.Context,
+				Namespace: "mqtt-kafka-connector",
+				Name:      "mqtt",
+				Secrets: deployer.Secrets{
+					"user":     m.MqttUser,
+					"password": m.MqttPassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   m.Context,
 			Namespace: "mqtt-kafka-connector",

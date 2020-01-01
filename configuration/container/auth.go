@@ -44,16 +44,18 @@ func (a *Auth) Requirements() []world.Configuration {
 		&build.AuthHttpProxy{
 			Image: a.image(),
 		},
-		&deployer.SecretDeployer{
-			Context:   a.Context,
-			Namespace: a.Namespace,
-			Name:      "auth",
-			Secrets: deployer.Secrets{
-				"ldap-user":     a.LdapUsername,
-				"ldap-password": a.LdapPassword,
-				"auth-secret":   a.Secret,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   a.Context,
+				Namespace: a.Namespace,
+				Name:      "auth",
+				Secrets: deployer.Secrets{
+					"ldap-user":     a.LdapUsername,
+					"ldap-password": a.LdapPassword,
+					"auth-secret":   a.Secret,
+				},
 			},
-		},
+		),
 	}
 }
 

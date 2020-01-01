@@ -55,14 +55,16 @@ func (p *Portfolio) Children() []world.Configuration {
 				},
 			},
 		},
-		&deployer.SecretDeployer{
-			Context:   p.Context,
-			Namespace: "portfolio",
-			Name:      "portfolio",
-			Secrets: deployer.Secrets{
-				"git-sync-password": p.GitSyncPassword,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   p.Context,
+				Namespace: "portfolio",
+				Name:      "portfolio",
+				Secrets: deployer.Secrets{
+					"git-sync-password": p.GitSyncPassword,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   p.Context,
 			Namespace: "portfolio",

@@ -157,15 +157,9 @@ func (p *Prometheus) prometheus() []world.Configuration {
 				Context:   p.Context,
 				Namespace: "prometheus",
 				Name:      "prometheus",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "prometheus.yaml",
-						Value: prometheusConfig,
-					},
-					deployer.ConfigEntry{
-						Key:   "alert.rules.yaml",
-						Value: prometheusAlertRulesConfig,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"prometheus.yaml":  deployer.ConfigValueStatic(prometheusConfig),
+					"alert.rules.yaml": deployer.ConfigValueStatic(prometheusAlertRulesConfig),
 				},
 			},
 		),
@@ -319,11 +313,8 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 				Context:   p.Context,
 				Namespace: "prometheus",
 				Name:      "alertmanager",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "alertmanager.yaml",
-						Value: prometheusAlertmanagerConfig,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"alertmanager.yaml": deployer.ConfigValueStatic(prometheusAlertmanagerConfig),
 				},
 			},
 		),

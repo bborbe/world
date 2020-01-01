@@ -5,23 +5,101 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
+	"github.com/pkg/errors"
 )
 
+func NewBackupConfigJson(targets BackupTargets) BackupConfigJson {
+	var result BackupConfigJson
+	for _, target := range targets {
+		result = append(result, BackupConfigJsonEntry{
+			Active:      true,
+			User:        target.User,
+			Host:        target.Host,
+			IP:          target.IP,
+			Port:        target.Port,
+			ExcludeFrom: fmt.Sprintf("/config/%s.exclude", target.Host),
+			Directory:   target.Directory,
+		})
+	}
+	return result
+}
+
+type BackupConfigJson []BackupConfigJsonEntry
+
+type BackupConfigJsonEntry struct {
+	Active      bool   `json:"active"`
+	User        string `json:"user"`
+	Host        string `json:"host"`
+	IP          string `json:"ip"`
+	Port        int    `json:"port"`
+	ExcludeFrom string `json:"exclude_from"`
+	Directory   string `json:"dir"`
+}
+
+func (b BackupConfigJson) Value(ctx context.Context) (string, error) {
+	buf := &bytes.Buffer{}
+	if err := json.NewEncoder(buf).Encode(b); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func (b BackupConfigJson) Validate(ctx context.Context) error {
+	return json.NewEncoder(&bytes.Buffer{}).Encode(b)
+}
+
+type BackupTargets []BackupTarget
+
+func (b BackupTargets) Validate(ctx context.Context) error {
+	for _, target := range b {
+		if err := target.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type BackupTarget struct {
+	User      string
+	Host      string
+	IP        string
+	Port      int
+	Excludes  []string
+	Directory string
+}
+
+func (b BackupTarget) Validate(ctx context.Context) error {
+	if b.Directory == "" {
+		return errors.New("Directory missing")
+	}
+	if b.User == "" {
+		return errors.New("User missing")
+	}
+	if b.Host == "" {
+		return errors.New("Host missing")
+	}
+	if b.Port <= 0 || b.Port >= 65535 {
+		return errors.Errorf("invalid port %d", b.Port)
+	}
+	return nil
+}
+
 type BackupClient struct {
-	Context         k8s.Context
-	Domains         k8s.IngressHosts
-	GitSyncPassword deployer.SecretValue
-	BackupSshKey    deployer.SecretValue
-	GitRepoUrl      container.GitRepoUrl
+	Context       k8s.Context
+	Domains       k8s.IngressHosts
+	BackupSshKey  deployer.SecretValue
+	BackupTargets BackupTargets
 }
 
 func (b *BackupClient) Validate(ctx context.Context) error {
@@ -29,9 +107,8 @@ func (b *BackupClient) Validate(ctx context.Context) error {
 		ctx,
 		b.Context,
 		b.Domains,
-		b.GitSyncPassword,
 		b.BackupSshKey,
-		b.GitRepoUrl,
+		b.BackupTargets,
 	)
 }
 
@@ -61,16 +138,35 @@ func (b *BackupClient) rsync() []world.Configuration {
 		Repository: "bborbe/backup-rsync-client",
 		Tag:        "1.1.0",
 	}
+	configValues := map[string]deployer.ConfigValue{
+		"backup-config.json": NewBackupConfigJson(b.BackupTargets),
+	}
+	for _, target := range b.BackupTargets {
+		buf := &bytes.Buffer{}
+		for _, exclude := range target.Excludes {
+			fmt.Fprintf(buf, "- %s\n", exclude)
+		}
+		configValues[fmt.Sprintf("%s.exclude", target.Host)] = deployer.ConfigValueStatic(buf.String())
+	}
 	return []world.Configuration{
-		&deployer.SecretDeployer{
-			Context:   b.Context,
-			Namespace: "backup",
-			Name:      "backup",
-			Secrets: deployer.Secrets{
-				"git-sync-password": b.GitSyncPassword,
-				"backup-ssh-key":    b.BackupSshKey,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.ConfigMapApplier{
+				Context:      b.Context,
+				Namespace:    "backup",
+				Name:         "config",
+				ConfigValues: configValues,
 			},
-		},
+		),
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   b.Context,
+				Namespace: "backup",
+				Name:      "backup",
+				Secrets: deployer.Secrets{
+					"backup-ssh-key": b.BackupSshKey,
+				},
+			},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   b.Context,
 			Namespace: "backup",
@@ -99,7 +195,10 @@ func (b *BackupClient) rsync() []world.Configuration {
 							Memory: "500Mi",
 						},
 					},
-					Args: []k8s.Arg{"-logtostderr", "-v=4"},
+					Args: []k8s.Arg{
+						"-logtostderr",
+						"-v=4",
+					},
 					Env: []k8s.Env{
 						{
 							Name:  "CONFIG",
@@ -139,18 +238,13 @@ func (b *BackupClient) rsync() []world.Configuration {
 						},
 					},
 				},
-				&container.GitSync{
-					MountName:                 "config",
-					GitRepoUrl:                b.GitRepoUrl,
-					GitSyncUsername:           "bborbereadonly",
-					GitSyncPasswordSecretName: "backup",
-					GitSyncPasswordSecretPath: "git-sync-password",
-				},
 			},
 			Volumes: []k8s.PodVolume{
 				{
-					Name:     "config",
-					EmptyDir: &k8s.PodVolumeEmptyDir{},
+					Name: "config",
+					ConfigMap: k8s.PodVolumeConfigMap{
+						Name: "config",
+					},
 				},
 				{
 					Name: "backup",

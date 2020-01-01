@@ -111,11 +111,13 @@ func (t *Traefik) Children() []world.Configuration {
 				Context:   t.Context,
 				Namespace: "traefik",
 				Name:      "traefik",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "config",
-						Value: t.traefikConfig(),
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"config": deployer.ConfigValueFunc(func(ctx context.Context) (string, error) {
+						if t.SSL {
+							return traefikConfigWithHttps, nil
+						}
+						return traefikConfigWithoutHttps, nil
+					}),
 				},
 			},
 		),
@@ -390,12 +392,6 @@ func (t *Traefik) Applier() (world.Applier,
 	error) {
 	return nil,
 		nil
-}
-func (t *Traefik) traefikConfig() string {
-	if t.SSL {
-		return traefikConfigWithHttps
-	}
-	return traefikConfigWithoutHttps
 }
 
 const traefikConfigWithHttps = `graceTimeOut = 10

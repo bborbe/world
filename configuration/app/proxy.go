@@ -65,26 +65,22 @@ func (p *Proxy) Children() []world.Configuration {
 				Context:   p.Context,
 				Namespace: "proxy",
 				Name:      "proxy",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "user.action",
-						Value: privoxyUserAction,
-					},
-					deployer.ConfigEntry{
-						Key:   "user.filter",
-						Value: privoxyUserConfig,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"user.action": deployer.ConfigValueStatic(privoxyUserAction),
+					"user.filter": deployer.ConfigValueStatic(privoxyUserConfig),
 				},
 			},
 		),
-		&deployer.SecretDeployer{
-			Context:   p.Context,
-			Namespace: "proxy",
-			Name:      "proxy",
-			Secrets: deployer.Secrets{
-				"htpasswd": p.Password,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   p.Context,
+				Namespace: "proxy",
+				Name:      "proxy",
+				Secrets: deployer.Secrets{
+					"htpasswd": p.Password,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   p.Context,
 			Namespace: "proxy",

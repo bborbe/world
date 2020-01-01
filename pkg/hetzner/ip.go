@@ -8,17 +8,24 @@ import (
 	"context"
 	"net"
 
+	"github.com/golang/glog"
+
 	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
+	"github.com/pkg/errors"
 )
 
 type IP struct {
+	Client Client
 	ApiKey deployer.SecretValue
 	Name   k8s.Context
 }
 
 func (i IP) Validate(ctx context.Context) error {
+	if i.Client == nil {
+		return errors.New("client missing")
+	}
 	return validation.Validate(ctx,
 		i.Name,
 		i.ApiKey,
@@ -26,14 +33,10 @@ func (i IP) Validate(ctx context.Context) error {
 }
 
 func (i IP) IP(ctx context.Context) (net.IP, error) {
-	bytes, err := i.ApiKey.Value()
+	apiKey, err := i.ApiKey.Value(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "get apikey failed")
 	}
-	server, _, err := ApiKey(bytes).Client().Server.GetByName(ctx, i.Name.String())
-	if err != nil {
-		return nil, err
-	}
-	return server.PublicNet.IPv4.IP, nil
-
+	glog.V(4).Infof("get ip for %s with api key %s", i.Name.String(), string(apiKey))
+	return i.Client.GetIP(ctx, ApiKey(apiKey), i.Name)
 }

@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/app"
+	"github.com/bborbe/world/configuration/backup"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
@@ -28,6 +29,7 @@ type World struct {
 	App              AppName
 	Cluster          ClusterName
 	TeamvaultSecrets *secret.Teamvault
+	HetznerClient    hetzner.Client
 }
 
 func (w *World) Children() []world.Configuration {
@@ -72,6 +74,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 	k8sContext := k8s.Context("hetzner-1")
 	apiKey := w.TeamvaultSecrets.Password("kLolmq")
 	ip := &hetzner.IP{
+		Client: w.HetznerClient,
 		ApiKey: apiKey,
 		Name:   k8sContext,
 	}
@@ -165,9 +168,10 @@ func (w *World) fire() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"backup.fire.hm.benjamin-borbe.de",
 			},
-			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
-			BackupSshKey:    w.TeamvaultSecrets.File("8q1bJw"),
-			GitRepoUrl:      "https://bborbereadonly@bitbucket.org/bborbe/backup_config_fire.git",
+			BackupSshKey: w.TeamvaultSecrets.File("8q1bJw"),
+			BackupTargets: app.BackupTargets{
+				backup.Sun,
+			},
 		},
 	}
 }
@@ -200,9 +204,10 @@ func (w *World) nuke() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"backup.nuke.hm.benjamin-borbe.de",
 			},
-			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
-			BackupSshKey:    w.TeamvaultSecrets.File("8q1bJw"),
-			GitRepoUrl:      "https://bborbereadonly@bitbucket.org/bborbe/backup_config_nuke.git",
+			BackupSshKey: w.TeamvaultSecrets.File("8q1bJw"),
+			BackupTargets: app.BackupTargets{
+				backup.Fire,
+			},
 		},
 	}
 }
@@ -260,9 +265,18 @@ func (w *World) sun() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"backup.sun.pn.benjamin-borbe.de",
 			},
-			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
-			BackupSshKey:    w.TeamvaultSecrets.File("8q1bJw"),
-			GitRepoUrl:      "https://bborbereadonly@bitbucket.org/bborbe/backup_config_sun.git",
+			BackupSshKey: w.TeamvaultSecrets.File("8q1bJw"),
+			BackupTargets: app.BackupTargets{
+				backup.Netcup,
+				backup.Sun,
+				backup.Rasp,
+				backup.Co2hz,
+				backup.Co2wz,
+				backup.Fire,
+				backup.Nuke,
+				backup.Nova,
+				backup.Star,
+			},
 		},
 	}
 }

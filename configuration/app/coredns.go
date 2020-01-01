@@ -52,11 +52,8 @@ func (c *CoreDns) Children() []world.Configuration {
 				Context:   c.Context,
 				Namespace: "kube-system",
 				Name:      "coredns",
-				ConfigEntryList: deployer.ConfigEntryList{
-					deployer.ConfigEntry{
-						Key:   "Corefile",
-						Value: corefileConfig,
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"Corefile": deployer.ConfigValueStatic(corefileConfig),
 				},
 			},
 		),

@@ -187,56 +187,31 @@ func (c *Calico) Children() []world.Configuration {
 				Context:   c.Context,
 				Namespace: "kube-system",
 				Name:      "calico-config",
-				ConfigEntryList: deployer.ConfigEntryList{
-					{
-						Key: "etcd_ca",
-						ValueFrom: func(ctx context.Context) (string, error) {
-							return "", nil
-						},
-					},
-					{
-						Key: "etcd_cert",
-						ValueFrom: func(ctx context.Context) (string, error) {
-							return "", nil
-						},
-					},
-					{
-						Key: "etcd_key",
-						ValueFrom: func(ctx context.Context) (string, error) {
-							return "", nil
-						},
-					},
-					{
-						Key:   "calico_backend",
-						Value: "bird",
-					},
-					{
-						Key:   "veth_mtu",
-						Value: "1440",
-					},
-					{
-						Key:   "cni_network_config",
-						Value: "{\n  \"name\": \"k8s-pod-network\",\n  \"cniVersion\": \"0.3.0\",\n  \"plugins\": [\n    {\n      \"type\": \"calico\",\n      \"log_level\": \"info\",\n      \"etcd_endpoints\": \"__ETCD_ENDPOINTS__\",\n      \"etcd_key_file\": \"__ETCD_KEY_FILE__\",\n      \"etcd_cert_file\": \"__ETCD_CERT_FILE__\",\n      \"etcd_ca_cert_file\": \"__ETCD_CA_CERT_FILE__\",\n      \"mtu\": __CNI_MTU__,\n      \"ipam\": {\n          \"type\": \"calico-ipam\"\n      },\n      \"policy\": {\n          \"type\": \"k8s\"\n      },\n      \"kubernetes\": {\n          \"kubeconfig\": \"__KUBECONFIG_FILEPATH__\"\n      }\n    },\n    {\n      \"type\": \"portmap\",\n      \"snat\": true,\n      \"capabilities\": {\"portMappings\": true}\n    }\n  ]\n}",
-					},
-					{
-						Key: "etcd_endpoints",
-						ValueFrom: func(ctx context.Context) (string, error) {
-							ip, err := c.ClusterIP.IP(ctx)
-							if err != nil {
-								return "", errors.Wrap(err, "get ip failed")
-							}
-							return fmt.Sprintf("http://%s:2379", ip), nil
-						},
-					},
+				ConfigValues: map[string]deployer.ConfigValue{
+					"etcd_ca":   deployer.ConfigValueStatic(""),
+					"etcd_cert": deployer.ConfigValueStatic(""),
+					"etcd_key":  deployer.ConfigValueStatic(""),
+					"etcd_endpoints": deployer.ConfigValueFunc(func(ctx context.Context) (string, error) {
+						ip, err := c.ClusterIP.IP(ctx)
+						if err != nil {
+							return "", errors.Wrap(err, "get ip failed")
+						}
+						return fmt.Sprintf("http://%s:2379", ip), nil
+					}),
+					"calico_backend":     deployer.ConfigValueStatic("bird"),
+					"veth_mtu":           deployer.ConfigValueStatic("1440"),
+					"cni_network_config": deployer.ConfigValueStatic("{\n  \"name\": \"k8s-pod-network\",\n  \"cniVersion\": \"0.3.0\",\n  \"plugins\": [\n    {\n      \"type\": \"calico\",\n      \"log_level\": \"info\",\n      \"etcd_endpoints\": \"__ETCD_ENDPOINTS__\",\n      \"etcd_key_file\": \"__ETCD_KEY_FILE__\",\n      \"etcd_cert_file\": \"__ETCD_CERT_FILE__\",\n      \"etcd_ca_cert_file\": \"__ETCD_CA_CERT_FILE__\",\n      \"mtu\": __CNI_MTU__,\n      \"ipam\": {\n          \"type\": \"calico-ipam\"\n      },\n      \"policy\": {\n          \"type\": \"k8s\"\n      },\n      \"kubernetes\": {\n          \"kubeconfig\": \"__KUBECONFIG_FILEPATH__\"\n      }\n    },\n    {\n      \"type\": \"portmap\",\n      \"snat\": true,\n      \"capabilities\": {\"portMappings\": true}\n    }\n  ]\n}"),
 				},
 			},
 		),
-		&deployer.SecretDeployer{
-			Context:   c.Context,
-			Namespace: "kube-system",
-			Name:      "calico-etcd-secrets",
-			Secrets:   deployer.Secrets{},
-		},
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   c.Context,
+				Namespace: "kube-system",
+				Name:      "calico-etcd-secrets",
+				Secrets:   deployer.Secrets{},
+			},
+		),
 		&k8s.DaemonSetConfiguration{
 			Requirements: []world.Configuration{
 				&build.CalicoCNI{

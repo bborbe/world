@@ -139,7 +139,7 @@ func (s *Server) Apply(ctx context.Context) error {
 }
 
 func (s *Server) client(ctx context.Context) (*hcloud.Client, error) {
-	bytes, err := s.ApiKey.Value()
+	bytes, err := s.ApiKey.Value(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get secret failed")
 	}

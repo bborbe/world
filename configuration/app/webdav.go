@@ -54,14 +54,16 @@ func (w *Webdav) Children() []world.Configuration {
 				},
 			},
 		},
-		&deployer.SecretDeployer{
-			Context:   w.Context,
-			Namespace: "webdav",
-			Name:      "webdav",
-			Secrets: deployer.Secrets{
-				"password": w.Password,
+		world.NewConfiguraionBuilder().WithApplier(
+			&deployer.SecretApplier{
+				Context:   w.Context,
+				Namespace: "webdav",
+				Name:      "webdav",
+				Secrets: deployer.Secrets{
+					"password": w.Password,
+				},
 			},
-		},
+		),
 		&deployer.DeploymentDeployer{
 			Context:   w.Context,
 			Namespace: "webdav",

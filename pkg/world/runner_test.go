@@ -8,7 +8,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bborbe/teamvault-utils/connector"
+	"github.com/bborbe/world/pkg/hetzner"
+
+	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world/configuration"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/world"
@@ -18,8 +20,9 @@ func TestValidate(t *testing.T) {
 	ctx := context.Background()
 	builder := world.Builder{
 		Configuration: &configuration.World{
+			HetznerClient: hetzner.NewCLientDummy(),
 			TeamvaultSecrets: &secret.Teamvault{
-				TeamvaultConnector: connector.NewDummy(),
+				TeamvaultConnector: teamvault.NewDummyConnector(),
 			},
 		},
 	}
