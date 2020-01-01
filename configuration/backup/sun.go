@@ -33,8 +33,5 @@ var Sun = app.BackupTarget{
 		"/var/log",
 		"/var/run",
 		"/var/tmp",
-		"/sun-timemachine",
-		"/sun-backup",
-		"/sun-data",
 	},
 }
