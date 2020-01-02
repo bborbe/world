@@ -93,6 +93,7 @@ var Nova = app.BackupTarget{
 		"/Users/jana/VirtualBox VMs/*",
 		"/Users/Shared/Epic Games/*",
 		"/Users/Shared/Lightroom/Lightroom Catalog Previews.lrdata/*",
+		"/Users/Shared/Lightroom/Lightroom Catalog-2 Previews.lrdata/*",
 		"/Users/Shared/UnrealEngine/*",
 		"/Volumes/*",
 		"Saved Application State",
