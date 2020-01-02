@@ -139,7 +139,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 		Repository: "bborbe/backup-rsync-client",
 		Tag:        "1.1.0",
 	}
-	configValues := map[string]deployer.ConfigValue{
+	configValues := deployer.ConfigValues{
 		"backup-config.json": NewBackupConfigJson(b.BackupTargets),
 	}
 	for _, target := range b.BackupTargets {
@@ -179,6 +179,9 @@ func (b *BackupClient) rsync() []world.Configuration {
 					MaxSurge:       1,
 					MaxUnavailable: 1,
 				},
+			},
+			Annotations: map[string]string{
+				"config-checksum": configValues.Checksum(),
 			},
 			Containers: []deployer.HasContainer{
 				&deployer.DeploymentDeployerContainer{

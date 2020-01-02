@@ -6,12 +6,23 @@ package deployer
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 )
 
 type ConfigValues map[string]ConfigValue
+
+func (c ConfigValues) Checksum() string {
+	hasher := md5.New()
+	for _, value := range c {
+		value, _ := value.Value(context.Background())
+		hasher.Write([]byte(value))
+	}
+	return hex.EncodeToString(hasher.Sum(nil))
+}
 
 func (c ConfigValues) Validate(ctx context.Context) error {
 	for _, value := range c {

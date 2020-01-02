@@ -80,27 +80,27 @@ type DeploymentDeployer struct {
 	HostNetwork        k8s.PodHostNetwork
 	Requirements       []world.Configuration
 	DnsPolicy          k8s.PodDnsPolicy
-	Labels             k8s.Labels
+	Annotations        k8s.Annotations
 	Strategy           k8s.DeploymentStrategy
 	ServiceAccountName string
 }
 
-func (w *DeploymentDeployer) Validate(ctx context.Context) error {
-	for _, container := range w.Containers {
+func (d *DeploymentDeployer) Validate(ctx context.Context) error {
+	for _, container := range d.Containers {
 		if err := container.Validate(ctx); err != nil {
 			return errors.Wrap(err, "validate container failed")
 		}
 	}
 
-	if w.Strategy.Type == "" {
+	if d.Strategy.Type == "" {
 		return errors.New("Deployment Strategy missing")
 	}
 
 	return validation.Validate(
 		ctx,
-		w.Context,
-		w.Namespace,
-		w.Name,
+		d.Context,
+		d.Namespace,
+		d.Name,
 	)
 }
 
@@ -167,6 +167,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 			Labels: k8s.Labels{
 				"app": d.Name.String(),
 			},
+			Annotations: d.Annotations,
 		},
 		Spec: k8s.DeploymentSpec{
 			Replicas:             1,
@@ -182,6 +183,7 @@ func (d *DeploymentDeployer) deployment() k8s.Deployment {
 					Labels: k8s.Labels{
 						"app": d.Name.String(),
 					},
+					Annotations: d.Annotations,
 				},
 				Spec: k8s.PodSpec{
 					Containers:         d.containers(),
