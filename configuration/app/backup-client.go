@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bborbe/world/configuration/build"
@@ -144,6 +145,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 	}
 	for _, target := range b.BackupTargets {
 		buf := &bytes.Buffer{}
+		sort.Strings(target.Excludes)
 		for _, exclude := range target.Excludes {
 			exclude = strings.ReplaceAll(exclude, ` `, `\ `)
 			fmt.Fprintf(buf, "- %s\n", exclude)

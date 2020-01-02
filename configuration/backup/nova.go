@@ -97,5 +97,6 @@ var Nova = app.BackupTarget{
 		"/Users/Shared/UnrealEngine/*",
 		"/Volumes/*",
 		"Saved Application State",
+		"/Users/bborbe/Documents/workspaces/go/pkg/*",
 	},
 }
