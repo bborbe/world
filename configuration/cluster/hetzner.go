@@ -28,23 +28,16 @@ type Hetzner struct {
 	DisableCNI        bool
 	KubernetesVersion docker.Tag
 	ServerType        hetzner.ServerType
+	User              ssh.User
+	SSH               *ssh.SSH
 }
 
 func (h *Hetzner) Children() []world.Configuration {
-	user := ssh.User("bborbe")
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   h.IP,
-			Port: 22,
-		},
-		User:           user,
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-	}
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(&hetzner.Server{
 			ApiKey:        h.ApiKey,
 			Name:          h.Context,
-			User:          user,
+			User:          h.User,
 			PublicKeyPath: "/Users/bborbe/.ssh/id_rsa.pub",
 			ServerType:    h.ServerType,
 		}),
@@ -61,22 +54,15 @@ func (h *Hetzner) Children() []world.Configuration {
 			},
 		),
 		&service.UbuntuUnattendedUpgrades{
-			SSH: ssh,
+			SSH: h.SSH,
 		},
 		&service.Kubernetes{
-			SSH:         ssh,
+			SSH:         h.SSH,
 			Context:     h.Context,
 			ClusterIP:   h.IP,
 			DisableRBAC: h.DisableRBAC,
 			DisableCNI:  h.DisableCNI,
 			Version:     h.KubernetesVersion,
-		},
-		&service.OpenvpnServer{
-			ServerName: "hetzner",
-			SSH:        ssh,
-			ServerIP:   "192.168.0.0",
-			ServerMask: "255.255.255.0",
-			Routes:     []service.OpenvpnRoute{},
 		},
 	}
 }

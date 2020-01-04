@@ -8,6 +8,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bborbe/world/pkg/content"
+	"github.com/bborbe/world/pkg/file"
+
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -17,14 +20,14 @@ import (
 type Service struct {
 	SSH     *ssh.SSH
 	Name    remote.ServiceName
-	Content remote.HasContent
+	Content content.HasContent
 }
 
 func (s *Service) Children() []world.Configuration {
 	return []world.Configuration{
-		&File{
+		&remote.File{
 			SSH:     s.SSH,
-			Path:    remote.Path(fmt.Sprintf("/etc/systemd/system/%s.service", s.Name)),
+			Path:    file.Path(fmt.Sprintf("/etc/systemd/system/%s.service", s.Name)),
 			Content: s.Content,
 			User:    "root",
 			Group:   "root",

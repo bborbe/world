@@ -7,6 +7,9 @@ package service
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/file"
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
@@ -15,43 +18,45 @@ import (
 
 type Directory struct {
 	SSH   *ssh.SSH
-	Path  remote.Path
-	User  remote.User
-	Group remote.Group
-	Perm  remote.Perm
+	Path  file.HasPath
+	User  file.User
+	Group file.Group
+	Perm  file.Perm
 }
 
-func (f *Directory) Children() []world.Configuration {
+func (d *Directory) Children() []world.Configuration {
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(&remote.Directory{
-			SSH:  f.SSH,
-			Path: f.Path,
+			SSH:  d.SSH,
+			Path: d.Path,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.Chown{
-			SSH:   f.SSH,
-			Path:  f.Path,
-			User:  f.User,
-			Group: f.Group,
+			SSH:   d.SSH,
+			Path:  d.Path,
+			User:  d.User,
+			Group: d.Group,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.Chmod{
-			SSH:  f.SSH,
-			Path: f.Path,
-			Perm: f.Perm,
+			SSH:  d.SSH,
+			Path: d.Path,
+			Perm: d.Perm,
 		}),
 	}
 }
 
-func (f *Directory) Applier() (world.Applier, error) {
+func (d *Directory) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (f *Directory) Validate(ctx context.Context) error {
+func (d *Directory) Validate(ctx context.Context) error {
+	if d.Path == nil {
+		return errors.New("Path missing")
+	}
 	return validation.Validate(
 		ctx,
-		f.SSH,
-		f.Path,
-		f.User,
-		f.Group,
-		f.Perm,
+		d.SSH,
+		d.User,
+		d.Group,
+		d.Perm,
 	)
 }

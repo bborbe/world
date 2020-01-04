@@ -17,6 +17,7 @@ require (
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.2
 	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
+	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114 // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/client-go v9.0.0+incompatible

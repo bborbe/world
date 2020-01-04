@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package service
+package template
 
 import (
 	"bytes"
 	"text/template"
 )
 
-func render(content string, data interface{}) ([]byte, error) {
+func Render(content string, data interface{}) ([]byte, error) {
 	tpl, err := template.New("template").Parse(content)
 	if err != nil {
 		return nil, err

@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bborbe/world/pkg/content"
+
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
@@ -41,7 +43,7 @@ func (d *Docker) Children() []world.Configuration {
 		&Service{
 			SSH:  d.SSH,
 			Name: d.Name,
-			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+			Content: content.Func(func(ctx context.Context) ([]byte, error) {
 				content, err := d.BuildDockerServiceContent(ctx)
 				if err != nil {
 					return nil, errors.Wrap(err, "get DockerServiceContent failed")

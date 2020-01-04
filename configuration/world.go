@@ -7,16 +7,19 @@ package configuration
 import (
 	"context"
 
+	"github.com/bborbe/world/configuration/openvpn"
+
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/backup"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/configuration/network"
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
-	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/secret"
+	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
@@ -78,12 +81,31 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		ApiKey: apiKey,
 		Name:   k8sContext,
 	}
+
+	user := ssh.User("bborbe")
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   ip,
+			Port: 22,
+		},
+		User:           user,
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
+
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Hetzner{
 			Context:    k8sContext,
 			ApiKey:     apiKey,
 			IP:         ip,
 			ServerType: "cx11",
+			User:       user,
+			SSH:        ssh,
+		},
+		"openvpn-server": &openvpn.Server{
+			ServerName:  "hetzner",
+			SSH:         ssh,
+			ServerIPNet: network.HetznerVPNIPNet,
+			Routes:      openvpn.Routes{},
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
@@ -135,8 +157,12 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 func (w *World) nova() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Nova{
-			IP:   network.IPStatic("192.168.178.122"),
+			IP:   network.NovaIP,
 			Host: "nova.hm.benjamin-borbe.de",
+		},
+		"openvpn-client": &openvpn.Client{
+			ClientName: "nova",
+			ServerName: "vpn.benjamin-borbe.de",
 		},
 	}
 }
@@ -145,14 +171,14 @@ func (w *World) fire() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Fire{
 			Context:   k8sContext,
-			ClusterIP: network.IPStatic("192.168.178.3"),
+			ClusterIP: network.FireIP,
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
 		},
 		"calico": &service.Calico{
 			Context:   k8sContext,
-			ClusterIP: network.IPStatic("192.168.178.3"),
+			ClusterIP: network.FireIP,
 		},
 		"dns": &app.CoreDns{
 			Context: k8sContext,
@@ -181,14 +207,14 @@ func (w *World) nuke() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Nuke{
 			Context:   k8sContext,
-			ClusterIP: network.IPStatic("192.168.178.5"),
+			ClusterIP: network.NukeIP,
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
 		},
 		"calico": &service.Calico{
 			Context:   k8sContext,
-			ClusterIP: network.IPStatic("192.168.178.5"),
+			ClusterIP: network.NukeIP,
 		},
 		"dns": &app.CoreDns{
 			Context: k8sContext,
@@ -217,14 +243,14 @@ func (w *World) sun() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Sun{
 			Context:   k8sContext,
-			ClusterIP: network.IPStatic("192.168.2.3"),
+			ClusterIP: network.SunIP,
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
 		},
 		"calico": &service.Calico{
 			Context:   k8sContext,
-			ClusterIP: network.IPStatic("192.168.2.3"),
+			ClusterIP: network.SunIP,
 		},
 		"dns": &app.CoreDns{
 			Context: k8sContext,
@@ -283,11 +309,10 @@ func (w *World) sun() map[AppName]world.Configuration {
 
 func (w *World) netcup() map[AppName]world.Configuration {
 	k8sContext := k8s.Context("netcup")
-	ip := network.IPStatic("185.170.112.48")
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Netcup{
 			Context:     k8sContext,
-			IP:          ip,
+			IP:          network.NetcupIP,
 			DisableCNI:  true,
 			DisableRBAC: true,
 		},
@@ -296,7 +321,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"calico": &service.Calico{
 			Context:   k8sContext,
-			ClusterIP: ip,
+			ClusterIP: network.NetcupIP,
 		},
 		"debug": &app.Debug{
 			Context: k8sContext,
@@ -308,8 +333,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.Host("debug.benjamin-borbe.de"),
-								IP:   ip,
+								Host: network.DebugHostname,
+								IP:   network.NetcupIP,
 							},
 						},
 					},
@@ -336,8 +361,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.Host("metabase.benjamin-borbe.de"),
-								IP:   ip,
+								Host: network.MetabaseHostname,
+								IP:   network.NetcupIP,
 							},
 						},
 					},
@@ -346,7 +371,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"grafana": &app.Grafana{
 			Context:      k8sContext,
-			Domain:       "grafana.benjamin-borbe.de",
+			Domain:       k8s.IngressHost(network.GrafanaHostname.String()),
 			LdapUsername: w.TeamvaultSecrets.Username("MOPMLG"),
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 			Requirements: []world.Configuration{
@@ -356,8 +381,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.Host("grafana.benjamin-borbe.de"),
-								IP:   ip,
+								Host: network.GrafanaHostname,
+								IP:   network.NetcupIP,
 							},
 						},
 					},
@@ -392,8 +417,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.Host("kafka-status.benjamin-borbe.de"),
-								IP:   ip,
+								Host: network.KafkaStatus,
+								IP:   network.NetcupIP,
 							},
 						},
 					},
@@ -413,8 +438,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.Host("versions.benjamin-borbe.de"),
-								IP:   ip,
+								Host: network.VersionsHostname,
+								IP:   network.NetcupIP,
 							},
 						},
 					},
@@ -434,8 +459,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.Host("updates.benjamin-borbe.de"),
-								IP:   ip,
+								Host: network.UpdatesHostname,
+								IP:   network.NetcupIP,
 							},
 						},
 					},
@@ -507,8 +532,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.Host("kafka-sample.benjamin-borbe.de"),
-								IP:   ip,
+								Host: network.KafkaSampleHostname,
+								IP:   network.NetcupIP,
 							},
 						},
 					},
@@ -637,7 +662,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"ip": &app.Ip{
 			Context: k8sContext,
-			IP:      ip,
+			IP:      network.NetcupIP,
 			Tag:     "1.1.0",
 			Domain:  "ip.benjamin-borbe.de",
 		},

@@ -20,23 +20,23 @@ type IngresseConfiguration struct {
 	Requirements []world.Configuration
 }
 
-func (d *IngresseConfiguration) Validate(ctx context.Context) error {
+func (i *IngresseConfiguration) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		d.Context,
-		d.Ingress,
+		i.Context,
+		i.Ingress,
 	)
 }
 
-func (d *IngresseConfiguration) Applier() (world.Applier, error) {
+func (i *IngresseConfiguration) Applier() (world.Applier, error) {
 	return &IngressApplier{
-		Context: d.Context,
-		Ingress: d.Ingress,
+		Context: i.Context,
+		Ingress: i.Ingress,
 	}, nil
 }
 
-func (d *IngresseConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (i *IngresseConfiguration) Children() []world.Configuration {
+	return i.Requirements
 }
 
 type IngressApplier struct {
@@ -44,23 +44,23 @@ type IngressApplier struct {
 	Ingress Ingress
 }
 
-func (s *IngressApplier) Satisfied(ctx context.Context) (bool, error) {
+func (i *IngressApplier) Satisfied(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (s *IngressApplier) Apply(ctx context.Context) error {
+func (i *IngressApplier) Apply(ctx context.Context) error {
 	deployer := &Deployer{
-		Context: s.Context,
-		Data:    s.Ingress,
+		Context: i.Context,
+		Data:    i.Ingress,
 	}
 	return deployer.Apply(ctx)
 }
 
-func (s *IngressApplier) Validate(ctx context.Context) error {
-	if s.Context == "" {
+func (i *IngressApplier) Validate(ctx context.Context) error {
+	if i.Context == "" {
 		return errors.New("context missing")
 	}
-	return s.Ingress.Validate(ctx)
+	return i.Ingress.Validate(ctx)
 }
 
 type Ingress struct {

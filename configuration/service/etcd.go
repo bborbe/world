@@ -7,6 +7,8 @@ package service
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/file"
+
 	"github.com/bborbe/world/pkg/remote"
 
 	"github.com/bborbe/world/configuration/build"
@@ -31,7 +33,7 @@ func (e *Etcd) Children() []world.Configuration {
 		},
 		&Directory{
 			SSH:   e.SSH,
-			Path:  "/var/lib/etcd",
+			Path:  file.Path("/var/lib/etcd"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,

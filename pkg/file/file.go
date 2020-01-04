@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package remote
+package file
 
 import (
 	"context"
@@ -11,33 +11,31 @@ import (
 	"github.com/pkg/errors"
 )
 
+type HasPath interface {
+	Path(ctx context.Context) (string, error)
+}
+
+type PathFunc func(ctx context.Context) (string, error)
+
+func (p PathFunc) Path(ctx context.Context) (string, error) {
+	return p(ctx)
+}
+
 type Path string
+
+func (p Path) Path(ctx context.Context) (string, error) {
+	return p.String(), nil
+}
 
 func (p Path) String() string {
 	return string(p)
 }
 
-func (f Path) Validate(ctx context.Context) error {
-	if f == "" {
+func (p Path) Validate(ctx context.Context) error {
+	if p == "" {
 		return errors.New("Path missing")
 	}
 	return nil
-}
-
-type HasContent interface {
-	Content(ctx context.Context) ([]byte, error)
-}
-
-type StaticContent []byte
-
-func (s StaticContent) Content(ctx context.Context) ([]byte, error) {
-	return s, nil
-}
-
-type ContentFunc func(ctx context.Context) ([]byte, error)
-
-func (s ContentFunc) Content(ctx context.Context) ([]byte, error) {
-	return s(ctx)
 }
 
 type User string

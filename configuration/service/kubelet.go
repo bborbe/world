@@ -12,6 +12,10 @@ import (
 	"os/user"
 	"path"
 
+	"github.com/bborbe/world/pkg/content"
+	"github.com/bborbe/world/pkg/file"
+	"github.com/bborbe/world/pkg/template"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -60,130 +64,130 @@ func (k *Kubelet) Children() []world.Configuration {
 		},
 		&Directory{
 			SSH:   k.SSH,
-			Path:  "/etc/kubernetes",
+			Path:  file.Path("/etc/kubernetes"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
 		},
 		&Directory{
 			SSH:   k.SSH,
-			Path:  "/etc/kubernetes/ssl",
+			Path:  file.Path("/etc/kubernetes/ssl"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
 		},
 		&Directory{
 			SSH:   k.SSH,
-			Path:  "/etc/kubernetes/manifests",
+			Path:  file.Path("/etc/kubernetes/manifests"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
 		},
 		&Directory{
 			SSH:   k.SSH,
-			Path:  "/srv",
+			Path:  file.Path("/srv"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
 		},
 		&Directory{
 			SSH:   k.SSH,
-			Path:  "/srv/kubernetes",
+			Path:  file.Path("/srv/kubernetes"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
 		},
 		&Directory{
 			SSH:   k.SSH,
-			Path:  "/srv/kubernetes/manifests",
+			Path:  file.Path("/srv/kubernetes/manifests"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
 		},
 		&Directory{
 			SSH:   k.SSH,
-			Path:  "/var/lib/kubelet",
+			Path:  file.Path("/var/lib/kubelet"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
 		},
-		&File{
+		&remote.File{
 			SSH:   k.SSH,
-			Path:  "/etc/kubernetes/ssl/ca.pem",
+			Path:  file.Path("/etc/kubernetes/ssl/ca.pem"),
 			User:  "root",
 			Group: "root",
 			Perm:  0644,
-			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+			Content: content.Func(func(ctx context.Context) ([]byte, error) {
 				return k.readPem(ctx, caCert)
 			}),
 		},
-		&File{
+		&remote.File{
 			SSH:   k.SSH,
-			Path:  "/etc/kubernetes/ssl/node-key.pem",
+			Path:  file.Path("/etc/kubernetes/ssl/node-key.pem"),
 			User:  "root",
 			Group: "root",
 			Perm:  0644,
-			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+			Content: content.Func(func(ctx context.Context) ([]byte, error) {
 				return k.readPem(ctx, serverKey)
 			}),
 		},
-		&File{
+		&remote.File{
 			SSH:   k.SSH,
-			Path:  "/etc/kubernetes/ssl/node.pem",
+			Path:  file.Path("/etc/kubernetes/ssl/node.pem"),
 			User:  "root",
 			Group: "root",
 			Perm:  0644,
-			Content: remote.ContentFunc(func(ctx context.Context) ([]byte, error) {
+			Content: content.Func(func(ctx context.Context) ([]byte, error) {
 				return k.readPem(ctx, serverCert)
 			}),
 		},
-		&File{
+		&remote.File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/manifests/kube-apiserver.yaml",
+			Path:    file.Path("/etc/kubernetes/manifests/kube-apiserver.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
-			Content: remote.ContentFunc(k.kubeApiserverYaml),
+			Content: content.Func(k.kubeApiserverYaml),
 		},
-		&File{
+		&remote.File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/manifests/kube-podmaster.yaml",
+			Path:    file.Path("/etc/kubernetes/manifests/kube-podmaster.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
-			Content: remote.ContentFunc(k.kubePodmasterYaml),
+			Content: content.Func(k.kubePodmasterYaml),
 		},
-		&File{
+		&remote.File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/kubeconfig.yaml",
+			Path:    file.Path("/etc/kubernetes/kubeconfig.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
-			Content: remote.ContentFunc(k.nodeKubeconfigYaml),
+			Content: content.Func(k.nodeKubeconfigYaml),
 		},
-		&File{
+		&remote.File{
 			SSH:     k.SSH,
-			Path:    "/etc/kubernetes/manifests/kube-proxy.yaml",
+			Path:    file.Path("/etc/kubernetes/manifests/kube-proxy.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
-			Content: remote.ContentFunc(k.kubeProxyYaml),
+			Content: content.Func(k.kubeProxyYaml),
 		},
-		&File{
+		&remote.File{
 			SSH:     k.SSH,
-			Path:    "/srv/kubernetes/manifests/kube-scheduler.yaml",
+			Path:    file.Path("/srv/kubernetes/manifests/kube-scheduler.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
-			Content: remote.ContentFunc(k.kubeSchedulerYaml),
+			Content: content.Func(k.kubeSchedulerYaml),
 		},
-		&File{
+		&remote.File{
 			SSH:     k.SSH,
-			Path:    "/srv/kubernetes/manifests/kube-controller-manager.yaml",
+			Path:    file.Path("/srv/kubernetes/manifests/kube-controller-manager.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
-			Content: remote.ContentFunc(k.kubeControllerManagerYaml),
+			Content: content.Func(k.kubeControllerManagerYaml),
 		},
 		&Docker{
 			SSH:  k.SSH,
@@ -310,7 +314,7 @@ func (k *Kubelet) kubeApiserverYaml(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return render(`  
+	return template.Render(`  
 apiVersion: v1
 kind: Pod
 metadata:
@@ -385,7 +389,7 @@ func (k *Kubelet) kubePodmasterYaml(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return render(`
+	return template.Render(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -442,7 +446,7 @@ spec:
 }
 
 func (k *Kubelet) nodeKubeconfigYaml(ctx context.Context) ([]byte, error) {
-	return render(`
+	return template.Render(`
 apiVersion: v1
 kind: Config
 clusters:
@@ -465,7 +469,7 @@ current-context: kubelet-context
 }
 
 func (k *Kubelet) kubeProxyYaml(ctx context.Context) ([]byte, error) {
-	return render(`
+	return template.Render(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -499,7 +503,7 @@ spec:
 }
 
 func (k *Kubelet) kubeSchedulerYaml(ctx context.Context) ([]byte, error) {
-	return render(`
+	return template.Render(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -529,7 +533,7 @@ spec:
 }
 
 func (k *Kubelet) kubeControllerManagerYaml(ctx context.Context) ([]byte, error) {
-	return render(`
+	return template.Render(`
 apiVersion: v1
 kind: Pod
 metadata:
