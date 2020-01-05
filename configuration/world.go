@@ -74,6 +74,7 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 }
 
 func (w *World) hetzner1() map[AppName]world.Configuration {
+	name := "hetzner"
 	k8sContext := k8s.Context("hetzner-1")
 	apiKey := w.TeamvaultSecrets.Password("kLolmq")
 	ip := &hetzner.IP{
@@ -91,7 +92,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		User:           user,
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
-
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Hetzner{
 			Context:    k8sContext,
@@ -102,8 +102,8 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			SSH:        ssh,
 		},
 		"openvpn-server": &openvpn.Server{
-			ServerName:  "hetzner",
 			SSH:         ssh,
+			ServerName:  openvpn.ServerName(name),
 			ServerIPNet: network.HetznerVPNIPNet,
 			Routes:      openvpn.Routes{},
 		},
@@ -155,43 +155,59 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 }
 
 func (w *World) nova() map[AppName]world.Configuration {
+	name := "nova"
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Nova{
 			IP:   network.NovaIP,
 			Host: "nova.hm.benjamin-borbe.de",
 		},
 		"openvpn-client": &openvpn.LocalClient{
-			ClientName:    "nova",
+			ClientName:    openvpn.ClientName(name),
 			ServerName:    "hetzner",
 			ServerAddress: "hetzner-1.benjamin-borbe.de",
 		},
 	}
 }
 func (w *World) fire() map[AppName]world.Configuration {
-	k8sContext := k8s.Context("fire")
+	name := "fire"
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   network.FireIP,
+			Port: 22,
+		},
+		User:           "bborbe",
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Fire{
-			Context:   k8sContext,
+			SSH:       ssh,
+			Context:   k8s.Context(name),
 			ClusterIP: network.FireIP,
 		},
 		"cluster-admin": &service.ClusterAdmin{
-			Context: k8sContext,
+			Context: k8s.Context(name),
 		},
 		"calico": &service.Calico{
-			Context:   k8sContext,
+			Context:   k8s.Context(name),
 			ClusterIP: network.FireIP,
 		},
 		"dns": &app.CoreDns{
-			Context: k8sContext,
+			Context: k8s.Context(name),
 		},
+		//"openvpn-client": &openvpn.RemoteClient{
+		//	SSH:           ssh,
+		//	ClientName:    openvpn.ClientName(name),
+		//	ServerName:    "hetzner",
+		//	ServerAddress: "hetzner-1.benjamin-borbe.de",
+		//},
 		"traefik": &app.Traefik{
-			Context: k8sContext,
+			Context: k8s.Context(name),
 			Domains: k8s.IngressHosts{
 				"traefik.fire.hm.benjamin-borbe.de",
 			},
 		},
 		"backup": &app.BackupClient{
-			Context: k8sContext,
+			Context: k8s.Context(name),
 			Domains: k8s.IngressHosts{
 				"backup.fire.hm.benjamin-borbe.de",
 			},

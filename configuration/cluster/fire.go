@@ -18,6 +18,7 @@ import (
 )
 
 type Fire struct {
+	SSH         *ssh.SSH
 	Context     k8s.Context
 	ClusterIP   network.IP
 	DisableRBAC bool
@@ -25,14 +26,6 @@ type Fire struct {
 }
 
 func (f *Fire) Children() []world.Configuration {
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   f.ClusterIP,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-	}
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&dns.Server{
@@ -47,14 +40,14 @@ func (f *Fire) Children() []world.Configuration {
 			},
 		),
 		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
-			SSH:  ssh,
+			SSH:  f.SSH,
 			Port: 80,
 		}),
 		&service.UbuntuUnattendedUpgrades{
-			SSH: ssh,
+			SSH: f.SSH,
 		},
 		&service.Kubernetes{
-			SSH:         ssh,
+			SSH:         f.SSH,
 			Context:     f.Context,
 			ClusterIP:   f.ClusterIP,
 			DisableRBAC: f.DisableRBAC,
