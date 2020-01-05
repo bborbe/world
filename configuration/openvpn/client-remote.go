@@ -26,14 +26,6 @@ type RemoteClient struct {
 func (r *RemoteClient) Children() []world.Configuration {
 	clientConfig := r.clientConfig()
 	return []world.Configuration{
-		&remote.File{
-			SSH:     r.SSH,
-			Path:    file.Path("/etc/default/openvpn"),
-			User:    "root",
-			Group:   "root",
-			Perm:    0644,
-			Content: clientConfig.ServerConfig.OpenvpnDefaultConf(),
-		},
 		&service.Directory{
 			SSH:   r.SSH,
 			Path:  file.Path("/etc/openvpn"),
@@ -100,6 +92,14 @@ func (r *RemoteClient) Children() []world.Configuration {
 		world.NewConfiguraionBuilder().WithApplier(&apt.Clean{
 			SSH: r.SSH,
 		}),
+		&remote.File{
+			SSH:     r.SSH,
+			Path:    file.Path("/etc/default/openvpn"),
+			User:    "root",
+			Group:   "root",
+			Perm:    0644,
+			Content: clientConfig.ServerConfig.OpenvpnDefaultConf(),
+		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.ServiceStart{
 			SSH:  r.SSH,
 			Name: "openvpn",

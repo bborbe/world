@@ -7,17 +7,19 @@ package cluster
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/ssh"
+
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/remote"
-	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
 type Nuke struct {
+	SSH         *ssh.SSH
 	Context     k8s.Context
 	ClusterIP   network.IP
 	DisableRBAC bool
@@ -25,14 +27,7 @@ type Nuke struct {
 }
 
 func (n *Nuke) Children() []world.Configuration {
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   n.ClusterIP,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-	}
+
 	return []world.Configuration{
 		world.NewConfiguraionBuilder().WithApplier(
 			&dns.Server{
@@ -47,14 +42,14 @@ func (n *Nuke) Children() []world.Configuration {
 			},
 		),
 		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
-			SSH:  ssh,
+			SSH:  n.SSH,
 			Port: 80,
 		}),
 		&service.UbuntuUnattendedUpgrades{
-			SSH: ssh,
+			SSH: n.SSH,
 		},
 		&service.Kubernetes{
-			SSH:         ssh,
+			SSH:         n.SSH,
 			Context:     n.Context,
 			ClusterIP:   n.ClusterIP,
 			DisableRBAC: n.DisableRBAC,

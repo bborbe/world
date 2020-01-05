@@ -8,18 +8,27 @@ import (
 	"github.com/bborbe/world/pkg/network"
 )
 
-const (
-	NetcupIP = network.IPStatic("185.170.112.48")
+type Network struct {
+	Name  string
+	IPNet network.IPNet
+}
 
-	PNNetwork = network.IPNetStatic("192.168.2.0/24")
-	SunIP     = network.IPStatic("192.168.2.3")
+var PN = Network{
+	Name:  "pn",
+	IPNet: network.IPNetStatic("192.168.2.0/24"),
+}
 
-	HetznerVPNIPNet = network.IPNetStatic("172.16.90.1/24")
+var HetznerVPN = Network{
+	Name:  "hetzner-vpn",
+	IPNet: network.IPNetStatic("172.16.90.1/24"),
+}
 
-	RaspVPNIPNet = network.IPNetStatic("172.16.80.1/24")
+var RaspVPN = Network{
+	Name:  "rasp-vpn",
+	IPNet: network.IPNetStatic("172.16.80.1/24"),
+}
 
-	HMNetwork = network.IPNetStatic("192.168.178.0/24")
-	FireIP    = network.IPStatic("192.168.178.3")
-	NukeIP    = network.IPStatic("192.168.178.5")
-	NovaIP    = network.IPStatic("192.168.178.122")
-)
+var HM = Network{
+	Name:  "hm",
+	IPNet: network.IPNetStatic("192.168.178.0/24"),
+}

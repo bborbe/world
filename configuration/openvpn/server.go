@@ -43,14 +43,6 @@ func (s *Server) Children() []world.Configuration {
 		Routes:      s.Routes,
 	}
 	return []world.Configuration{
-		&remote.File{
-			SSH:     s.SSH,
-			Path:    file.Path("/etc/default/openvpn"),
-			User:    "root",
-			Group:   "root",
-			Perm:    0644,
-			Content: serverConfig.OpenvpnDefaultConf(),
-		},
 		&service.Directory{
 			SSH:   s.SSH,
 			Path:  file.Path("/etc/openvpn/keys"),
@@ -134,6 +126,14 @@ func (s *Server) Children() []world.Configuration {
 		world.NewConfiguraionBuilder().WithApplier(&apt.Clean{
 			SSH: s.SSH,
 		}),
+		&remote.File{
+			SSH:     s.SSH,
+			Path:    file.Path("/etc/default/openvpn"),
+			User:    "root",
+			Group:   "root",
+			Perm:    0644,
+			Content: serverConfig.OpenvpnDefaultConf(),
+		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.ServiceStart{
 			SSH:  s.SSH,
 			Name: "openvpn",
