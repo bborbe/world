@@ -194,12 +194,12 @@ func (w *World) fire() map[AppName]world.Configuration {
 		"dns": &app.CoreDns{
 			Context: k8s.Context(name),
 		},
-		//"openvpn-client": &openvpn.RemoteClient{
-		//	SSH:           ssh,
-		//	ClientName:    openvpn.ClientName(name),
-		//	ServerName:    "hetzner",
-		//	ServerAddress: "hetzner-1.benjamin-borbe.de",
-		//},
+		"openvpn-client": &openvpn.RemoteClient{
+			SSH:           ssh,
+			ClientName:    openvpn.ClientName(name),
+			ServerName:    "hetzner",
+			ServerAddress: "hetzner-1.benjamin-borbe.de",
+		},
 		"traefik": &app.Traefik{
 			Context: k8s.Context(name),
 			Domains: k8s.IngressHosts{
