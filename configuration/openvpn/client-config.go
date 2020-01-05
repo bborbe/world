@@ -6,10 +6,18 @@ package openvpn
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"io/ioutil"
+	"math/big"
 	"os"
 	"os/user"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/file"
@@ -19,8 +27,9 @@ import (
 )
 
 type ClientConfig struct {
-	ClientName   ClientName
-	ServerConfig ServerConfig
+	ClientName    ClientName
+	ServerConfig  ServerConfig
+	ServerAddress ServerAddress
 }
 
 func (c ClientConfig) Validate(ctx context.Context) error {
@@ -28,6 +37,7 @@ func (c ClientConfig) Validate(ctx context.Context) error {
 		ctx,
 		c.ServerConfig.ServerName,
 		c.ClientName,
+		c.ServerAddress,
 	)
 }
 
@@ -39,11 +49,13 @@ func (c *ClientConfig) ConfigContent() content.HasContent {
 			Netmask string
 		}
 		data := struct {
+			ServerName string
 			ServerHost string
 			ServerPort int
 			Routes     []Route
 		}{
-			ServerHost: c.ServerConfig.ServerName.String(),
+			ServerName: c.ServerConfig.ServerName.String(),
+			ServerHost: c.ServerAddress.String(),
 			ServerPort: 563,
 			Routes:     []Route{},
 		}
@@ -55,31 +67,33 @@ func (c *ClientConfig) ConfigContent() content.HasContent {
 #viscosity protocol openvpn
 #viscosity autoreconnect true
 #viscosity dnssupport true
-#viscosity name Home
+#viscosity name {{.ServerName}}
 #viscosity dhcp false
-remote {{.ServerHost}} {{.ServerPort}} tcp-client
+
+client
 dev tap
-persist-tun
+proto tcp
+remote {{.ServerHost}} {{.ServerPort}}
+resolv-retry infinite
+nobind
 persist-key
-compress lzo
-pull
-tls-client
+persist-tun
 ca ca.crt
-cert cert.crt
-key key.key
+cert client.crt
+key client.key
+remote-cert-tls server
+tls-auth ta.key 1
+cipher AES-256-CBC
+verb 3
+
 {{range $route := .Routes}}
 route {{$route.Net}} {{$route.Mask}} default default
 {{ end }} 
-tls-auth ta.key 1
-mute-replay-warnings
-ns-cert-type server
-resolv-retry infinite
-comp-lzo adaptive
 `, data)
 	})
 }
 
-func (c *ClientConfig) LocalPath(filename string) file.HasPath {
+func (c *ClientConfig) localPath(filename string) file.HasPath {
 	return file.PathFunc(func(ctx context.Context) (string, error) {
 		directory, err := c.clientDirectory()
 		if err != nil {
@@ -99,4 +113,121 @@ func (c *ClientConfig) clientDirectory() (string, error) {
 		return "", err
 	}
 	return dir, nil
+}
+
+func (c *ClientConfig) ClientKey() content.Func {
+	return func(ctx context.Context) ([]byte, error) {
+		caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+		if err != nil {
+			return nil, err
+		}
+		return pem.EncodeToMemory(&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+		}), nil
+	}
+}
+
+func (c *ClientConfig) ClientCertifcate() *x509.Certificate {
+	return &x509.Certificate{
+		SerialNumber: big.NewInt(1658),
+		Subject: pkix.Name{
+			//Organization:  []string{"Benjamin Borbe"},
+			//Country:       []string{"DE"},
+			//Province:      []string{"Hessen"},
+			//Locality:      []string{"Wiesbaden"},
+			//StreetAddress: []string{""},
+			//PostalCode:    []string{""},
+			CommonName: c.ClientName.String(),
+		},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+		SubjectKeyId: []byte{1, 2, 3, 4, 6},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+}
+
+func (c *ClientConfig) ClientCrt() content.Func {
+	return func(ctx context.Context) ([]byte, error) {
+		caPriv, err := readLocal(ctx, c.ServerConfig.LocalPathCAPrivateKey())
+		if err != nil {
+			return nil, err
+		}
+
+		caPrivPem, _ := pem.Decode(caPriv)
+		if caPrivPem.Type != "RSA PRIVATE KEY" {
+			return nil, errors.Errorf("invalid type %s", caPrivPem.Type)
+		}
+
+		caPrivKey, err := x509.ParsePKCS1PrivateKey(caPrivPem.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		certKey, err := readLocal(ctx, c.LocalPathClientKey())
+		if err != nil {
+			return nil, err
+		}
+
+		certPrivPem, _ := pem.Decode(certKey)
+		if certPrivPem.Type != "RSA PRIVATE KEY" {
+			return nil, errors.Errorf("invalid type %s", certPrivPem.Type)
+		}
+
+		certPrivKey, err := x509.ParsePKCS1PrivateKey(certPrivPem.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		certBytes, err := x509.CreateCertificate(rand.Reader, c.ClientCertifcate(), c.ServerConfig.CACertifcate(), &certPrivKey.PublicKey, caPrivKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: certBytes,
+		}), nil
+	}
+}
+
+func (c *ClientConfig) CaCrt() content.Func {
+	return func(ctx context.Context) (bytes []byte, err error) {
+		path, err := c.ServerConfig.LocalPathCaCrt().Path(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return ioutil.ReadFile(path)
+	}
+}
+
+func (c *ClientConfig) TAKey() content.Func {
+	return func(ctx context.Context) (bytes []byte, err error) {
+		path, err := c.ServerConfig.LocalPathTaKey().Path(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return ioutil.ReadFile(path)
+	}
+}
+
+func (c *ClientConfig) LocalPathTaKey() file.HasPath {
+	return c.localPath("ta.key")
+}
+
+func (c *ClientConfig) LocalPathCaCrt() file.HasPath {
+	return c.localPath("ca.crt")
+}
+
+func (c *ClientConfig) LocalPathClientKey() file.HasPath {
+	return c.localPath("client.key")
+}
+
+func (c *ClientConfig) LocalPathClientCrt() file.HasPath {
+	return c.localPath("client.crt")
+}
+
+func (c *ClientConfig) LocalPathConfig() file.HasPath {
+	return c.localPath("client.ovpn")
 }

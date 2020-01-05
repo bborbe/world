@@ -7,6 +7,8 @@ package openvpn
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/local"
+
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/apt"
 	"github.com/bborbe/world/pkg/file"
@@ -82,15 +84,12 @@ func (s *Server) Children() []world.Configuration {
 			Perm:      0600,
 			Content:   serverConfig.DHPem(),
 		},
-		&remote.FileLocalCached{
-			SSH:       s.SSH,
-			Path:      file.Path("/etc/openvpn/keys/ca.key"),
-			LocalPath: serverConfig.LocalPathCAPrivateKey(),
-			User:      "root",
-			Group:     "root",
-			Perm:      0600,
-			Content:   serverConfig.CAPrivateKey(),
-		},
+		world.NewConfiguraionBuilder().WithApplier(
+			&local.FileContent{
+				Path:    serverConfig.LocalPathCAPrivateKey(),
+				Content: serverConfig.CAPrivateKey(),
+			},
+		),
 		&remote.FileLocalCached{
 			SSH:       s.SSH,
 			Path:      file.Path("/etc/openvpn/keys/ca.crt"),
@@ -102,21 +101,21 @@ func (s *Server) Children() []world.Configuration {
 		},
 		&remote.FileLocalCached{
 			SSH:       s.SSH,
-			Path:      file.Path("/etc/openvpn/keys/server.crt"),
-			LocalPath: serverConfig.LocalPathServerCrt(),
-			User:      "root",
-			Group:     "root",
-			Perm:      0600,
-			Content:   serverConfig.ServerCrt(),
-		},
-		&remote.FileLocalCached{
-			SSH:       s.SSH,
 			Path:      file.Path("/etc/openvpn/keys/server.key"),
 			LocalPath: serverConfig.LocalPathServerKey(),
 			User:      "root",
 			Group:     "root",
 			Perm:      0600,
 			Content:   serverConfig.ServerKey(),
+		},
+		&remote.FileLocalCached{
+			SSH:       s.SSH,
+			Path:      file.Path("/etc/openvpn/keys/server.crt"),
+			LocalPath: serverConfig.LocalPathServerCrt(),
+			User:      "root",
+			Group:     "root",
+			Perm:      0600,
+			Content:   serverConfig.ServerCrt(),
 		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
 			SSH:  s.SSH,

@@ -160,9 +160,10 @@ func (w *World) nova() map[AppName]world.Configuration {
 			IP:   network.NovaIP,
 			Host: "nova.hm.benjamin-borbe.de",
 		},
-		"openvpn-client": &openvpn.Client{
-			ClientName: "nova",
-			ServerName: "vpn.benjamin-borbe.de",
+		"openvpn-client": &openvpn.LocalClient{
+			ClientName:    "nova",
+			ServerName:    "hetzner",
+			ServerAddress: "hetzner-1.benjamin-borbe.de",
 		},
 	}
 }

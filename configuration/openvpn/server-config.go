@@ -93,34 +93,23 @@ func (s *ServerConfig) ServerConfigContent() content.Func {
 			})
 		}
 		return template.Render(`
-dev tap0
-
-proto tcp-server
+dev tap
 port {{.ServerPort}}
-
+proto tcp
 server {{.ServerIP}} {{.ServerNetmask}}
-ifconfig-pool-persist ip_pool
-
-mode server
-status server.status
-tls-auth /etc/openvpn/keys/ta.key 0
-keepalive 10 30
-client-to-client
-max-clients 150
-verb 3
-
-tls-server
-dh /etc/openvpn/keys/dh.pem
 ca /etc/openvpn/keys/ca.crt
 cert /etc/openvpn/keys/server.crt
 key /etc/openvpn/keys/server.key
-comp-lzo
-
+dh /etc/openvpn/keys/dh.pem
+tls-auth /etc/openvpn/keys/ta.key 0
+ifconfig-pool-persist ip_pool
+keepalive 10 120
+cipher AES-256-CBC
 persist-key
 persist-tun
-
+status server.status
+verb 3
 log /var/log/openvpn/server.log
-
 {{range $route := .Routes}}
 route {{$route.IP}} {{$route.Netmask}} {{$route.Gateway}}
 {{ end }} 
@@ -141,7 +130,7 @@ func (s *ServerConfig) CAPrivateKey() content.Func {
 	}
 }
 
-func (s *ServerConfig) caCertifcate() *x509.Certificate {
+func (s *ServerConfig) CACertifcate() *x509.Certificate {
 	return &x509.Certificate{
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
@@ -178,7 +167,7 @@ func (s *ServerConfig) CaCrt() content.Func {
 			return nil, err
 		}
 
-		caCert, err := x509.CreateCertificate(rand.Reader, s.caCertifcate(), s.caCertifcate(), &caPrivKey.PublicKey, caPrivKey)
+		caCert, err := x509.CreateCertificate(rand.Reader, s.CACertifcate(), s.CACertifcate(), &caPrivKey.PublicKey, caPrivKey)
 		if err != nil {
 			return nil, err
 		}
@@ -190,25 +179,28 @@ func (s *ServerConfig) CaCrt() content.Func {
 	}
 }
 
+func (s *ServerConfig) ServerCertifcate() *x509.Certificate {
+	return &x509.Certificate{
+		SerialNumber: big.NewInt(1658),
+		Subject: pkix.Name{
+			//Organization:  []string{"Benjamin Borbe"},
+			//Country:       []string{"DE"},
+			//Province:      []string{"Hessen"},
+			//Locality:      []string{"Wiesbaden"},
+			//StreetAddress: []string{""},
+			//PostalCode:    []string{""},
+			CommonName: s.ServerName.String(),
+		},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+		SubjectKeyId: []byte{1, 2, 3, 4, 6},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+}
+
 func (s *ServerConfig) ServerCrt() content.Func {
 	return func(ctx context.Context) ([]byte, error) {
-		cert := &x509.Certificate{
-			SerialNumber: big.NewInt(1658),
-			Subject: pkix.Name{
-				Organization:  []string{"Benjamin Borbe"},
-				Country:       []string{"DE"},
-				Province:      []string{"Hessen"},
-				Locality:      []string{"Wiesbaden"},
-				StreetAddress: []string{""},
-				PostalCode:    []string{""},
-			},
-			NotBefore:    time.Now(),
-			NotAfter:     time.Now().AddDate(10, 0, 0),
-			SubjectKeyId: []byte{1, 2, 3, 4, 6},
-			ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-			KeyUsage:     x509.KeyUsageDigitalSignature,
-		}
-
 		caPriv, err := readLocal(ctx, s.LocalPathCAPrivateKey())
 		if err != nil {
 			return nil, err
@@ -239,7 +231,7 @@ func (s *ServerConfig) ServerCrt() content.Func {
 			return nil, err
 		}
 
-		certBytes, err := x509.CreateCertificate(rand.Reader, cert, s.caCertifcate(), &certPrivKey.PublicKey, caPrivKey)
+		certBytes, err := x509.CreateCertificate(rand.Reader, s.ServerCertifcate(), s.CACertifcate(), &certPrivKey.PublicKey, caPrivKey)
 		if err != nil {
 			return nil, err
 		}
@@ -291,27 +283,27 @@ func (s *ServerConfig) DHPem() content.Func {
 }
 
 func (s *ServerConfig) LocalPathCaCrt() file.HasPath {
-	return s.LocalPath("ca.crt")
+	return s.localPath("ca.crt")
 }
 
 func (s *ServerConfig) LocalPathCAPrivateKey() file.HasPath {
-	return s.LocalPath("ca.key")
+	return s.localPath("ca.key")
 }
 
 func (s *ServerConfig) LocalPathServerCrt() file.HasPath {
-	return s.LocalPath("server.crt")
+	return s.localPath("server.crt")
 }
 
 func (s *ServerConfig) LocalPathDhPem() file.HasPath {
-	return s.LocalPath("dh.pem")
+	return s.localPath("dh.pem")
 }
 
 func (s *ServerConfig) LocalPathTaKey() file.HasPath {
-	return s.LocalPath("ta.key")
+	return s.localPath("ta.key")
 }
 
 func (s *ServerConfig) LocalPathServerKey() file.HasPath {
-	return s.LocalPath("server.key")
+	return s.localPath("server.key")
 }
 
 func (s *ServerConfig) serverDirectory() (string, error) {
@@ -326,7 +318,7 @@ func (s *ServerConfig) serverDirectory() (string, error) {
 	return dir, nil
 }
 
-func (s *ServerConfig) LocalPath(filename string) file.HasPath {
+func (s *ServerConfig) localPath(filename string) file.HasPath {
 	return file.PathFunc(func(ctx context.Context) (string, error) {
 		directory, err := s.serverDirectory()
 		if err != nil {

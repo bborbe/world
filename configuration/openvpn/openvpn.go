@@ -14,11 +14,11 @@ import (
 
 type ClientName string
 
-func (o ClientName) String() string {
-	return string(o)
+func (c ClientName) String() string {
+	return string(c)
 }
-func (o ClientName) Validate(ctx context.Context) error {
-	if o == "" {
+func (c ClientName) Validate(ctx context.Context) error {
+	if c == "" {
 		return errors.New("ClientName empty")
 	}
 	return nil
@@ -26,11 +26,23 @@ func (o ClientName) Validate(ctx context.Context) error {
 
 type ServerName string
 
-func (o ServerName) String() string {
-	return string(o)
+func (s ServerName) String() string {
+	return string(s)
 }
-func (o ServerName) Validate(ctx context.Context) error {
-	if o == "" {
+func (s ServerName) Validate(ctx context.Context) error {
+	if s == "" {
+		return errors.New("ServerName empty")
+	}
+	return nil
+}
+
+type ServerAddress string
+
+func (s ServerAddress) String() string {
+	return string(s)
+}
+func (s ServerAddress) Validate(ctx context.Context) error {
+	if s == "" {
 		return errors.New("ServerName empty")
 	}
 	return nil
@@ -38,8 +50,8 @@ func (o ServerName) Validate(ctx context.Context) error {
 
 type Routes []Route
 
-func (o Routes) Validate(ctx context.Context) error {
-	for _, route := range o {
+func (r Routes) Validate(ctx context.Context) error {
+	for _, route := range r {
 		if err := route.Validate(ctx); err != nil {
 			return err
 		}
@@ -52,10 +64,10 @@ type Route struct {
 	IPNet  network.IPNet
 }
 
-func (o Route) Validate(ctx context.Context) error {
+func (r Route) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		o.IPNet,
-		o.Gatway,
+		r.IPNet,
+		r.Gatway,
 	)
 }
