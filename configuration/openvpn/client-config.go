@@ -132,12 +132,6 @@ func (c *ClientConfig) ClientCertifcate() *x509.Certificate {
 	return &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
 		Subject: pkix.Name{
-			//Organization:  []string{"Benjamin Borbe"},
-			//Country:       []string{"DE"},
-			//Province:      []string{"Hessen"},
-			//Locality:      []string{"Wiesbaden"},
-			//StreetAddress: []string{""},
-			//PostalCode:    []string{""},
 			CommonName: c.ClientName.String(),
 		},
 		NotBefore:    time.Now(),
