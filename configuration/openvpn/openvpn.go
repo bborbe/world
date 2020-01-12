@@ -100,7 +100,7 @@ func BuildClientIPs(servers ...server.Server) ClientIPs {
 	for _, server := range servers {
 		result = append(result, ClientIP{
 			Name: ClientName(server.Name),
-			IP:   server.IP,
+			IP:   server.VpnIP,
 		})
 	}
 

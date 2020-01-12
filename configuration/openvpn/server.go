@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
+	"sort"
 
 	"github.com/bborbe/world/pkg/content"
 
@@ -192,16 +194,60 @@ func (s *Server) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
+type ipPool []ipPoolEntry
+
+func (i ipPool) Len() int { return len(i) }
+
+func (i ipPool) Less(a, b int) bool {
+	c := bytes.Compare(i[a].ip, i[b].ip)
+	if c < 0 {
+		return true
+	}
+	if c > 0 {
+		return false
+	}
+	return i[a].name < i[b].name
+}
+
+func (i ipPool) Swap(a, b int) { i[a], i[b] = i[b], i[a] }
+
+func (i *ipPool) Bytes() []byte {
+	if i == nil {
+		return nil
+	}
+	buf := &bytes.Buffer{}
+	for _, e := range *i {
+		buf.Write(e.Bytes())
+	}
+	return buf.Bytes()
+}
+
+type ipPoolEntry struct {
+	name string
+	ip   net.IP
+}
+
+func (e ipPoolEntry) Bytes() []byte {
+	buf := &bytes.Buffer{}
+	fmt.Fprint(buf, e.name)
+	fmt.Fprintln(buf, e.ip.String())
+	return buf.Bytes()
+}
+
 func (s *Server) ipPoolContent() content.HasContent {
 	return content.Func(func(ctx context.Context) ([]byte, error) {
-		buf := &bytes.Buffer{}
+		var result ipPool
 		for _, clientIP := range s.ClientIPs {
 			ip, err := clientIP.IP.IP(ctx)
 			if err != nil {
 				return nil, err
 			}
-			fmt.Fprintf(buf, "%s,%s\n", clientIP.Name, ip.String())
+			result = append(result, ipPoolEntry{
+				name: clientIP.Name.String(),
+				ip:   ip,
+			})
 		}
-		return buf.Bytes(), nil
+		sort.Sort(result)
+		return result.Bytes(), nil
 	})
 }

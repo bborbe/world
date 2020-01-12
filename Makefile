@@ -46,4 +46,4 @@ errcheck:
 
 addlicense:
 	@GO111MODULE=on go get github.com/google/addlicense
-	@addlicense -c "Benjamin Borbe" -y 2019 -l bsd ./*.go ./pkg/*/*.go ./configuration/*.go  ./configuration/*/*.go
+	@addlicense -c "Benjamin Borbe" -y 2020 -l bsd ./*.go ./pkg/*/*.go ./configuration/*.go  ./configuration/*/*.go

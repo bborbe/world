@@ -7,6 +7,7 @@ package network
 import (
 	"context"
 	"net"
+	"strconv"
 )
 
 type IPNet interface {
@@ -30,4 +31,25 @@ func (i IPNetStatic) String() string {
 
 func (i IPNetStatic) Validate(ctx context.Context) error {
 	return nil
+}
+
+type IPNetFromIP struct {
+	IP   IP
+	Mask int
+}
+
+func (i IPNetFromIP) IPNet(ctx context.Context) (net.IPNet, error) {
+	ip, err := i.IP.IP(ctx)
+	if err != nil {
+		return net.IPNet{}, err
+	}
+	_, ipnet, err := net.ParseCIDR(ip.String() + "/" + strconv.Itoa(i.Mask))
+	if err != nil {
+		return net.IPNet{}, err
+	}
+	return *ipnet, nil
+
+}
+func (i IPNetFromIP) Validate(ctx context.Context) error {
+	return i.IP.Validate(ctx)
 }

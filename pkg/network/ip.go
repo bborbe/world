@@ -35,3 +35,19 @@ func (i IPStatic) Validate(ctx context.Context) error {
 	}
 	return nil
 }
+
+type IPFromIPNet struct {
+	IPNet IPNet
+}
+
+func (i IPFromIPNet) IP(ctx context.Context) (net.IP, error) {
+	ipNet, err := i.IPNet.IPNet(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return ipNet.IP, nil
+}
+
+func (i IPFromIPNet) Validate(ctx context.Context) error {
+	return i.IPNet.Validate(ctx)
+}
