@@ -49,9 +49,9 @@ type Kubelet struct {
 
 func (k *Kubelet) Children() []world.Configuration {
 	return []world.Configuration{
-		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
+		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
 			SSH:  k.SSH,
-			Port: 6443,
+			Port: network.PortStatic(6443),
 		}),
 		&build.Hyperkube{
 			Image: k.hyperkubeImage(),

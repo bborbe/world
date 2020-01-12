@@ -7,12 +7,14 @@ package openvpn
 import (
 	"context"
 
+	"github.com/bborbe/world/pkg/network"
+
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/apt"
 	"github.com/bborbe/world/pkg/file"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
-
+	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
@@ -21,6 +23,20 @@ type RemoteClient struct {
 	ClientName    ClientName
 	ServerName    ServerName
 	ServerAddress ServerAddress
+	ServerPort    network.Port
+	Routes        ClientRoutes
+}
+
+func (r *RemoteClient) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		r.SSH,
+		r.ClientName,
+		r.ServerName,
+		r.ServerAddress,
+		r.ServerPort,
+		r.clientConfig(),
+	)
 }
 
 func (r *RemoteClient) Children() []world.Configuration {
@@ -104,15 +120,15 @@ func (r *RemoteClient) Children() []world.Configuration {
 			SSH:  r.SSH,
 			Name: "openvpn",
 		}),
+		world.NewConfiguraionBuilder().WithApplier(&remote.ServiceStart{
+			SSH:  r.SSH,
+			Name: "openvpn@client",
+		}),
 	}
 }
 
 func (r *RemoteClient) Applier() (world.Applier, error) {
 	return nil, nil
-}
-
-func (r *RemoteClient) Validate(ctx context.Context) error {
-	return r.clientConfig().Validate(ctx)
 }
 
 func (r *RemoteClient) clientConfig() ClientConfig {
@@ -121,6 +137,8 @@ func (r *RemoteClient) clientConfig() ClientConfig {
 		ServerAddress: r.ServerAddress,
 		ServerConfig: ServerConfig{
 			ServerName: r.ServerName,
+			ServerPort: r.ServerPort,
 		},
+		Routes: r.Routes,
 	}
 }

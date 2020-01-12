@@ -7,6 +7,7 @@ package openvpn
 import (
 	"context"
 
+	"github.com/bborbe/world/configuration/server"
 	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
@@ -48,9 +49,9 @@ func (s ServerAddress) Validate(ctx context.Context) error {
 	return nil
 }
 
-type Routes []Route
+type ServerRoutes []ServerRoute
 
-func (r Routes) Validate(ctx context.Context) error {
+func (r ServerRoutes) Validate(ctx context.Context) error {
 	for _, route := range r {
 		if err := route.Validate(ctx); err != nil {
 			return err
@@ -59,15 +60,87 @@ func (r Routes) Validate(ctx context.Context) error {
 	return nil
 }
 
-type Route struct {
+type ServerRoute struct {
 	Gatway network.IP
 	IPNet  network.IPNet
 }
 
-func (r Route) Validate(ctx context.Context) error {
+func (r ServerRoute) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		r.IPNet,
 		r.Gatway,
 	)
+}
+
+type ClientRoutes []ClientRoute
+
+func (r ClientRoutes) Validate(ctx context.Context) error {
+	for _, route := range r {
+		if err := route.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type ClientRoute struct {
+	IPNet network.IPNet
+}
+
+func (r ClientRoute) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		r.IPNet,
+	)
+}
+
+func BuildClientIPs(servers ...server.Server) ClientIPs {
+	var result ClientIPs
+	for _, server := range servers {
+		result = append(result, ClientIP{
+			Name: ClientName(server.Name),
+			IP:   server.IP,
+		})
+	}
+
+	return result
+}
+
+type ClientIPs []ClientIP
+
+func (c ClientIPs) Validate(ctx context.Context) error {
+	for _, clientIP := range c {
+		if err := clientIP.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type ClientIP struct {
+	Name ClientName
+	IP   network.IP
+}
+
+func (c ClientIP) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		c.Name,
+		c.IP,
+	)
+}
+
+func BuildServerRoutes(servers ...server.Server) ServerRoutes {
+	var result ServerRoutes
+	for _, server := range servers {
+		result = append(result, ServerRoute{
+			Gatway: server.VpnIP,
+			IPNet: network.IPNetFromIP{
+				IP:   server.IP,
+				Mask: 32,
+			},
+		})
+	}
+	return result
 }

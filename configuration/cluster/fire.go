@@ -39,9 +39,9 @@ func (f *Fire) Children() []world.Configuration {
 				},
 			},
 		),
-		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
+		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
 			SSH:  f.SSH,
-			Port: 80,
+			Port: network.PortStatic(80),
 		}),
 		&service.UbuntuUnattendedUpgrades{
 			SSH: f.SSH,

@@ -33,7 +33,8 @@ import (
 type ServerConfig struct {
 	ServerName  ServerName
 	ServerIPNet network.IPNet
-	Routes      Routes
+	ServerPort  network.Port
+	Routes      ServerRoutes
 }
 
 func (s ServerConfig) Validate(ctx context.Context) error {
@@ -42,6 +43,7 @@ func (s ServerConfig) Validate(ctx context.Context) error {
 		s.ServerName,
 		s.ServerIPNet,
 		s.Routes,
+		s.ServerPort,
 	)
 }
 
@@ -61,10 +63,16 @@ func (s *ServerConfig) ServerConfigContent() content.Func {
 		if err != nil {
 			return nil, err
 		}
+
+		port, err := s.ServerPort.Port(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		type Route struct {
 			Gateway string
-			IP      string
-			Netmask string
+			Net     string
+			Mask    string
 		}
 		data := struct {
 			ServerIP      string
@@ -74,7 +82,7 @@ func (s *ServerConfig) ServerConfigContent() content.Func {
 		}{
 			ServerIP:      serverIPNet.IP.String(),
 			ServerNetmask: net.IP(serverIPNet.Mask).String(),
-			ServerPort:    563,
+			ServerPort:    port,
 			Routes:        []Route{},
 		}
 		for _, route := range s.Routes {
@@ -88,8 +96,8 @@ func (s *ServerConfig) ServerConfigContent() content.Func {
 			}
 			data.Routes = append(data.Routes, Route{
 				Gateway: gateway.String(),
-				IP:      ipnet.IP.String(),
-				Netmask: net.IP(ipnet.Mask).String(),
+				Net:     ipnet.IP.String(),
+				Mask:    net.IP(ipnet.Mask).String(),
 			})
 		}
 		return template.Render(`
@@ -108,10 +116,13 @@ cipher AES-256-CBC
 persist-key
 persist-tun
 status server.status
+client-to-client
+
 verb 3
 log /var/log/openvpn/server.log
+
 {{range $route := .Routes}}
-route {{$route.IP}} {{$route.Netmask}} {{$route.Gateway}}
+route {{$route.Net}} {{$route.Mask}} {{$route.Gateway}}
 {{ end }} 
 `, data)
 	}

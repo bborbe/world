@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"github.com/bborbe/world/pkg/local"
+	"github.com/bborbe/world/pkg/network"
+	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
@@ -15,6 +17,19 @@ type LocalClient struct {
 	ClientName    ClientName
 	ServerName    ServerName
 	ServerAddress ServerAddress
+	Routes        ClientRoutes
+	ServerPort    network.Port
+}
+
+func (l *LocalClient) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		l.ClientName,
+		l.ServerName,
+		l.ServerAddress,
+		l.ServerPort,
+		l.clientConfig(),
+	)
 }
 
 func (l *LocalClient) Children() []world.Configuration {
@@ -57,16 +72,14 @@ func (l *LocalClient) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (l *LocalClient) Validate(ctx context.Context) error {
-	return l.clientConfig().Validate(ctx)
-}
-
 func (l *LocalClient) clientConfig() ClientConfig {
 	return ClientConfig{
 		ClientName:    l.ClientName,
 		ServerAddress: l.ServerAddress,
 		ServerConfig: ServerConfig{
 			ServerName: l.ServerName,
+			ServerPort: l.ServerPort,
 		},
+		Routes: l.Routes,
 	}
 }

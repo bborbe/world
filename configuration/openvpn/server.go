@@ -5,7 +5,11 @@
 package openvpn
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+
+	"github.com/bborbe/world/pkg/content"
 
 	"github.com/bborbe/world/pkg/local"
 
@@ -22,8 +26,10 @@ import (
 type Server struct {
 	SSH         *ssh.SSH
 	ServerName  ServerName
+	ServerPort  network.Port
 	ServerIPNet network.IPNet
-	Routes      Routes
+	Routes      ServerRoutes
+	ClientIPs   ClientIPs
 }
 
 func (s *Server) Validate(ctx context.Context) error {
@@ -32,20 +38,25 @@ func (s *Server) Validate(ctx context.Context) error {
 		s.SSH,
 		s.ServerName,
 		s.ServerIPNet,
+		s.ServerPort,
 		s.Routes,
+		s.ClientIPs,
 	)
 }
 
 func (s *Server) Children() []world.Configuration {
-	serverConfig := &ServerConfig{
-		ServerName:  s.ServerName,
-		ServerIPNet: s.ServerIPNet,
-		Routes:      s.Routes,
-	}
+	serverConfig := s.serverConfig()
 	return []world.Configuration{
 		&service.Directory{
 			SSH:   s.SSH,
 			Path:  file.Path("/etc/openvpn/keys"),
+			User:  "root",
+			Group: "root",
+			Perm:  0700,
+		},
+		&service.Directory{
+			SSH:   s.SSH,
+			Path:  file.Path("/var/log/openvpn"),
 			User:  "root",
 			Group: "root",
 			Perm:  0700,
@@ -57,6 +68,14 @@ func (s *Server) Children() []world.Configuration {
 			Group:   "root",
 			Perm:    0600,
 			Content: serverConfig.ServerConfigContent(),
+		},
+		&remote.File{
+			SSH:     s.SSH,
+			Path:    file.Path("/etc/openvpn/ip_pool"),
+			User:    "root",
+			Group:   "root",
+			Perm:    0600,
+			Content: s.ipPoolContent(),
 		},
 		&remote.FileLocalCached{
 			SSH:       s.SSH,
@@ -109,9 +128,9 @@ func (s *Server) Children() []world.Configuration {
 			Perm:      0600,
 			Content:   serverConfig.ServerCrt(),
 		},
-		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
+		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
 			SSH:  s.SSH,
-			Port: 563,
+			Port: network.PortStatic(563),
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&apt.Update{
 			SSH: s.SSH,
@@ -138,9 +157,51 @@ func (s *Server) Children() []world.Configuration {
 			SSH:  s.SSH,
 			Name: "openvpn",
 		}),
+		world.NewConfiguraionBuilder().WithApplier(&remote.ServiceStart{
+			SSH:  s.SSH,
+			Name: "openvpn@server",
+		}),
+		&service.Sysctl{
+			SSH: s.SSH,
+			Options: service.SysctlOptions{
+				{
+					Option: "net.ipv4.ip_forward",
+					Value:  "1",
+				},
+			},
+		},
+		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
+			SSH:  s.SSH,
+			Port: serverConfig.ServerPort,
+		}),
+		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowForward{
+			SSH: s.SSH,
+		}),
+	}
+}
+func (s *Server) serverConfig() ServerConfig {
+	return ServerConfig{
+		ServerName:  s.ServerName,
+		ServerIPNet: s.ServerIPNet,
+		ServerPort:  network.PortStatic(563),
+		Routes:      s.Routes,
 	}
 }
 
 func (s *Server) Applier() (world.Applier, error) {
 	return nil, nil
+}
+
+func (s *Server) ipPoolContent() content.HasContent {
+	return content.Func(func(ctx context.Context) ([]byte, error) {
+		buf := &bytes.Buffer{}
+		for _, clientIP := range s.ClientIPs {
+			ip, err := clientIP.IP.IP(ctx)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(buf, "%s,%s\n", clientIP.Name, ip.String())
+		}
+		return buf.Bytes(), nil
+	})
 }

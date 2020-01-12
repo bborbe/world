@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"io/ioutil"
 	"math/big"
+	"net"
 	"os"
 	"os/user"
 	"path"
@@ -30,12 +31,14 @@ type ClientConfig struct {
 	ClientName    ClientName
 	ServerConfig  ServerConfig
 	ServerAddress ServerAddress
+	Routes        ClientRoutes
 }
 
 func (c ClientConfig) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		c.ServerConfig.ServerName,
+		c.ServerConfig.ServerPort,
 		c.ClientName,
 		c.ServerAddress,
 	)
@@ -43,10 +46,14 @@ func (c ClientConfig) Validate(ctx context.Context) error {
 
 func (c *ClientConfig) ConfigContent() content.HasContent {
 	return content.Func(func(ctx context.Context) ([]byte, error) {
+		port, err := c.ServerConfig.ServerPort.Port(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		type Route struct {
-			Gateway string
-			IP      string
-			Netmask string
+			Net  string
+			Mask string
 		}
 		data := struct {
 			ServerName string
@@ -56,9 +63,20 @@ func (c *ClientConfig) ConfigContent() content.HasContent {
 		}{
 			ServerName: c.ServerConfig.ServerName.String(),
 			ServerHost: c.ServerAddress.String(),
-			ServerPort: 563,
+			ServerPort: port,
 			Routes:     []Route{},
 		}
+		for _, route := range c.Routes {
+			ipnet, err := route.IPNet.IPNet(ctx)
+			if err != nil {
+				return nil, err
+			}
+			data.Routes = append(data.Routes, Route{
+				Net:  ipnet.IP.String(),
+				Mask: net.IP(ipnet.Mask).String(),
+			})
+		}
+
 		return template.Render(`
 #viscosity startonopen true
 #viscosity usepeerdns false
@@ -81,9 +99,10 @@ persist-tun
 ca ca.crt
 cert client.crt
 key client.key
-remote-cert-tls server
+remote-cert-tls client
 tls-auth ta.key 1
 cipher AES-256-CBC
+
 verb 3
 
 {{range $route := .Routes}}

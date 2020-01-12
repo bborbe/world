@@ -41,9 +41,9 @@ func (n *Nuke) Children() []world.Configuration {
 				},
 			},
 		),
-		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
+		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
 			SSH:  n.SSH,
-			Port: 80,
+			Port: network.PortStatic(80),
 		}),
 		&service.UbuntuUnattendedUpgrades{
 			SSH: n.SSH,

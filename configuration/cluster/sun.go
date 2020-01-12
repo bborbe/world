@@ -39,9 +39,9 @@ func (s *Sun) Children() []world.Configuration {
 				},
 			},
 		),
-		world.NewConfiguraionBuilder().WithApplier(&remote.Iptables{
+		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
 			SSH:  s.SSH,
-			Port: 80,
+			Port: network.PortStatic(80),
 		}),
 		&service.UbuntuUnattendedUpgrades{
 			SSH: s.SSH,

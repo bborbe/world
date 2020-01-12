@@ -5,6 +5,7 @@
 package network
 
 import (
+	"github.com/bborbe/world/configuration/openvpn"
 	"github.com/bborbe/world/pkg/network"
 )
 
@@ -31,4 +32,14 @@ var RaspVPN = Network{
 var HM = Network{
 	Name:  "hm",
 	IPNet: network.IPNetStatic("192.168.178.0/24"),
+}
+
+var VPNServer = struct {
+	ServerName    openvpn.ServerName
+	ServerAddress openvpn.ServerAddress
+	Port          network.Port
+}{
+	ServerName:    "hetzner",
+	ServerAddress: "hetzner-1.benjamin-borbe.de",
+	Port:          network.PortStatic(563),
 }
