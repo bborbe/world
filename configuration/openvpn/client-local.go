@@ -17,7 +17,7 @@ type LocalClient struct {
 	ClientName    ClientName
 	ServerName    ServerName
 	ServerAddress ServerAddress
-	Routes        ClientRoutes
+	Routes        Routes
 	ServerPort    network.Port
 }
 

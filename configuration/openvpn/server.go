@@ -30,7 +30,7 @@ type Server struct {
 	ServerName  ServerName
 	ServerPort  network.Port
 	ServerIPNet network.IPNet
-	Routes      ServerRoutes
+	Routes      Routes
 	ClientIPs   ClientIPs
 }
 

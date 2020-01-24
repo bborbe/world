@@ -34,7 +34,7 @@ type ServerConfig struct {
 	ServerName  ServerName
 	ServerIPNet network.IPNet
 	ServerPort  network.Port
-	Routes      ServerRoutes
+	Routes      Routes
 }
 
 func (s ServerConfig) Validate(ctx context.Context) error {
@@ -86,7 +86,7 @@ func (s *ServerConfig) ServerConfigContent() content.Func {
 			Routes:        []Route{},
 		}
 		for _, route := range s.Routes {
-			gateway, err := route.Gatway.IP(ctx)
+			gateway, err := route.Gateway.IP(ctx)
 			if err != nil {
 				return nil, err
 			}

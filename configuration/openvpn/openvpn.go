@@ -49,9 +49,23 @@ func (s ServerAddress) Validate(ctx context.Context) error {
 	return nil
 }
 
-type ServerRoutes []ServerRoute
+func BuildRoutes(servers ...server.Server) Routes {
+	var result Routes
+	for _, server := range servers {
+		result = append(result, Route{
+			Gateway: server.VpnIP,
+			IPNet: network.IPNetFromIP{
+				IP:   server.IP,
+				Mask: 32,
+			},
+		})
+	}
+	return result
+}
 
-func (r ServerRoutes) Validate(ctx context.Context) error {
+type Routes []Route
+
+func (r Routes) Validate(ctx context.Context) error {
 	for _, route := range r {
 		if err := route.Validate(ctx); err != nil {
 			return err
@@ -60,38 +74,16 @@ func (r ServerRoutes) Validate(ctx context.Context) error {
 	return nil
 }
 
-type ServerRoute struct {
-	Gatway network.IP
-	IPNet  network.IPNet
+type Route struct {
+	Gateway network.IP
+	IPNet   network.IPNet
 }
 
-func (r ServerRoute) Validate(ctx context.Context) error {
+func (r Route) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		r.IPNet,
-		r.Gatway,
-	)
-}
-
-type ClientRoutes []ClientRoute
-
-func (r ClientRoutes) Validate(ctx context.Context) error {
-	for _, route := range r {
-		if err := route.Validate(ctx); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type ClientRoute struct {
-	IPNet network.IPNet
-}
-
-func (r ClientRoute) Validate(ctx context.Context) error {
-	return validation.Validate(
-		ctx,
-		r.IPNet,
+		r.Gateway,
 	)
 }
 
@@ -129,18 +121,4 @@ func (c ClientIP) Validate(ctx context.Context) error {
 		c.Name,
 		c.IP,
 	)
-}
-
-func BuildServerRoutes(servers ...server.Server) ServerRoutes {
-	var result ServerRoutes
-	for _, server := range servers {
-		result = append(result, ServerRoute{
-			Gatway: server.VpnIP,
-			IPNet: network.IPNetFromIP{
-				IP:   server.IP,
-				Mask: 32,
-			},
-		})
-	}
-	return result
 }

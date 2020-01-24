@@ -24,7 +24,7 @@ type RemoteClient struct {
 	ServerName    ServerName
 	ServerAddress ServerAddress
 	ServerPort    network.Port
-	Routes        ClientRoutes
+	Routes        Routes
 }
 
 func (r *RemoteClient) Validate(ctx context.Context) error {

@@ -18,22 +18,10 @@ var Hetzner = Server{
 	VpnIP: network.IPStatic("172.16.90.1"),
 }
 
-var Netcup = Server{
-	Name:  "netcup",
-	IP:    network.IPStatic("185.170.112.48"),
-	VpnIP: network.IPStatic("172.16.90.10"),
-}
-
-var Sun = Server{
-	Name:  "sun",
-	IP:    network.IPStatic("192.168.2.3"),
-	VpnIP: network.IPStatic("172.16.90.5"),
-}
-
-var Rasp = Server{
-	Name:  "rasp",
-	IP:    network.IPStatic("192.168.178.2"),
-	VpnIP: network.IPStatic("172.16.90.8"),
+var Nova = Server{
+	Name:  "nova",
+	IP:    network.IPStatic("192.168.178.122"),
+	VpnIP: network.IPStatic("172.16.90.2"),
 }
 
 var Fire = Server{
@@ -48,6 +36,12 @@ var Nuke = Server{
 	VpnIP: network.IPStatic("172.16.90.4"),
 }
 
+var Sun = Server{
+	Name:  "sun",
+	IP:    network.IPStatic("192.168.2.3"),
+	VpnIP: network.IPStatic("172.16.90.5"),
+}
+
 var Co2hz = Server{
 	Name:  "co2hz",
 	IP:    network.IPStatic("192.168.178.6"),
@@ -60,14 +54,20 @@ var Co2wz = Server{
 	VpnIP: network.IPStatic("172.16.90.7"),
 }
 
+var Rasp = Server{
+	Name:  "rasp",
+	IP:    network.IPStatic("192.168.178.2"),
+	VpnIP: network.IPStatic("172.16.90.8"),
+}
+
 var Star = Server{
 	Name:  "star",
 	IP:    network.IPStatic("192.168.178.101"),
 	VpnIP: network.IPStatic("172.16.90.9"),
 }
 
-var Nova = Server{
-	Name:  "nova",
-	IP:    network.IPStatic("192.168.178.122"),
-	VpnIP: network.IPStatic("172.16.90.2"),
+var Netcup = Server{
+	Name:  "netcup",
+	IP:    network.IPStatic("185.170.112.48"),
+	VpnIP: network.IPStatic("172.16.90.10"),
 }

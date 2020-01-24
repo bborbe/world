@@ -31,7 +31,7 @@ type ClientConfig struct {
 	ClientName    ClientName
 	ServerConfig  ServerConfig
 	ServerAddress ServerAddress
-	Routes        ClientRoutes
+	Routes        Routes
 }
 
 func (c ClientConfig) Validate(ctx context.Context) error {
@@ -52,8 +52,9 @@ func (c *ClientConfig) ConfigContent() content.HasContent {
 		}
 
 		type Route struct {
-			Net  string
-			Mask string
+			Gateway string
+			Net     string
+			Mask    string
 		}
 		data := struct {
 			ServerName string
@@ -67,16 +68,20 @@ func (c *ClientConfig) ConfigContent() content.HasContent {
 			Routes:     []Route{},
 		}
 		for _, route := range c.Routes {
+			gateway, err := route.Gateway.IP(ctx)
+			if err != nil {
+				return nil, err
+			}
 			ipnet, err := route.IPNet.IPNet(ctx)
 			if err != nil {
 				return nil, err
 			}
 			data.Routes = append(data.Routes, Route{
-				Net:  ipnet.IP.String(),
-				Mask: net.IP(ipnet.Mask).String(),
+				Gateway: gateway.String(),
+				Net:     ipnet.IP.String(),
+				Mask:    net.IP(ipnet.Mask).String(),
 			})
 		}
-
 		return template.Render(`
 #viscosity startonopen true
 #viscosity usepeerdns false
@@ -106,7 +111,7 @@ cipher AES-256-CBC
 verb 3
 
 {{range $route := .Routes}}
-route {{$route.Net}} {{$route.Mask}} default default
+route {{$route.Net}} {{$route.Mask}} {{$route.Gateway}}
 {{ end }} 
 `, data)
 	})

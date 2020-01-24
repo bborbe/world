@@ -7,14 +7,12 @@ package configuration
 import (
 	"context"
 
-	"github.com/bborbe/world/configuration/server"
-
-	"github.com/bborbe/world/configuration/openvpn"
-
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/backup"
 	"github.com/bborbe/world/configuration/cluster"
-	"github.com/bborbe/world/configuration/network"
+	"github.com/bborbe/world/configuration/net"
+	"github.com/bborbe/world/configuration/openvpn"
+	"github.com/bborbe/world/configuration/server"
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
@@ -107,18 +105,19 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		},
 		"openvpn-server": &openvpn.Server{
 			SSH:         ssh,
-			ServerName:  network.VPNServer.ServerName,
-			ServerIPNet: network.HetznerVPN.IPNet,
-			ServerPort:  network.VPNServer.Port,
-			Routes: openvpn.BuildServerRoutes(
-				server.Sun,
-				server.Rasp,
+			ServerName:  net.VPNServer.ServerName,
+			ServerIPNet: net.HetznerVPN.IPNet,
+			ServerPort:  net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Nova,
 				server.Fire,
 				server.Nuke,
+				server.Sun,
 				server.Co2hz,
 				server.Co2wz,
+				server.Rasp,
 				server.Star,
-				server.Nova,
+				server.Netcup,
 			),
 			ClientIPs: openvpn.BuildClientIPs(
 				server.Netcup,
@@ -180,34 +179,35 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 }
 
 func (w *World) nova() map[AppName]world.Configuration {
-	server := server.Nova
+	nova := server.Nova
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Nova{
-			IP:   server.IP,
+			IP:   nova.IP,
 			Host: "nova.hm.benjamin-borbe.de",
 		},
 		"openvpn-client": &openvpn.LocalClient{
-			ClientName:    openvpn.ClientName(server.Name),
-			ServerName:    network.VPNServer.ServerName,
-			ServerAddress: network.VPNServer.ServerAddress,
-			ServerPort:    network.VPNServer.Port,
-			Routes: []openvpn.ClientRoute{
-				{
-					IPNet: network.PN.IPNet,
-				},
-				{
-					IPNet: network.HM.IPNet,
-				},
-			},
+			ClientName:    openvpn.ClientName(nova.Name),
+			ServerName:    net.VPNServer.ServerName,
+			ServerAddress: net.VPNServer.ServerAddress,
+			ServerPort:    net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Fire,
+				server.Nuke,
+				server.Sun,
+				server.Co2hz,
+				server.Co2wz,
+				server.Rasp,
+				server.Star,
+			),
 		},
 	}
 }
 
 func (w *World) fire() map[AppName]world.Configuration {
-	server := server.Fire
+	fire := server.Fire
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			IP:   server.IP,
+			IP:   fire.IP,
 			Port: 22,
 		},
 		User:           "bborbe",
@@ -216,39 +216,38 @@ func (w *World) fire() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Fire{
 			SSH:       ssh,
-			Context:   k8s.Context(server.Name),
-			ClusterIP: server.IP,
+			Context:   k8s.Context(fire.Name),
+			ClusterIP: fire.IP,
 		},
 		"cluster-admin": &service.ClusterAdmin{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(fire.Name),
 		},
 		"calico": &service.Calico{
-			Context:   k8s.Context(server.Name),
-			ClusterIP: server.IP,
+			Context:   k8s.Context(fire.Name),
+			ClusterIP: fire.IP,
 		},
 		"dns": &app.CoreDns{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(fire.Name),
 		},
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
-			ClientName:    openvpn.ClientName(server.Name),
-			ServerName:    network.VPNServer.ServerName,
-			ServerAddress: network.VPNServer.ServerAddress,
-			ServerPort:    network.VPNServer.Port,
-			Routes: []openvpn.ClientRoute{
-				{
-					IPNet: network.PN.IPNet,
-				},
-			},
+			ClientName:    openvpn.ClientName(fire.Name),
+			ServerName:    net.VPNServer.ServerName,
+			ServerAddress: net.VPNServer.ServerAddress,
+			ServerPort:    net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Nova,
+				server.Sun,
+			),
 		},
 		"traefik": &app.Traefik{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(fire.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.fire.hm.benjamin-borbe.de",
 			},
 		},
 		"backup": &app.BackupClient{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(fire.Name),
 			Domains: k8s.IngressHosts{
 				"backup.fire.hm.benjamin-borbe.de",
 			},
@@ -261,10 +260,10 @@ func (w *World) fire() map[AppName]world.Configuration {
 }
 
 func (w *World) nuke() map[AppName]world.Configuration {
-	server := server.Nuke
+	nuke := server.Nuke
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			IP:   server.IP,
+			IP:   nuke.IP,
 			Port: 22,
 		},
 		User:           "bborbe",
@@ -273,39 +272,38 @@ func (w *World) nuke() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Nuke{
 			SSH:       ssh,
-			Context:   k8s.Context(server.Name),
-			ClusterIP: server.IP,
+			Context:   k8s.Context(nuke.Name),
+			ClusterIP: nuke.IP,
 		},
 		"cluster-admin": &service.ClusterAdmin{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(nuke.Name),
 		},
 		"calico": &service.Calico{
-			Context:   k8s.Context(server.Name),
-			ClusterIP: server.IP,
+			Context:   k8s.Context(nuke.Name),
+			ClusterIP: nuke.IP,
 		},
 		"dns": &app.CoreDns{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(nuke.Name),
 		},
 		"traefik": &app.Traefik{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(nuke.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.nuke.hm.benjamin-borbe.de",
 			},
 		},
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
-			ClientName:    openvpn.ClientName(server.Name),
-			ServerName:    network.VPNServer.ServerName,
-			ServerAddress: network.VPNServer.ServerAddress,
-			ServerPort:    network.VPNServer.Port,
-			Routes: []openvpn.ClientRoute{
-				{
-					IPNet: network.PN.IPNet,
-				},
-			},
+			ClientName:    openvpn.ClientName(nuke.Name),
+			ServerName:    net.VPNServer.ServerName,
+			ServerAddress: net.VPNServer.ServerAddress,
+			ServerPort:    net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Nova,
+				server.Sun,
+			),
 		},
 		"backup": &app.BackupClient{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(nuke.Name),
 			Domains: k8s.IngressHosts{
 				"backup.nuke.hm.benjamin-borbe.de",
 			},
@@ -318,10 +316,10 @@ func (w *World) nuke() map[AppName]world.Configuration {
 }
 
 func (w *World) sun() map[AppName]world.Configuration {
-	server := server.Sun
+	sun := server.Sun
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			IP:   server.IP,
+			IP:   sun.IP,
 			Port: 22,
 		},
 		User:           "bborbe",
@@ -330,36 +328,40 @@ func (w *World) sun() map[AppName]world.Configuration {
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Sun{
 			SSH:       ssh,
-			Context:   k8s.Context(server.Name),
-			ClusterIP: server.IP,
+			Context:   k8s.Context(sun.Name),
+			ClusterIP: sun.IP,
 		},
 		"cluster-admin": &service.ClusterAdmin{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(sun.Name),
 		},
 		"calico": &service.Calico{
-			Context:   k8s.Context(server.Name),
-			ClusterIP: server.IP,
+			Context:   k8s.Context(sun.Name),
+			ClusterIP: sun.IP,
 		},
 		"dns": &app.CoreDns{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(sun.Name),
 		},
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
-			ClientName:    openvpn.ClientName(server.Name),
-			ServerName:    network.VPNServer.ServerName,
-			ServerAddress: network.VPNServer.ServerAddress,
-			ServerPort:    network.VPNServer.Port,
-			Routes: []openvpn.ClientRoute{
-				{
-					IPNet: network.HM.IPNet,
-				},
-			},
+			ClientName:    openvpn.ClientName(sun.Name),
+			ServerName:    net.VPNServer.ServerName,
+			ServerAddress: net.VPNServer.ServerAddress,
+			ServerPort:    net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Fire,
+				server.Nuke,
+				server.Nova,
+				server.Co2hz,
+				server.Co2wz,
+				server.Rasp,
+				server.Star,
+			),
 		},
 		"minecraft": &app.Minecraft{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(sun.Name),
 		},
 		"monitoring": &app.Monitoring{
-			Context:         k8s.Context(server.Name),
+			Context:         k8s.Context(sun.Name),
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
 			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
 			Configs: []app.MonitoringConfig{
@@ -381,13 +383,13 @@ func (w *World) sun() map[AppName]world.Configuration {
 			},
 		},
 		"traefik": &app.Traefik{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(sun.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.sun.pn.benjamin-borbe.de",
 			},
 		},
 		"backup": &app.BackupClient{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(sun.Name),
 			Domains: k8s.IngressHosts{
 				"backup.sun.pn.benjamin-borbe.de",
 			},
@@ -408,23 +410,23 @@ func (w *World) sun() map[AppName]world.Configuration {
 }
 
 func (w *World) netcup() map[AppName]world.Configuration {
-	server := server.Netcup
+	netcup := server.Netcup
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Netcup{
-			Context:     k8s.Context(server.Name),
-			IP:          server.IP,
+			Context:     k8s.Context(netcup.Name),
+			IP:          netcup.IP,
 			DisableCNI:  true,
 			DisableRBAC: true,
 		},
 		"cluster-admin": &service.ClusterAdmin{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 		},
 		"calico": &service.Calico{
-			Context:   k8s.Context(server.Name),
-			ClusterIP: server.IP,
+			Context:   k8s.Context(netcup.Name),
+			ClusterIP: netcup.IP,
 		},
 		"debug": &app.Debug{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domain:  "debug.benjamin-borbe.de",
 			Requirements: []world.Configuration{
 				world.NewConfiguraionBuilder().WithApplier(
@@ -433,8 +435,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.DebugHostname,
-								IP:   server.IP,
+								Host: net.DebugHostname,
+								IP:   netcup.IP,
 							},
 						},
 					},
@@ -442,7 +444,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"mqtt-kafka-connector-co2mon": &app.MqttKafkaConnector{
-			Context:      k8s.Context(server.Name),
+			Context:      k8s.Context(netcup.Name),
 			MqttBroker:   "tcp://rasp.hm.benjamin-borbe.de:1883",
 			MqttUser:     w.TeamvaultSecrets.Username("9qNx3O"),
 			MqttPassword: w.TeamvaultSecrets.Password("9qNx3O"),
@@ -451,7 +453,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			KafkaTopic:   "co2mon",
 		},
 		"metabase": &app.Metabase{
-			Context:          k8s.Context(server.Name),
+			Context:          k8s.Context(netcup.Name),
 			Domain:           "metabase.benjamin-borbe.de",
 			DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
 			Requirements: []world.Configuration{
@@ -461,8 +463,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.MetabaseHostname,
-								IP:   server.IP,
+								Host: net.MetabaseHostname,
+								IP:   netcup.IP,
 							},
 						},
 					},
@@ -470,8 +472,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"grafana": &app.Grafana{
-			Context:      k8s.Context(server.Name),
-			Domain:       k8s.IngressHost(network.GrafanaHostname.String()),
+			Context:      k8s.Context(netcup.Name),
+			Domain:       k8s.IngressHost(net.GrafanaHostname.String()),
 			LdapUsername: w.TeamvaultSecrets.Username("MOPMLG"),
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 			Requirements: []world.Configuration{
@@ -481,8 +483,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.GrafanaHostname,
-								IP:   server.IP,
+								Host: net.GrafanaHostname,
+								IP:   netcup.IP,
 							},
 						},
 					},
@@ -490,13 +492,13 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"hostpath": &app.HostPathProvisioner{
-			Context:             k8s.Context(server.Name),
+			Context:             k8s.Context(netcup.Name),
 			HostPath:            "/data/hostpath-provisioner",
 			DefaultStorageClass: true,
 		},
 		"kafka": &app.Kafka{
 			AccessMode:        "ReadWriteMany",
-			Context:           k8s.Context(server.Name),
+			Context:           k8s.Context(netcup.Name),
 			DisableConnect:    true,
 			DisableRest:       true,
 			KafkaReplicas:     1,
@@ -507,7 +509,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Version:           "5.3.1", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
 		},
 		"kafka-status": &app.KafkaStatus{
-			Context:  k8s.Context(server.Name),
+			Context:  k8s.Context(netcup.Name),
 			Replicas: 1,
 			Domain:   "kafka-status.benjamin-borbe.de",
 			Requirements: []world.Configuration{
@@ -517,8 +519,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.KafkaStatus,
-								IP:   server.IP,
+								Host: net.KafkaStatus,
+								IP:   netcup.IP,
 							},
 						},
 					},
@@ -526,7 +528,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"kafka-latest-versions": &app.KafkaLatestVersions{
-			Context:      k8s.Context(server.Name),
+			Context:      k8s.Context(netcup.Name),
 			Replicas:     2,
 			AccessMode:   "ReadWriteMany",
 			StorageClass: "hostpath",
@@ -538,8 +540,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.VersionsHostname,
-								IP:   server.IP,
+								Host: net.VersionsHostname,
+								IP:   netcup.IP,
 							},
 						},
 					},
@@ -547,7 +549,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"kafka-update-available": &app.KafkaUpdateAvailable{
-			Context:      k8s.Context(server.Name),
+			Context:      k8s.Context(netcup.Name),
 			Replicas:     2,
 			AccessMode:   "ReadWriteMany",
 			StorageClass: "hostpath",
@@ -559,8 +561,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.UpdatesHostname,
-								IP:   server.IP,
+								Host: net.UpdatesHostname,
+								IP:   netcup.IP,
 							},
 						},
 					},
@@ -568,10 +570,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"kafka-k8s-version-collector": &app.KafkaK8sVersionCollector{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 		},
 		"kafka-dockerhub-version-collector": &app.KafkaDockerhubVersionCollector{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Repositories: []docker.Repository{
 				"confluentinc/cp-kafka-connect",
 				"confluentinc/cp-kafka-rest",
@@ -595,16 +597,16 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"kafka-regex-version-collector": &app.KafkaRegexVersionCollector{
-			Context:     k8s.Context(server.Name),
+			Context:     k8s.Context(netcup.Name),
 			Application: "Golang",
 			Url:         "https://golang.org/dl/",
 			Regex:       `https://dl.google.com/go/go([\d\.]+)\.src\.tar\.gz`,
 		},
 		"kafka-atlassian-version-collector": &app.KafkaAtlassianVersionCollector{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 		},
 		"kafka-installed-version-collector": &app.KafkaInstalledVersionCollector{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Apps: []struct {
 				Name  string
 				Regex string
@@ -623,7 +625,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"kafka-sample": &app.KafkaSample{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domain:  "kafka-sample.benjamin-borbe.de",
 			Requirements: []world.Configuration{
 				world.NewConfiguraionBuilder().WithApplier(
@@ -632,8 +634,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: network.KafkaSampleHostname,
-								IP:   server.IP,
+								Host: net.KafkaSampleHostname,
+								IP:   netcup.IP,
 							},
 						},
 					},
@@ -641,17 +643,17 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"dns": &app.CoreDns{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 		},
 		"traefik": &app.Traefik{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.benjamin-borbe.de",
 			},
 			SSL: true,
 		},
 		"prometheus": &app.Prometheus{
-			Context:            k8s.Context(server.Name),
+			Context:            k8s.Context(netcup.Name),
 			PrometheusDomain:   "prometheus.benjamin-borbe.de",
 			AlertmanagerDomain: "prometheus-alertmanager.benjamin-borbe.de",
 			Secret:             w.TeamvaultSecrets.Password("aqMr6w"),
@@ -659,12 +661,12 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			LdapPassword:       w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"ldap": &app.Ldap{
-			Context:      k8s.Context(server.Name),
+			Context:      k8s.Context(netcup.Name),
 			Tag:          "1.3.0",
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"teamvault": &app.Teamvault{
-			Context:          k8s.Context(server.Name),
+			Context:          k8s.Context(netcup.Name),
 			Domain:           "teamvault.benjamin-borbe.de",
 			DatabasePassword: w.TeamvaultSecrets.Password("VO0W5w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("3OlNaq"),
@@ -675,7 +677,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
 		},
 		"monitoring": &app.Monitoring{
-			Context:         k8s.Context(server.Name),
+			Context:         k8s.Context(netcup.Name),
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
 			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
 			Configs: []app.MonitoringConfig{
@@ -697,7 +699,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"confluence": &app.Confluence{
-			Context:          k8s.Context(server.Name),
+			Context:          k8s.Context(netcup.Name),
 			Domain:           "confluence.benjamin-borbe.de",
 			Version:          "6.15.10",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
@@ -705,32 +707,32 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
 		},
 		"jira": &app.Jira{
-			Context:          k8s.Context(server.Name),
+			Context:          k8s.Context(netcup.Name),
 			Domain:           "jira.benjamin-borbe.de",
-			Version:          "7.13.11",
+			Version:          "7.13.12",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
 		},
 		"backup": &app.BackupServer{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 		},
 		"poste": &app.Poste{
-			Context:      k8s.Context(server.Name),
+			Context:      k8s.Context(netcup.Name),
 			PosteVersion: "2.2.0", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				"mail.benjamin-borbe.de",
 			},
 		},
 		"maven": &app.Maven{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"maven.benjamin-borbe.de",
 			},
 			MavenRepoVersion: "1.0.0",
 		},
 		"portfolio": &app.Portfolio{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"benjamin-borbe.de",
 				"www.benjamin-borbe.de",
@@ -741,47 +743,47 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			GitSyncPassword:      w.TeamvaultSecrets.Password("YLb4wV"),
 		},
 		"webdav": &app.Webdav{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"webdav.benjamin-borbe.de",
 			},
 			Password: w.TeamvaultSecrets.Password("VOzvAO"),
 		},
 		"bind": &app.Bind{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 		},
 		"download": &app.Download{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"dl.benjamin-borbe.de",
 			},
 		},
 		"mumble": &app.Mumble{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Tag:     "1.1.1",
 		},
 		"ip": &app.Ip{
-			Context: k8s.Context(server.Name),
-			IP:      server.IP,
+			Context: k8s.Context(netcup.Name),
+			IP:      netcup.IP,
 			Tag:     "1.1.0",
 			Domain:  "ip.benjamin-borbe.de",
 		},
 		"password": &app.Password{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Tag:     "1.1.0",
 			Domains: k8s.IngressHosts{
 				"password.benjamin-borbe.de",
 			},
 		},
 		"now": &app.Now{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Tag:     "1.3.0",
 			Domains: k8s.IngressHosts{
 				"now.benjamin-borbe.de",
 			},
 		},
 		"helloworld": &app.HelloWorld{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Tag:     "1.0.1",
 			Domains: k8s.IngressHosts{
 				"rocketsource.de",
@@ -791,13 +793,13 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"slideshow": &app.Slideshow{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"slideshow.benjamin-borbe.de",
 			},
 		},
 		"kickstart": &app.Kickstart{
-			Context: k8s.Context(server.Name),
+			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"kickstart.benjamin-borbe.de",
 				"ks.benjamin-borbe.de",
@@ -807,76 +809,73 @@ func (w *World) netcup() map[AppName]world.Configuration {
 }
 
 func (w *World) rasp() map[AppName]world.Configuration {
-	server := server.Rasp
+	rasp := server.Rasp
 	return map[AppName]world.Configuration{
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH: &ssh.SSH{
 				Host: ssh.Host{
-					IP:   server.IP,
+					IP:   rasp.IP,
 					Port: 22,
 				},
 				User:           "bborbe",
 				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 			},
-			ClientName:    openvpn.ClientName(server.Name),
-			ServerName:    network.VPNServer.ServerName,
-			ServerAddress: network.VPNServer.ServerAddress,
-			ServerPort:    network.VPNServer.Port,
-			Routes: []openvpn.ClientRoute{
-				{
-					IPNet: network.PN.IPNet,
-				},
-			},
+			ClientName:    openvpn.ClientName(rasp.Name),
+			ServerName:    net.VPNServer.ServerName,
+			ServerAddress: net.VPNServer.ServerAddress,
+			ServerPort:    net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Nova,
+				server.Sun,
+			),
 		},
 	}
 }
 
 func (w *World) co2hz() map[AppName]world.Configuration {
-	server := server.Co2hz
+	co2hz := server.Co2hz
 	return map[AppName]world.Configuration{
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH: &ssh.SSH{
 				Host: ssh.Host{
-					IP:   server.IP,
+					IP:   co2hz.IP,
 					Port: 22,
 				},
 				User:           "bborbe",
 				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 			},
-			ClientName:    openvpn.ClientName(server.Name),
-			ServerName:    network.VPNServer.ServerName,
-			ServerAddress: network.VPNServer.ServerAddress,
-			ServerPort:    network.VPNServer.Port,
-			Routes: []openvpn.ClientRoute{
-				{
-					IPNet: network.PN.IPNet,
-				},
-			},
+			ClientName:    openvpn.ClientName(co2hz.Name),
+			ServerName:    net.VPNServer.ServerName,
+			ServerAddress: net.VPNServer.ServerAddress,
+			ServerPort:    net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Nova,
+				server.Sun,
+			),
 		},
 	}
 }
 
 func (w *World) co2wz() map[AppName]world.Configuration {
-	server := server.Co2wz
+	co2wz := server.Co2wz
 	return map[AppName]world.Configuration{
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH: &ssh.SSH{
 				Host: ssh.Host{
-					IP:   server.IP,
+					IP:   co2wz.IP,
 					Port: 22,
 				},
 				User:           "bborbe",
 				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 			},
-			ClientName:    openvpn.ClientName(server.Name),
-			ServerName:    network.VPNServer.ServerName,
-			ServerAddress: network.VPNServer.ServerAddress,
-			ServerPort:    network.VPNServer.Port,
-			Routes: []openvpn.ClientRoute{
-				{
-					IPNet: network.PN.IPNet,
-				},
-			},
+			ClientName:    openvpn.ClientName(co2wz.Name),
+			ServerName:    net.VPNServer.ServerName,
+			ServerAddress: net.VPNServer.ServerAddress,
+			ServerPort:    net.VPNServer.Port,
+			Routes: openvpn.BuildRoutes(
+				server.Nova,
+				server.Sun,
+			),
 		},
 	}
 }
