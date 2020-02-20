@@ -35,6 +35,7 @@ type ServerConfig struct {
 	ServerIPNet network.IPNet
 	ServerPort  network.Port
 	Routes      Routes
+	Device      Device
 }
 
 func (s ServerConfig) Validate(ctx context.Context) error {
@@ -44,6 +45,7 @@ func (s ServerConfig) Validate(ctx context.Context) error {
 		s.ServerIPNet,
 		s.Routes,
 		s.ServerPort,
+		s.Device,
 	)
 }
 
@@ -79,11 +81,13 @@ func (s *ServerConfig) ServerConfigContent() content.Func {
 			ServerNetmask string
 			ServerPort    int
 			Routes        []Route
+			Device        string
 		}{
 			ServerIP:      serverIPNet.IP.String(),
 			ServerNetmask: net.IP(serverIPNet.Mask).String(),
 			ServerPort:    port,
 			Routes:        []Route{},
+			Device:        s.Device.String(),
 		}
 		for _, route := range s.Routes {
 			gateway, err := route.Gateway.IP(ctx)
@@ -101,9 +105,9 @@ func (s *ServerConfig) ServerConfigContent() content.Func {
 			})
 		}
 		return template.Render(`
-dev tap
+dev {{.Device}}
 port {{.ServerPort}}
-proto tcp
+proto tcp4
 server {{.ServerIP}} {{.ServerNetmask}}
 ca /etc/openvpn/keys/ca.crt
 cert /etc/openvpn/keys/server.crt
@@ -116,6 +120,10 @@ cipher AES-256-CBC
 persist-key
 persist-tun
 status server.status
+topology subnet
+comp-lzo
+client-config-dir /etc/openvpn/ccd
+push "route {{.ServerIP}} {{.ServerNetmask}}"
 client-to-client
 
 verb 3

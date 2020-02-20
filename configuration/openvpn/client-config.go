@@ -32,6 +32,7 @@ type ClientConfig struct {
 	ServerConfig  ServerConfig
 	ServerAddress ServerAddress
 	Routes        Routes
+	Device        Device
 }
 
 func (c ClientConfig) Validate(ctx context.Context) error {
@@ -41,6 +42,7 @@ func (c ClientConfig) Validate(ctx context.Context) error {
 		c.ServerConfig.ServerPort,
 		c.ClientName,
 		c.ServerAddress,
+		c.Device,
 	)
 }
 
@@ -61,11 +63,13 @@ func (c *ClientConfig) ConfigContent() content.HasContent {
 			ServerHost string
 			ServerPort int
 			Routes     []Route
+			Device     string
 		}{
 			ServerName: c.ServerConfig.ServerName.String(),
 			ServerHost: c.ServerAddress.String(),
 			ServerPort: port,
 			Routes:     []Route{},
+			Device:     c.Device.String(),
 		}
 		for _, route := range c.Routes {
 			gateway, err := route.Gateway.IP(ctx)
@@ -94,8 +98,8 @@ func (c *ClientConfig) ConfigContent() content.HasContent {
 #viscosity dhcp false
 
 client
-dev tap
-proto tcp
+dev {{.Device}}
+proto tcp4
 remote {{.ServerHost}} {{.ServerPort}}
 resolv-retry infinite
 nobind
@@ -107,6 +111,7 @@ key client.key
 remote-cert-tls client
 tls-auth ta.key 1
 cipher AES-256-CBC
+comp-lzo
 
 verb 3
 

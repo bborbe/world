@@ -19,6 +19,7 @@ type LocalClient struct {
 	ServerAddress ServerAddress
 	Routes        Routes
 	ServerPort    network.Port
+	Device        Device
 }
 
 func (l *LocalClient) Validate(ctx context.Context) error {
@@ -29,6 +30,7 @@ func (l *LocalClient) Validate(ctx context.Context) error {
 		l.ServerAddress,
 		l.ServerPort,
 		l.clientConfig(),
+		l.Device,
 	)
 }
 
@@ -81,5 +83,6 @@ func (l *LocalClient) clientConfig() ClientConfig {
 			ServerPort: l.ServerPort,
 		},
 		Routes: l.Routes,
+		Device: l.Device,
 	}
 }

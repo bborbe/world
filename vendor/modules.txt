@@ -1,22 +1,41 @@
+# github.com/GehirnInc/crypt v0.0.0-20190301055215-6c0105aabd46
+github.com/GehirnInc/crypt
+github.com/GehirnInc/crypt/apr1_crypt
+github.com/GehirnInc/crypt/common
+github.com/GehirnInc/crypt/internal
+github.com/GehirnInc/crypt/md5_crypt
 # github.com/bborbe/http v0.0.0-20180829202151-efee63a8d109
 github.com/bborbe/http/client_builder
 github.com/bborbe/http/header
 github.com/bborbe/http/rest
 # github.com/bborbe/io v0.0.0-20180829202151-54b762caaee8
 github.com/bborbe/io/util
-# github.com/bborbe/run v0.0.0-20180829202151-c1766cb9c9a6
+# github.com/bborbe/run v0.0.0-20190723085027-d2ca2c9a7ee0
 github.com/bborbe/run
-github.com/bborbe/run/errors
 # github.com/bborbe/teamvault-utils v0.0.0-20200101152120-5357a2c26f65
 github.com/bborbe/teamvault-utils
 github.com/bborbe/teamvault-utils/mocks
-# github.com/foomo/htpasswd v0.0.0-20180422071726-cb63c4ac0e50
+# github.com/beorn7/perks v1.0.1
+github.com/beorn7/perks/quantile
+# github.com/certifi/gocertifi v0.0.0-20200104152315-a6d78f326758
+github.com/certifi/gocertifi
+# github.com/cespare/xxhash/v2 v2.1.1
+github.com/cespare/xxhash/v2
+# github.com/foomo/htpasswd v0.0.0-20200116085101-e3a90e78da9c
 github.com/foomo/htpasswd
+# github.com/getsentry/raven-go v0.2.0
+github.com/getsentry/raven-go
 # github.com/go-yaml/yaml v2.1.0+incompatible
 github.com/go-yaml/yaml
 # github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 github.com/golang/glog
-# github.com/hetznercloud/hcloud-go v1.9.0
+# github.com/golang/protobuf v1.3.2
+github.com/golang/protobuf/proto
+github.com/golang/protobuf/ptypes
+github.com/golang/protobuf/ptypes/any
+github.com/golang/protobuf/ptypes/duration
+github.com/golang/protobuf/ptypes/timestamp
+# github.com/hetznercloud/hcloud-go v1.17.0
 github.com/hetznercloud/hcloud-go/hcloud
 github.com/hetznercloud/hcloud-go/hcloud/schema
 # github.com/hpcloud/tail v1.0.0
@@ -27,6 +46,8 @@ github.com/hpcloud/tail/watch
 github.com/hpcloud/tail/winfile
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/matttproud/golang_protobuf_extensions v1.0.1
+github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/onsi/ginkgo v1.8.0
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
@@ -60,13 +81,26 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
-# github.com/spf13/cobra v0.0.3
+# github.com/prometheus/client_golang v1.4.0
+github.com/prometheus/client_golang/prometheus
+github.com/prometheus/client_golang/prometheus/internal
+# github.com/prometheus/client_model v0.2.0
+github.com/prometheus/client_model/go
+# github.com/prometheus/common v0.9.1
+github.com/prometheus/common/expfmt
+github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
+github.com/prometheus/common/model
+# github.com/prometheus/procfs v0.0.8
+github.com/prometheus/procfs
+github.com/prometheus/procfs/internal/fs
+github.com/prometheus/procfs/internal/util
+# github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
-# github.com/spf13/pflag v1.0.2
+# github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
+# golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/chacha20
@@ -80,9 +114,10 @@ golang.org/x/crypto/ssh
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
+# golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
+golang.org/x/sys/windows
 # golang.org/x/text v0.3.2
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -105,7 +140,7 @@ golang.org/x/text/transform
 gopkg.in/fsnotify.v1
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 gopkg.in/tomb.v1
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
 # k8s.io/client-go v9.0.0+incompatible
 k8s.io/client-go/util/cert

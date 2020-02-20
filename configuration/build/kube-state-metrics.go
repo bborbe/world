@@ -16,29 +16,29 @@ type KubeStateMetrics struct {
 	Image docker.Image
 }
 
-func (t *KubeStateMetrics) Validate(ctx context.Context) error {
+func (k *KubeStateMetrics) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		k.Image,
 	)
 }
 
-func (n *KubeStateMetrics) Children() []world.Configuration {
+func (k *KubeStateMetrics) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "quay.io/coreos/kube-state-metrics",
-					Tag:        n.Image.Tag,
+					Tag:        k.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: k.Image,
 			},
 		},
 	}
 }
 
-func (n *KubeStateMetrics) Applier() (world.Applier, error) {
+func (k *KubeStateMetrics) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: k.Image,
 	}, nil
 }

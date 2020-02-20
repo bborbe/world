@@ -9,7 +9,7 @@ import "github.com/bborbe/world/configuration/app"
 var Nova = app.BackupTarget{
 	User:      "root",
 	Host:      "nova.hm.benjamin-borbe.de",
-	IP:        "172.16.80.3",
+	IP:        "172.16.90.16",
 	Port:      22,
 	Directory: "/",
 	Excludes: []string{

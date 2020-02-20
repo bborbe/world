@@ -62,7 +62,7 @@ func (p *Prometheus) Children() []world.Configuration {
 func (p *Prometheus) prometheus() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/prometheus",
-		Tag:        "v2.14.0", // https://quay.io/repository/prometheus/prometheus?tag=latest&tab=tags
+		Tag:        "v2.15.2", // https://quay.io/repository/prometheus/prometheus?tag=latest&tab=tags
 	}
 	prometheusPort := deployer.Port{
 		Port:     9090,
@@ -213,7 +213,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 					},
 					LivenessProbe: k8s.Probe{
 						HttpGet: k8s.HttpGet{
-							Path:   "/",
+							Path:   "/-/healthy",
 							Port:   prometheusPort.Port,
 							Scheme: "HTTP",
 						},
@@ -224,7 +224,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 					},
 					ReadinessProbe: k8s.Probe{
 						HttpGet: k8s.HttpGet{
-							Path:   "/",
+							Path:   "/-/ready",
 							Port:   prometheusPort.Port,
 							Scheme: "HTTP",
 						},
@@ -366,7 +366,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					},
 					LivenessProbe: k8s.Probe{
 						HttpGet: k8s.HttpGet{
-							Path:   "/",
+							Path:   "/-/healthy",
 							Port:   alertmanagerPort.Port,
 							Scheme: "HTTP",
 						},
@@ -377,7 +377,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					},
 					ReadinessProbe: k8s.Probe{
 						HttpGet: k8s.HttpGet{
-							Path:   "/",
+							Path:   "/-/ready",
 							Port:   alertmanagerPort.Port,
 							Scheme: "HTTP",
 						},
@@ -547,7 +547,7 @@ func (p *Prometheus) kubeStateMetrics() []world.Configuration {
 	}
 	image := docker.Image{
 		Repository: "bborbe/kube-state-metrics",
-		Tag:        "v1.4.0",
+		Tag:        "v1.9.3", // https://quay.io/repository/coreos/kube-state-metrics?tag=latest&tab=tags
 	}
 	return []world.Configuration{
 		&build.KubeStateMetrics{

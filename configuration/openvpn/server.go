@@ -31,7 +31,9 @@ type Server struct {
 	ServerPort  network.Port
 	ServerIPNet network.IPNet
 	Routes      Routes
+	IRoutes     IRoutes
 	ClientIPs   ClientIPs
+	Device      Device
 }
 
 func (s *Server) Validate(ctx context.Context) error {
@@ -42,16 +44,26 @@ func (s *Server) Validate(ctx context.Context) error {
 		s.ServerIPNet,
 		s.ServerPort,
 		s.Routes,
+		s.IRoutes,
 		s.ClientIPs,
+		s.Device,
 	)
 }
 
 func (s *Server) Children() []world.Configuration {
 	serverConfig := s.serverConfig()
-	return []world.Configuration{
+
+	configurations := []world.Configuration{
 		&service.Directory{
 			SSH:   s.SSH,
 			Path:  file.Path("/etc/openvpn/keys"),
+			User:  "root",
+			Group: "root",
+			Perm:  0700,
+		},
+		&service.Directory{
+			SSH:   s.SSH,
+			Path:  file.Path("/etc/openvpn/ccd"),
 			User:  "root",
 			Group: "root",
 			Perm:  0700,
@@ -180,6 +192,30 @@ func (s *Server) Children() []world.Configuration {
 			SSH: s.SSH,
 		}),
 	}
+
+	for _, iroute := range s.IRoutes {
+		irouteIPNet := iroute.IPNet
+		configurations = append(configurations, &remote.File{
+			SSH:  s.SSH,
+			Path: file.Path("/etc/openvpn/ccd/" + iroute.Name.String()),
+			Content: content.Func(func(ctx context.Context) ([]byte, error) {
+				ipNet, err := irouteIPNet.IPNet(ctx)
+				if err != nil {
+					return nil, err
+				}
+				buf := bytes.NewBufferString("iroute ")
+				fmt.Fprint(buf, ipNet.IP.String())
+				fmt.Fprint(buf, " ")
+				fmt.Fprintln(buf, net.IP(ipNet.Mask).String())
+				return buf.Bytes(), nil
+			}),
+			User:  "root",
+			Group: "root",
+			Perm:  0600,
+		})
+	}
+
+	return configurations
 }
 func (s *Server) serverConfig() ServerConfig {
 	return ServerConfig{
@@ -187,6 +223,7 @@ func (s *Server) serverConfig() ServerConfig {
 		ServerIPNet: s.ServerIPNet,
 		ServerPort:  network.PortStatic(563),
 		Routes:      s.Routes,
+		Device:      s.Device,
 	}
 }
 
@@ -230,6 +267,7 @@ type ipPoolEntry struct {
 func (e ipPoolEntry) Bytes() []byte {
 	buf := &bytes.Buffer{}
 	fmt.Fprint(buf, e.name)
+	fmt.Fprint(buf, ",")
 	fmt.Fprintln(buf, e.ip.String())
 	return buf.Bytes()
 }

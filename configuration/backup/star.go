@@ -9,6 +9,7 @@ import "github.com/bborbe/world/configuration/app"
 var Star = app.BackupTarget{
 	User:      "root",
 	Host:      "star.hm.benjamin-borbe.de",
+	IP:        "172.16.90.32",
 	Port:      22,
 	Directory: "/",
 	Excludes: []string{

@@ -22,26 +22,26 @@ type Netcup struct {
 	DisableRBAC       bool
 	DisableCNI        bool
 	KubernetesVersion docker.Tag
+	SSH               *ssh.SSH
+}
+
+func (n *Netcup) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		n.SSH,
+	)
 }
 
 func (n *Netcup) Children() []world.Configuration {
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   n.IP,
-			Port: 22,
-		},
-		User:           ssh.User("bborbe"),
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-	}
 	return []world.Configuration{
 		&service.DisablePostfix{
-			SSH: ssh,
+			SSH: n.SSH,
 		},
 		&service.UbuntuUnattendedUpgrades{
-			SSH: ssh,
+			SSH: n.SSH,
 		},
 		&service.Kubernetes{
-			SSH:         ssh,
+			SSH:         n.SSH,
 			Context:     n.Context,
 			ClusterIP:   n.IP,
 			DisableRBAC: n.DisableRBAC,
@@ -53,10 +53,4 @@ func (n *Netcup) Children() []world.Configuration {
 
 func (n *Netcup) Applier() (world.Applier, error) {
 	return nil, nil
-}
-
-func (n *Netcup) Validate(ctx context.Context) error {
-	return validation.Validate(
-		ctx,
-	)
 }

@@ -76,9 +76,9 @@ func apply(ctx context.Context, cfg Runner, path []string) error {
 	}
 	glog.V(4).Infof("found %d children", len(cfg.Runners))
 
-	var list []run.RunFunc
+	var list []run.Func
 	for _, child := range cfg.Runners {
-		list = append(list, func(child Runner) run.RunFunc {
+		list = append(list, func(child Runner) run.Func {
 			return func(ctx context.Context) error {
 				return apply(ctx, child, path)
 			}

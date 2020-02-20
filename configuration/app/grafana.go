@@ -50,7 +50,7 @@ func (g *Grafana) Children() []world.Configuration {
 func (g *Grafana) grafana() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/grafana",
-		Tag:        "5.2.4",
+		Tag:        "6.5.3", // https://hub.docker.com/r/grafana/grafana/tags
 	}
 	port := deployer.Port{
 		Port:     3000,

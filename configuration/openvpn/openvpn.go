@@ -13,6 +13,22 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Device string
+
+func (d Device) Validate(ctx context.Context) error {
+	if d == "" {
+		return errors.New("Device empty")
+	}
+	return nil
+}
+
+func (d Device) String() string {
+	return string(d)
+}
+
+const Tap Device = "tap"
+const Tun Device = "tun"
+
 type ClientName string
 
 func (c ClientName) String() string {
@@ -47,6 +63,44 @@ func (s ServerAddress) Validate(ctx context.Context) error {
 		return errors.New("ServerName empty")
 	}
 	return nil
+}
+
+func BuildIRoutes(servers ...server.Server) IRoutes {
+	var result IRoutes
+	for _, server := range servers {
+		result = append(result, IRoute{
+			Name: ClientName(server.Name),
+			IPNet: network.IPNetFromIP{
+				IP:   server.IP,
+				Mask: 32,
+			},
+		})
+	}
+	return result
+}
+
+type IRoute struct {
+	Name  ClientName
+	IPNet network.IPNet
+}
+
+func (r IRoutes) Validate(ctx context.Context) error {
+	for _, route := range r {
+		if err := route.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type IRoutes []IRoute
+
+func (r IRoute) Validate(ctx context.Context) error {
+	return validation.Validate(
+		ctx,
+		r.IPNet,
+		r.Name,
+	)
 }
 
 func BuildRoutes(servers ...server.Server) Routes {
