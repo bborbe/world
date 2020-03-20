@@ -703,7 +703,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"confluence": &app.Confluence{
 			Context:          k8s.Context(netcup.Name),
 			Domain:           "confluence.benjamin-borbe.de",
-			Version:          "6.15.10",
+			Version:          "7.3.3",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
