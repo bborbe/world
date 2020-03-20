@@ -711,7 +711,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"jira": &app.Jira{
 			Context:          k8s.Context(netcup.Name),
 			Domain:           "jira.benjamin-borbe.de",
-			Version:          "7.13.12",
+			Version:          "8.8.0",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
