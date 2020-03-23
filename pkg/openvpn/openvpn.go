@@ -7,7 +7,6 @@ package openvpn
 import (
 	"context"
 
-	"github.com/bborbe/world/configuration/server"
 	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
@@ -65,20 +64,6 @@ func (s ServerAddress) Validate(ctx context.Context) error {
 	return nil
 }
 
-func BuildIRoutes(servers ...server.Server) IRoutes {
-	var result IRoutes
-	for _, server := range servers {
-		result = append(result, IRoute{
-			Name: ClientName(server.Name),
-			IPNet: network.IPNetFromIP{
-				IP:   server.IP,
-				Mask: 32,
-			},
-		})
-	}
-	return result
-}
-
 type IRoute struct {
 	Name  ClientName
 	IPNet network.IPNet
@@ -103,20 +88,6 @@ func (r IRoute) Validate(ctx context.Context) error {
 	)
 }
 
-func BuildRoutes(servers ...server.Server) Routes {
-	var result Routes
-	for _, server := range servers {
-		result = append(result, Route{
-			Gateway: server.VpnIP,
-			IPNet: network.IPNetFromIP{
-				IP:   server.IP,
-				Mask: 32,
-			},
-		})
-	}
-	return result
-}
-
 type Routes []Route
 
 func (r Routes) Validate(ctx context.Context) error {
@@ -139,18 +110,6 @@ func (r Route) Validate(ctx context.Context) error {
 		r.IPNet,
 		r.Gateway,
 	)
-}
-
-func BuildClientIPs(servers ...server.Server) ClientIPs {
-	var result ClientIPs
-	for _, server := range servers {
-		result = append(result, ClientIP{
-			Name: ClientName(server.Name),
-			IP:   server.VpnIP,
-		})
-	}
-
-	return result
 }
 
 type ClientIPs []ClientIP

@@ -8,7 +8,7 @@ import (
 	"context"
 
 	teamvault "github.com/bborbe/teamvault-utils"
-	"github.com/bborbe/world/configuration/deployer"
+	"github.com/bborbe/world/pkg/deployer"
 	"github.com/pkg/errors"
 )
 

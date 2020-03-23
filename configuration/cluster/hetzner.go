@@ -8,8 +8,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/world/configuration/deployer"
 	"github.com/bborbe/world/configuration/service"
+	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/hetzner"
