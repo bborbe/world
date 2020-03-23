@@ -22,8 +22,8 @@ func (g GitRepoUrl) String() string {
 	return string(g)
 }
 
-func (a GitRepoUrl) Validate(ctx context.Context) error {
-	if a == "" {
+func (g GitRepoUrl) Validate(ctx context.Context) error {
+	if g == "" {
 		return errors.New("GitRepoUrl missing")
 	}
 	return nil

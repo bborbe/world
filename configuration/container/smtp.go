@@ -22,8 +22,8 @@ func (s SmtpHostname) String() string {
 	return string(s)
 }
 
-func (a SmtpHostname) Validate(ctx context.Context) error {
-	if a == "" {
+func (s SmtpHostname) Validate(ctx context.Context) error {
+	if s == "" {
 		return errors.New("NamespaceName missing")
 	}
 	return nil
