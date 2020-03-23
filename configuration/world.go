@@ -340,6 +340,11 @@ func (w *World) sun() map[AppName]world.Configuration {
 		"dns": &app.CoreDns{
 			Context: k8s.Context(sun.Name),
 		},
+		"hostpath": &app.HostPathProvisioner{
+			Context:             k8s.Context(sun.Name),
+			HostPath:            "/data/hostpath-provisioner",
+			DefaultStorageClass: true,
+		},
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
 			ClientName:    openvpn.ClientName(sun.Name),
@@ -404,6 +409,180 @@ func (w *World) sun() map[AppName]world.Configuration {
 				backup.Star,
 			},
 		},
+		"mqtt-kafka-connector-co2mon": &app.MqttKafkaConnector{
+			Context:      k8s.Context(sun.Name),
+			MqttBroker:   "tcp://rasp.hm.benjamin-borbe.de:1883",
+			MqttUser:     w.TeamvaultSecrets.Username("9qNx3O"),
+			MqttPassword: w.TeamvaultSecrets.Password("9qNx3O"),
+			MqttTopic:    "co2mon",
+			KafkaBrokers: []string{"kafka-cp-kafka-headless.kafka.svc.cluster.local:9092"},
+			KafkaTopic:   "co2mon",
+		},
+		"metabase": &app.Metabase{
+			Context:          k8s.Context(sun.Name),
+			Domain:           "metabase.benjamin-borbe.de",
+			DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: MetabaseHostname,
+								IP:   sun.IP,
+							},
+						},
+					},
+				),
+			},
+		},
+		"kafka": &app.Kafka{
+			AccessMode:        "ReadWriteMany",
+			Context:           k8s.Context(sun.Name),
+			DisableConnect:    true,
+			DisableRest:       true,
+			KafkaReplicas:     1,
+			KafkaStorage:      "5Gi",
+			StorageClass:      "hostpath",
+			ZookeeperReplicas: 1,
+			ZookeeperStorage:  "5Gi",
+			Version:           "5.3.1", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
+		},
+		"kafka-status": &app.KafkaStatus{
+			Context:  k8s.Context(sun.Name),
+			Replicas: 1,
+			Domain:   "kafka-status.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: KafkaStatus,
+								IP:   sun.IP,
+							},
+						},
+					},
+				),
+			},
+		},
+		"kafka-latest-versions": &app.KafkaLatestVersions{
+			Context:      k8s.Context(sun.Name),
+			Replicas:     2,
+			AccessMode:   "ReadWriteMany",
+			StorageClass: "hostpath",
+			Domain:       "versions.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: VersionsHostname,
+								IP:   sun.IP,
+							},
+						},
+					},
+				),
+			},
+		},
+		"kafka-update-available": &app.KafkaUpdateAvailable{
+			Context:      k8s.Context(sun.Name),
+			Replicas:     2,
+			AccessMode:   "ReadWriteMany",
+			StorageClass: "hostpath",
+			Domain:       "updates.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: UpdatesHostname,
+								IP:   sun.IP,
+							},
+						},
+					},
+				),
+			},
+		},
+		"kafka-k8s-version-collector": &app.KafkaK8sVersionCollector{
+			Context: k8s.Context(sun.Name),
+		},
+		"kafka-dockerhub-version-collector": &app.KafkaDockerhubVersionCollector{
+			Context: k8s.Context(sun.Name),
+			Repositories: []docker.Repository{
+				"confluentinc/cp-kafka-connect",
+				"confluentinc/cp-kafka-rest",
+				"confluentinc/cp-kafka-rest",
+				"confluentinc/cp-kafka",
+				"confluentinc/cp-ksql-net",
+				"confluentinc/cp-ksql-net",
+				"confluentinc/cp-schema-registry",
+				"confluentinc/cp-zookeeper",
+				"coredns/coredns",
+				"grafana/grafana",
+				"jrelva/nginx-autoindex",
+				"library/alpine",
+				"library/golang",
+				"library/mariadb",
+				"library/postgres",
+				"library/redis",
+				"library/traefik",
+				"library/ubuntu",
+				"metabase/metabase",
+			},
+		},
+		"kafka-regex-version-collector": &app.KafkaRegexVersionCollector{
+			Context:     k8s.Context(sun.Name),
+			Application: "Golang",
+			Url:         "https://golang.org/dl/",
+			Regex:       `https://dl.google.com/go/go([\d\.]+)\.src\.tar\.gz`,
+		},
+		"kafka-atlassian-version-collector": &app.KafkaAtlassianVersionCollector{
+			Context: k8s.Context(sun.Name),
+		},
+		"kafka-installed-version-collector": &app.KafkaInstalledVersionCollector{
+			Context: k8s.Context(sun.Name),
+			Apps: []struct {
+				Name  string
+				Regex string
+				Url   string
+			}{
+				{
+					Name:  "Confluence",
+					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
+					Url:   "https://confluence.benjamin-borbe.de",
+				},
+				{
+					Name:  "Jira",
+					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
+					Url:   "https://jira.benjamin-borbe.de",
+				},
+			},
+		},
+		"kafka-sample": &app.KafkaSample{
+			Context: k8s.Context(sun.Name),
+			Domain:  "kafka-sample.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: KafkaSampleHostname,
+								IP:   sun.IP,
+							},
+						},
+					},
+				),
+			},
+		},
 	}
 }
 
@@ -435,6 +614,16 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			HostPath:            "/data/hostpath-provisioner",
 			DefaultStorageClass: true,
 		},
+		"dns": &app.CoreDns{
+			Context: k8s.Context(netcup.Name),
+		},
+		"traefik": &app.Traefik{
+			Context: k8s.Context(netcup.Name),
+			Domains: k8s.IngressHosts{
+				"traefik.benjamin-borbe.de",
+			},
+			SSL: true,
+		},
 		"debug": &app.Debug{
 			Context: k8s.Context(netcup.Name),
 			Domain:  "debug.benjamin-borbe.de",
@@ -446,34 +635,6 @@ func (w *World) netcup() map[AppName]world.Configuration {
 						List: []dns.Entry{
 							{
 								Host: DebugHostname,
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
-			},
-		},
-		"mqtt-kafka-connector-co2mon": &app.MqttKafkaConnector{
-			Context:      k8s.Context(netcup.Name),
-			MqttBroker:   "tcp://rasp.hm.benjamin-borbe.de:1883",
-			MqttUser:     w.TeamvaultSecrets.Username("9qNx3O"),
-			MqttPassword: w.TeamvaultSecrets.Password("9qNx3O"),
-			MqttTopic:    "co2mon",
-			KafkaBrokers: []string{"kafka-cp-kafka-headless.kafka.svc.cluster.local:9092"},
-			KafkaTopic:   "co2mon",
-		},
-		"metabase": &app.Metabase{
-			Context:          k8s.Context(netcup.Name),
-			Domain:           "metabase.benjamin-borbe.de",
-			DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: MetabaseHostname,
 								IP:   netcup.IP,
 							},
 						},
@@ -500,163 +661,6 @@ func (w *World) netcup() map[AppName]world.Configuration {
 					},
 				),
 			},
-		},
-
-		"kafka": &app.Kafka{
-			AccessMode:        "ReadWriteMany",
-			Context:           k8s.Context(netcup.Name),
-			DisableConnect:    true,
-			DisableRest:       true,
-			KafkaReplicas:     1,
-			KafkaStorage:      "5Gi",
-			StorageClass:      "hostpath",
-			ZookeeperReplicas: 1,
-			ZookeeperStorage:  "5Gi",
-			Version:           "5.3.1", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
-		},
-		"kafka-status": &app.KafkaStatus{
-			Context:  k8s.Context(netcup.Name),
-			Replicas: 1,
-			Domain:   "kafka-status.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: KafkaStatus,
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
-			},
-		},
-		"kafka-latest-versions": &app.KafkaLatestVersions{
-			Context:      k8s.Context(netcup.Name),
-			Replicas:     2,
-			AccessMode:   "ReadWriteMany",
-			StorageClass: "hostpath",
-			Domain:       "versions.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: VersionsHostname,
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
-			},
-		},
-		"kafka-update-available": &app.KafkaUpdateAvailable{
-			Context:      k8s.Context(netcup.Name),
-			Replicas:     2,
-			AccessMode:   "ReadWriteMany",
-			StorageClass: "hostpath",
-			Domain:       "updates.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: UpdatesHostname,
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
-			},
-		},
-		"kafka-k8s-version-collector": &app.KafkaK8sVersionCollector{
-			Context: k8s.Context(netcup.Name),
-		},
-		"kafka-dockerhub-version-collector": &app.KafkaDockerhubVersionCollector{
-			Context: k8s.Context(netcup.Name),
-			Repositories: []docker.Repository{
-				"confluentinc/cp-kafka-connect",
-				"confluentinc/cp-kafka-rest",
-				"confluentinc/cp-kafka-rest",
-				"confluentinc/cp-kafka",
-				"confluentinc/cp-ksql-net",
-				"confluentinc/cp-ksql-net",
-				"confluentinc/cp-schema-registry",
-				"confluentinc/cp-zookeeper",
-				"coredns/coredns",
-				"grafana/grafana",
-				"jrelva/nginx-autoindex",
-				"library/alpine",
-				"library/golang",
-				"library/mariadb",
-				"library/postgres",
-				"library/redis",
-				"library/traefik",
-				"library/ubuntu",
-				"metabase/metabase",
-			},
-		},
-		"kafka-regex-version-collector": &app.KafkaRegexVersionCollector{
-			Context:     k8s.Context(netcup.Name),
-			Application: "Golang",
-			Url:         "https://golang.org/dl/",
-			Regex:       `https://dl.google.com/go/go([\d\.]+)\.src\.tar\.gz`,
-		},
-		"kafka-atlassian-version-collector": &app.KafkaAtlassianVersionCollector{
-			Context: k8s.Context(netcup.Name),
-		},
-		"kafka-installed-version-collector": &app.KafkaInstalledVersionCollector{
-			Context: k8s.Context(netcup.Name),
-			Apps: []struct {
-				Name  string
-				Regex string
-				Url   string
-			}{
-				{
-					Name:  "Confluence",
-					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
-					Url:   "https://confluence.benjamin-borbe.de",
-				},
-				{
-					Name:  "Jira",
-					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
-					Url:   "https://jira.benjamin-borbe.de",
-				},
-			},
-		},
-		"kafka-sample": &app.KafkaSample{
-			Context: k8s.Context(netcup.Name),
-			Domain:  "kafka-sample.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: KafkaSampleHostname,
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
-			},
-		},
-		"dns": &app.CoreDns{
-			Context: k8s.Context(netcup.Name),
-		},
-		"traefik": &app.Traefik{
-			Context: k8s.Context(netcup.Name),
-			Domains: k8s.IngressHosts{
-				"traefik.benjamin-borbe.de",
-			},
-			SSL: true,
 		},
 		"prometheus": &app.Prometheus{
 			Context:            k8s.Context(netcup.Name),
