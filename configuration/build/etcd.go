@@ -16,29 +16,29 @@ type Etcd struct {
 	Image docker.Image
 }
 
-func (t *Etcd) Validate(ctx context.Context) error {
+func (e *Etcd) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		e.Image,
 	)
 }
 
-func (n *Etcd) Children() []world.Configuration {
+func (e *Etcd) Children() []world.Configuration {
 	return []world.Configuration{
 		&buildConfiguration{
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "quay.io/coreos/etcd",
-					Tag:        n.Image.Tag,
+					Tag:        e.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: e.Image,
 			},
 		},
 	}
 }
 
-func (n *Etcd) Applier() (world.Applier, error) {
+func (e *Etcd) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: e.Image,
 	}, nil
 }
