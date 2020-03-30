@@ -162,6 +162,20 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			IP:      ip,
 			Tag:     "1.1.0",
 			Domain:  "ip.hetzner-1.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: "ip.hetzner-1.benjamin-borbe.de",
+								IP:   ip,
+							},
+						},
+					},
+				),
+			},
 		},
 		"openfaas": &app.OpenFaas{
 			Context: k8sContext,
@@ -772,6 +786,20 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			IP:      netcup.IP,
 			Tag:     "1.1.0",
 			Domain:  "ip.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: "ip.benjamin-borbe.de",
+								IP:   netcup.IP,
+							},
+						},
+					},
+				),
+			},
 		},
 		"password": &app.Password{
 			Context: k8s.Context(netcup.Name),

@@ -18,19 +18,20 @@ import (
 )
 
 type Ip struct {
-	Context k8s.Context
-	Domain  k8s.IngressHost
-	Tag     docker.Tag
-	IP      network.IP
+	Context      k8s.Context
+	Domain       k8s.IngressHost
+	Tag          docker.Tag
+	IP           network.IP
+	Requirements []world.Configuration
 }
 
-func (t *Ip) Validate(ctx context.Context) error {
+func (i *Ip) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domain,
-		t.Tag,
-		t.IP,
+		i.Context,
+		i.Domain,
+		i.Tag,
+		i.IP,
 	)
 }
 
@@ -39,6 +40,13 @@ func (i *Ip) Applier() (world.Applier, error) {
 }
 
 func (i *Ip) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, i.Requirements...)
+	result = append(result, i.ip()...)
+	return result
+}
+
+func (i *Ip) ip() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/ip",
 		Tag:        i.Tag,
