@@ -16,10 +16,11 @@ import (
 )
 
 type Traefik struct {
-	Context     k8s.Context
-	Domains     k8s.IngressHosts
-	SSL         bool
-	DisableRBAC bool
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	SSL          bool
+	DisableRBAC  bool
+	Requirements []world.Configuration
 }
 
 func (t *Traefik) Validate(ctx context.Context) error {
@@ -36,10 +37,18 @@ func (t *Traefik) Validate(ctx context.Context) error {
 		t.Domains,
 	)
 }
+
 func (t *Traefik) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, t.Requirements...)
+	result = append(result, t.traefik()...)
+	return result
+}
+
+func (t *Traefik) traefik() []world.Configuration {
 	traefikImage := docker.Image{
 		Repository: "bborbe/traefik",
-		Tag:        "1.7.20-alpine", // https://hub.docker.com/_/traefik?tab=tags
+		Tag:        "1.7.24-alpine", // https://hub.docker.com/_/traefik?tab=tags
 	}
 	httpPort := deployer.Port{
 		Port:     80,

@@ -154,14 +154,9 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		"traefik": &app.Traefik{
 			Context: k8sContext,
 			Domains: k8s.IngressHosts{
-				"traefik.hetzner-1.benjamin-borbe.de",
+				"traefik.benjamin-borbe.de",
 			},
-		},
-		"ip": &app.Ip{
-			Context: k8sContext,
-			IP:      ip,
-			Tag:     "1.1.0",
-			Domain:  "ip.hetzner-1.benjamin-borbe.de",
+			SSL: true,
 			Requirements: []world.Configuration{
 				world.NewConfiguraionBuilder().WithApplier(
 					&dns.Server{
@@ -169,7 +164,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
 						List: []dns.Entry{
 							{
-								Host: "ip.hetzner-1.benjamin-borbe.de",
+								Host: "traefik.benjamin-borbe.de",
 								IP:   ip,
 							},
 						},
@@ -177,10 +172,25 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 				),
 			},
 		},
-		"openfaas": &app.OpenFaas{
+		"ip": &app.Ip{
 			Context: k8sContext,
 			IP:      ip,
-			Domain:  "openfaas.hetzner-1.benjamin-borbe.de",
+			Tag:     "1.1.0",
+			Domain:  "ip.benjamin-borbe.de",
+			Requirements: []world.Configuration{
+				world.NewConfiguraionBuilder().WithApplier(
+					&dns.Server{
+						Host:    "ns.rocketsource.de",
+						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+						List: []dns.Entry{
+							{
+								Host: "ip.benjamin-borbe.de",
+								IP:   ip,
+							},
+						},
+					},
+				),
+			},
 		},
 	}
 }
@@ -780,26 +790,6 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"mumble": &app.Mumble{
 			Context: k8s.Context(netcup.Name),
 			Tag:     "1.1.1",
-		},
-		"ip": &app.Ip{
-			Context: k8s.Context(netcup.Name),
-			IP:      netcup.IP,
-			Tag:     "1.1.0",
-			Domain:  "ip.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: "ip.benjamin-borbe.de",
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
-			},
 		},
 		"password": &app.Password{
 			Context: k8s.Context(netcup.Name),
