@@ -29,7 +29,7 @@ func (c *CoreDns) Validate(ctx context.Context) error {
 func (c *CoreDns) Children() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/coredns",
-		Tag:        "1.5.2", // https://hub.docker.com/r/coredns/coredns/tags
+		Tag:        "1.6.9", // https://hub.docker.com/r/coredns/coredns/tags
 	}
 	udpPort := deployer.Port{
 		Name:     "dns",
