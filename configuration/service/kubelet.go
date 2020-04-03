@@ -111,6 +111,14 @@ func (k *Kubelet) Children() []world.Configuration {
 			Perm:  0755,
 		},
 		&remote.File{
+			SSH:     k.SSH,
+			Path:    file.Path("/var/lib/kubelet/config.yaml"),
+			User:    "root",
+			Group:   "root",
+			Perm:    0644,
+			Content: content.Func(k.kubeletConf),
+		},
+		&remote.File{
 			SSH:   k.SSH,
 			Path:  file.Path("/etc/kubernetes/ssl/ca.pem"),
 			User:  "root",
@@ -199,6 +207,7 @@ func (k *Kubelet) Children() []world.Configuration {
 
 				args := []string{
 					"kubelet",
+					"--config=/var/lib/kubelet/config.yaml",
 					"--fail-swap-on=false",
 					fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
 					"--containerized",
@@ -678,4 +687,56 @@ func (k *Kubelet) readPem(ctx context.Context, name string) ([]byte, error) {
 		}
 	}
 	return ioutil.ReadFile(filepath)
+}
+
+const Banana = `
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+authentication:
+  anonymous:
+    enabled: true
+  webhook:
+    cacheTTL: 0s
+    enabled: true
+  x509:
+    clientCAFile: /etc/kubernetes/ssl/ca.pem
+authorization:
+  #mode: Webhook
+  mode: AlwaysAllow
+  webhook:
+    cacheAuthorizedTTL: 0s
+    cacheUnauthorizedTTL: 0s
+clusterDNS:
+- 10.103.0.10
+clusterDomain: cluster.local
+cpuManagerReconcilePeriod: 0s
+evictionPressureTransitionPeriod: 0s
+fileCheckFrequency: 0s
+healthzBindAddress: 127.0.0.1
+healthzPort: 10248
+httpCheckFrequency: 0s
+imageMinimumGCAge: 0s
+nodeStatusReportFrequency: 0s
+nodeStatusUpdateFrequency: 0s
+rotateCertificates: true
+runtimeRequestTimeout: 0s
+staticPodPath: /etc/kubernetes/manifests
+streamingConnectionIdleTimeout: 0s
+syncFrequency: 0s
+volumeStatsAggPeriod: 0s
+failSwapOn: false
+`
+
+func (k *Kubelet) kubeletConf(ctx context.Context) ([]byte, error) {
+	return template.Render(`
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+authentication:
+  anonymous:
+    enabled: true
+authorization:
+  mode: AlwaysAllow
+failSwapOn: false
+`, struct {
+	}{})
 }
