@@ -7,13 +7,13 @@ package cluster
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/ssh"
-
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
+	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/remote"
+	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
@@ -24,6 +24,7 @@ type Nuke struct {
 	ClusterIP   network.IP
 	DisableRBAC bool
 	DisableCNI  bool
+	Version     docker.Tag
 }
 
 func (n *Nuke) Children() []world.Configuration {
@@ -54,6 +55,7 @@ func (n *Nuke) Children() []world.Configuration {
 			ClusterIP:   n.ClusterIP,
 			DisableRBAC: n.DisableRBAC,
 			DisableCNI:  n.DisableCNI,
+			Version:     n.Version,
 		},
 	}
 }
