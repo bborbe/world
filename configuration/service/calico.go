@@ -30,7 +30,7 @@ func (c *Calico) Validate(ctx context.Context) error {
 	)
 }
 func (c *Calico) Children() []world.Configuration {
-	var version docker.Tag = "v3.6.1"
+	var version docker.Tag = "release-v3.13"
 	cniImage := docker.Image{
 		Repository: "bborbe/calico-cni",
 		Tag:        version,
@@ -128,9 +128,21 @@ func (c *Calico) Children() []world.Configuration {
 							"pods",
 							"nodes",
 							"namespaces",
+							"configmaps",
 						},
 						Verbs: []string{
 							"get",
+						},
+					},
+					{
+						ApiGroups: []string{
+							"",
+						},
+						Resources: []string{
+							"nodes/status",
+						},
+						Verbs: []string{
+							"patch",
 						},
 					},
 				},
