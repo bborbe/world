@@ -298,6 +298,7 @@ func (w *World) nuke() map[AppName]world.Configuration {
 			SSH:       ssh,
 			Context:   k8s.Context(nuke.Name),
 			ClusterIP: nuke.IP,
+			Version:   "v1.14.10",
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8s.Context(nuke.Name),
