@@ -208,15 +208,11 @@ func (k *Kubelet) Children() []world.Configuration {
 				args := []string{
 					"kubelet",
 					"--config=/var/lib/kubelet/config.yaml",
-					"--fail-swap-on=false",
 					fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
 					"--containerized",
 					"--register-node=true",
 					"--allow-privileged=true",
-					"--pod-manifest-path=/etc/kubernetes/manifests",
 					fmt.Sprintf("--hostname-override=%s", ip.String()),
-					"--cluster-dns=10.103.0.10",
-					"--cluster-domain=cluster.local",
 					"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
 					"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
 					"--v=0",
@@ -689,7 +685,8 @@ func (k *Kubelet) readPem(ctx context.Context, name string) ([]byte, error) {
 	return ioutil.ReadFile(filepath)
 }
 
-const Banana = `
+func (k *Kubelet) kubeletConf(ctx context.Context) ([]byte, error) {
+	return template.Render(`
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 authentication:
@@ -718,24 +715,12 @@ httpCheckFrequency: 0s
 imageMinimumGCAge: 0s
 nodeStatusReportFrequency: 0s
 nodeStatusUpdateFrequency: 0s
-rotateCertificates: true
+rotateCertificates: false
 runtimeRequestTimeout: 0s
 staticPodPath: /etc/kubernetes/manifests
 streamingConnectionIdleTimeout: 0s
 syncFrequency: 0s
 volumeStatsAggPeriod: 0s
-failSwapOn: false
-`
-
-func (k *Kubelet) kubeletConf(ctx context.Context) ([]byte, error) {
-	return template.Render(`
-apiVersion: kubelet.config.k8s.io/v1beta1
-kind: KubeletConfiguration
-authentication:
-  anonymous:
-    enabled: true
-authorization:
-  mode: AlwaysAllow
 failSwapOn: false
 `, struct {
 	}{})
