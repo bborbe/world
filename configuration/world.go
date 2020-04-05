@@ -6,12 +6,12 @@ package configuration
 
 import (
 	"context"
-	"github.com/bborbe/world/configuration/traefik"
 
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/backup"
 	"github.com/bborbe/world/configuration/cluster"
 	"github.com/bborbe/world/configuration/service"
+	"github.com/bborbe/world/configuration/traefik"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/hetzner"
@@ -647,7 +647,8 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"traefik.benjamin-borbe.de",
 			},
-			SSL: true,
+			SSL:   true,
+			Debug: false,
 		},
 		"debug": &app.Debug{
 			Context: k8s.Context(netcup.Name),

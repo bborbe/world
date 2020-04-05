@@ -18,6 +18,7 @@ type App struct {
 	Context      k8s.Context
 	Domains      k8s.IngressHosts
 	SSL          bool
+	Debug        bool
 	DisableRBAC  bool
 	Requirements []world.Configuration
 }
@@ -91,6 +92,13 @@ func (a *App) traefik() []world.Configuration {
 			EmptyDir: &k8s.PodVolumeEmptyDir{},
 		}
 	}
+	config := config{
+		SSL:   a.SSL,
+		Debug: a.Debug,
+	}
+	configValues := deployer.ConfigValues{
+		"config": config.ConfigValue(),
+	}
 	result := []world.Configuration{
 		&k8s.NamespaceConfiguration{
 			Context: a.Context,
@@ -116,17 +124,10 @@ func (a *App) traefik() []world.Configuration {
 		},
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   a.Context,
-				Namespace: "traefik",
-				Name:      "traefik",
-				ConfigValues: map[string]deployer.ConfigValue{
-					"config": deployer.ConfigValueFunc(func(ctx context.Context) (string, error) {
-						if a.SSL {
-							return traefikConfigWithHttps, nil
-						}
-						return traefikConfigWithoutHttps, nil
-					}),
-				},
+				Context:      a.Context,
+				Namespace:    "traefik",
+				Name:         "traefik",
+				ConfigValues: configValues,
 			},
 		),
 		&BuildApp{
@@ -156,6 +157,9 @@ func (a *App) traefik() []world.Configuration {
 					},
 					Template: k8s.PodTemplate{
 						Metadata: k8s.Metadata{
+							Annotations: k8s.Annotations{
+								"config-checksum": configValues.Checksum(),
+							},
 							Labels: k8s.Labels{
 								"app": "traefik",
 							},
@@ -180,7 +184,6 @@ func (a *App) traefik() []world.Configuration {
 									},
 									Args: []k8s.Arg{
 										"--configfile=/config/traefik.toml",
-										"--logLevel=INFO", // "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
 									},
 									VolumeMounts: []k8s.ContainerMount{
 										{
@@ -401,55 +404,3 @@ func (a *App) Applier() (world.Applier,
 	return nil,
 		nil
 }
-
-const traefikConfigWithHttps = `
-graceTimeOut = 10
-debug = false
-logLevel = "INFO"
-defaultEntryPoints = ["http","https"]
-[entryPoints]
-[entryPoints.http]
-address = ":80"
-compress = false
-[entryPoints.http.redirect]
-entryPoint = "https"
-[entryPoints.https]
-address = ":443"
-compress = false
-[entryPoints.https.tls]
-cipherSuites = [
-"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-"TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-]
-[kubernetes]
-[web]
-address = ":8080"
-[web.metrics.prometheus]
-[acme]
-email = "bborbe@rocketnews.de"
-storage = "/acme/acme.json"
-entryPoint = "https"
-onHostRule = true
-acmeLogging = true
-[acme.httpChallenge]
-entryPoint = "http"
-`
-
-const traefikConfigWithoutHttps = `
-graceTimeOut = 10
-debug = false
-logLevel = "INFO"
-defaultEntryPoints = ["http"]
-[entryPoints]
-[entryPoints.http]
-address = ":80"
-compress = false
-[kubernetes]
-[web]
-address = ":8080"
-[web.metrics.prometheus]
-email = "bborbe@rocketnews.de"
-entryPoint = "http"
-onHostRule = true
-`
