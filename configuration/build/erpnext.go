@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,13 +26,13 @@ func (e *Erpnext) Validate(ctx context.Context) error {
 
 func (e *Erpnext) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/erpnext.git",
 				Image:     e.Image,
 				GitBranch: docker.GitBranch(e.Image.Tag),
 			},
-		},
+		),
 	}
 }
 

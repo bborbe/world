@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type DebugServer struct {
 	Image docker.Image
 }
 
-func (t *DebugServer) Validate(ctx context.Context) error {
+func (d *DebugServer) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		d.Image,
 	)
 }
 
-func (p *DebugServer) Children() []world.Configuration {
+func (d *DebugServer) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "debug-server",
 				GitRepo:         "https://github.com/bborbe/debug-server.git",
 				SourceDirectory: "github.com/bborbe/debug-server",
 				Package:         "github.com/bborbe/debug-server",
-				Image:           p.Image,
+				Image:           d.Image,
 			},
-		},
+		),
 	}
 }
 
-func (p *DebugServer) Applier() (world.Applier, error) {
+func (d *DebugServer) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: p.Image,
+		Image: d.Image,
 	}, nil
 }

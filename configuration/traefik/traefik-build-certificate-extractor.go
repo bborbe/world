@@ -2,41 +2,42 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package build
+package traefik
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
-type TraefikCertificateExtractor struct {
+type BuildCertificateExtractor struct {
 	Image docker.Image
 }
 
-func (t *TraefikCertificateExtractor) Validate(ctx context.Context) error {
+func (b *BuildCertificateExtractor) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		b.Image,
 	)
 }
 
-func (t *TraefikCertificateExtractor) Children() []world.Configuration {
+func (b *BuildCertificateExtractor) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/DanielHuisman/traefik-certificate-extractor.git",
-				GitBranch: docker.GitBranch(t.Image.Tag),
-				Image:     t.Image,
+				GitBranch: docker.GitBranch(b.Image.Tag),
+				Image:     b.Image,
 			},
-		},
+		),
 	}
 }
 
-func (t *TraefikCertificateExtractor) Applier() (world.Applier, error) {
+func (b *BuildCertificateExtractor) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: t.Image,
+		Image: b.Image,
 	}, nil
 }

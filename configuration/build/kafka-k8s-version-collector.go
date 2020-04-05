@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type KafkaK8sVersionCollector struct {
 	Image docker.Image
 }
 
-func (t *KafkaK8sVersionCollector) Validate(ctx context.Context) error {
+func (k *KafkaK8sVersionCollector) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		k.Image,
 	)
 }
 
-func (i *KafkaK8sVersionCollector) Children() []world.Configuration {
+func (k *KafkaK8sVersionCollector) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-k8s-version-collector",
 				GitRepo:         "https://github.com/bborbe/kafka-k8s-version-collector.git",
 				SourceDirectory: "github.com/bborbe/kafka-k8s-version-collector",
 				Package:         "github.com/bborbe/kafka-k8s-version-collector",
-				Image:           i.Image,
+				Image:           k.Image,
 			},
-		},
+		),
 	}
 }
 
-func (i *KafkaK8sVersionCollector) Applier() (world.Applier, error) {
+func (k *KafkaK8sVersionCollector) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: i.Image,
+		Image: k.Image,
 	}, nil
 }

@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type KubednsMasq struct {
 	Image docker.Image
 }
 
-func (t *KubednsMasq) Validate(ctx context.Context) error {
+func (k *KubednsMasq) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		k.Image,
 	)
 }
 
-func (n *KubednsMasq) Children() []world.Configuration {
+func (k *KubednsMasq) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "gcr.io/google_containers/kube-dnsmasq-amd64",
-					Tag:        n.Image.Tag,
+					Tag:        k.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: k.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *KubednsMasq) Applier() (world.Applier, error) {
+func (k *KubednsMasq) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: k.Image,
 	}, nil
 }

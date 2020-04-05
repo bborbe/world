@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type Podmaster struct {
 	Image docker.Image
 }
 
-func (t *Podmaster) Validate(ctx context.Context) error {
+func (p *Podmaster) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		p.Image,
 	)
 }
 
-func (n *Podmaster) Children() []world.Configuration {
+func (p *Podmaster) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "gcr.io/google_containers/podmaster",
-					Tag:        n.Image.Tag,
+					Tag:        p.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: p.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *Podmaster) Applier() (world.Applier, error) {
+func (p *Podmaster) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: p.Image,
 	}, nil
 }

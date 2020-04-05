@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type Pause struct {
 	Image docker.Image
 }
 
-func (t *Pause) Validate(ctx context.Context) error {
+func (p *Pause) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		p.Image,
 	)
 }
 
-func (n *Pause) Children() []world.Configuration {
+func (p *Pause) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "k8s.gcr.io/pause",
-					Tag:        n.Image.Tag,
+					Tag:        p.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: p.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *Pause) Applier() (world.Applier, error) {
+func (p *Pause) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: p.Image,
 	}, nil
 }

@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -26,7 +27,7 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 
 func (t *Teamvault) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/teamvault.git",
 				Image:   t.Image,
@@ -35,7 +36,7 @@ func (t *Teamvault) Children() []world.Configuration {
 				},
 				GitBranch: "master",
 			},
-		},
+		),
 	}
 }
 

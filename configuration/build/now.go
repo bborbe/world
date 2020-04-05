@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -24,13 +25,13 @@ func (n *Now) Validate(ctx context.Context) error {
 }
 func (n *Now) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/now.git",
 				Image:     n.Image,
 				GitBranch: docker.GitBranch(n.Image.Tag),
 			},
-		},
+		),
 	}
 }
 

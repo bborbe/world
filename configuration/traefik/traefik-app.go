@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package app
+package traefik
 
 import (
 	"context"
 
-	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -15,7 +14,7 @@ import (
 	"github.com/bborbe/world/pkg/world"
 )
 
-type Traefik struct {
+type App struct {
 	Context      k8s.Context
 	Domains      k8s.IngressHosts
 	SSL          bool
@@ -23,29 +22,29 @@ type Traefik struct {
 	Requirements []world.Configuration
 }
 
-func (t *Traefik) Validate(ctx context.Context) error {
-	if t.SSL {
+func (a *App) Validate(ctx context.Context) error {
+	if a.SSL {
 		return validation.Validate(
 			ctx,
-			t.Context,
-			t.Domains,
+			a.Context,
+			a.Domains,
 		)
 	}
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
+		a.Context,
+		a.Domains,
 	)
 }
 
-func (t *Traefik) Children() []world.Configuration {
+func (a *App) Children() []world.Configuration {
 	var result []world.Configuration
-	result = append(result, t.Requirements...)
-	result = append(result, t.traefik()...)
+	result = append(result, a.Requirements...)
+	result = append(result, a.traefik()...)
 	return result
 }
 
-func (t *Traefik) traefik() []world.Configuration {
+func (a *App) traefik() []world.Configuration {
 	traefikImage := docker.Image{
 		Repository: "bborbe/traefik",
 		Tag:        "1.7.24-alpine", // https://hub.docker.com/_/traefik?tab=tags
@@ -71,7 +70,7 @@ func (t *Traefik) traefik() []world.Configuration {
 		httpPort,
 		dashboardPort,
 	}
-	if t.SSL {
+	if a.SSL {
 		ports = append(ports, httpsPort)
 	}
 	exporterImage := docker.Image{
@@ -79,7 +78,7 @@ func (t *Traefik) traefik() []world.Configuration {
 		Tag:        "v1.2.2",
 	}
 	var acmeVolume k8s.PodVolume
-	if t.SSL {
+	if a.SSL {
 		acmeVolume = k8s.PodVolume{
 			Name: "acme",
 			Host: k8s.PodVolumeHost{
@@ -94,7 +93,7 @@ func (t *Traefik) traefik() []world.Configuration {
 	}
 	result := []world.Configuration{
 		&k8s.NamespaceConfiguration{
-			Context: t.Context,
+			Context: a.Context,
 			Namespace: k8s.Namespace{
 				ApiVersion: "v1",
 				Kind:       "Namespace",
@@ -105,7 +104,7 @@ func (t *Traefik) traefik() []world.Configuration {
 			},
 		},
 		&k8s.ServiceaccountConfiguration{
-			Context: t.Context,
+			Context: a.Context,
 			Serviceaccount: k8s.ServiceAccount{
 				ApiVersion: "v1",
 				Kind:       "ServiceAccount",
@@ -117,12 +116,12 @@ func (t *Traefik) traefik() []world.Configuration {
 		},
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
-				Context:   t.Context,
+				Context:   a.Context,
 				Namespace: "traefik",
 				Name:      "traefik",
 				ConfigValues: map[string]deployer.ConfigValue{
 					"config": deployer.ConfigValueFunc(func(ctx context.Context) (string, error) {
-						if t.SSL {
+						if a.SSL {
 							return traefikConfigWithHttps, nil
 						}
 						return traefikConfigWithoutHttps, nil
@@ -130,11 +129,11 @@ func (t *Traefik) traefik() []world.Configuration {
 				},
 			},
 		),
-		&build.Traefik{
+		&BuildApp{
 			Image: traefikImage,
 		},
 		&k8s.DeploymentConfiguration{
-			Context: t.Context,
+			Context: a.Context,
 			Deployment: k8s.Deployment{
 				ApiVersion: "apps/v1",
 				Kind:       "Deployment",
@@ -236,7 +235,7 @@ func (t *Traefik) traefik() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   t.Context,
+			Context:   a.Context,
 			Namespace: "traefik",
 			Name:      "traefik",
 			Ports:     ports,
@@ -248,17 +247,17 @@ func (t *Traefik) traefik() []world.Configuration {
 			},
 		},
 		&deployer.IngressDeployer{
-			Context:   t.Context,
+			Context:   a.Context,
 			Namespace: "traefik",
 			Name:      "traefik",
 			Port:      "dashboard",
-			Domains:   t.Domains,
+			Domains:   a.Domains,
 		},
 	}
-	if t.SSL {
+	if a.SSL {
 		result = append(result,
 			&deployer.DeploymentDeployer{
-				Context:   t.Context,
+				Context:   a.Context,
 				Namespace: "traefik",
 				Name:      "traefik-extract",
 				Strategy: k8s.DeploymentStrategy{
@@ -272,7 +271,7 @@ func (t *Traefik) traefik() []world.Configuration {
 					&deployer.DeploymentDeployerContainer{
 						Name:  "traefik-extract",
 						Image: exporterImage,
-						Requirement: &build.TraefikCertificateExtractor{
+						Requirement: &BuildCertificateExtractor{
 							Image: exporterImage,
 						},
 						Resources: k8s.Resources{
@@ -315,10 +314,10 @@ func (t *Traefik) traefik() []world.Configuration {
 			})
 	}
 
-	if !t.DisableRBAC {
+	if !a.DisableRBAC {
 		result = append(result,
 			&k8s.ClusterRoleConfiguration{
-				Context: t.Context,
+				Context: a.Context,
 				ClusterRole: k8s.ClusterRole{
 					ApiVersion: "rbac.authorization.k8s.io/v1",
 					Kind:       "ClusterRole",
@@ -371,7 +370,7 @@ func (t *Traefik) traefik() []world.Configuration {
 				},
 			},
 			&k8s.ClusterRoleBindingConfiguration{
-				Context: t.Context,
+				Context: a.Context,
 				ClusterRoleBinding: k8s.ClusterRoleBinding{
 					ApiVersion: "rbac.authorization.k8s.io/v1",
 					Kind:       "ClusterRoleBinding",
@@ -397,13 +396,14 @@ func (t *Traefik) traefik() []world.Configuration {
 
 	return result
 }
-func (t *Traefik) Applier() (world.Applier,
+func (a *App) Applier() (world.Applier,
 	error) {
 	return nil,
 		nil
 }
 
-const traefikConfigWithHttps = `graceTimeOut = 10
+const traefikConfigWithHttps = `
+graceTimeOut = 10
 debug = false
 logLevel = "INFO"
 defaultEntryPoints = ["http","https"]
@@ -435,7 +435,9 @@ acmeLogging = true
 [acme.httpChallenge]
 entryPoint = "http"
 `
-const traefikConfigWithoutHttps = `graceTimeOut = 10
+
+const traefikConfigWithoutHttps = `
+graceTimeOut = 10
 debug = false
 logLevel = "INFO"
 defaultEntryPoints = ["http"]

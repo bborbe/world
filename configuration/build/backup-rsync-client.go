@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,7 +26,7 @@ func (b *BackupRsyncClient) Validate(ctx context.Context) error {
 
 func (b *BackupRsyncClient) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/backup-rsync-client.git",
 				BuildArgs: docker.BuildArgs{
@@ -34,7 +35,7 @@ func (b *BackupRsyncClient) Children() []world.Configuration {
 				Image:     b.Image,
 				GitBranch: docker.GitBranch(b.Image.Tag),
 			},
-		},
+		),
 	}
 }
 

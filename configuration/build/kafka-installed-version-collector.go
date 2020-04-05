@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,7 +26,7 @@ func (k *KafkaInstalledVersionCollector) Validate(ctx context.Context) error {
 
 func (k *KafkaInstalledVersionCollector) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-installed-version-collector",
 				GitRepo:         "https://github.com/bborbe/kafka-installed-version-collector.git",
@@ -33,7 +34,7 @@ func (k *KafkaInstalledVersionCollector) Children() []world.Configuration {
 				Package:         "github.com/bborbe/kafka-installed-version-collector",
 				Image:           k.Image,
 			},
-		},
+		),
 	}
 }
 

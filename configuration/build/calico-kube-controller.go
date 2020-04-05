@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type CalicoKubeController struct {
 	Image docker.Image
 }
 
-func (t *CalicoKubeController) Validate(ctx context.Context) error {
+func (c *CalicoKubeController) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		c.Image,
 	)
 }
 
-func (n *CalicoKubeController) Children() []world.Configuration {
+func (c *CalicoKubeController) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "quay.io/calico/kube-controllers",
-					Tag:        n.Image.Tag,
+					Tag:        c.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: c.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *CalicoKubeController) Applier() (world.Applier, error) {
+func (c *CalicoKubeController) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: c.Image,
 	}, nil
 }

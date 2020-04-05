@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type CalicoNode struct {
 	Image docker.Image
 }
 
-func (t *CalicoNode) Validate(ctx context.Context) error {
+func (c *CalicoNode) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		c.Image,
 	)
 }
 
-func (n *CalicoNode) Children() []world.Configuration {
+func (c *CalicoNode) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "quay.io/calico/node",
-					Tag:        n.Image.Tag,
+					Tag:        c.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: c.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *CalicoNode) Applier() (world.Applier, error) {
+func (c *CalicoNode) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: c.Image,
 	}, nil
 }

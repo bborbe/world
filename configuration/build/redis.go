@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type Redis struct {
 	Image docker.Image
 }
 
-func (w *Redis) Validate(ctx context.Context) error {
+func (r *Redis) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		w.Image,
+		r.Image,
 	)
 }
 
-func (n *Redis) Children() []world.Configuration {
+func (r *Redis) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "redis",
-					Tag:        n.Image.Tag,
+					Tag:        r.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: r.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *Redis) Applier() (world.Applier, error) {
+func (r *Redis) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: r.Image,
 	}, nil
 }

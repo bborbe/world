@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type HostPathProvisioner struct {
 	Image docker.Image
 }
 
-func (t *HostPathProvisioner) Validate(ctx context.Context) error {
+func (h *HostPathProvisioner) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		h.Image,
 	)
 }
 
-func (i *HostPathProvisioner) Children() []world.Configuration {
+func (h *HostPathProvisioner) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "hostpath-provisioner",
 				GitRepo:         "https://github.com/bborbe/hostpath-provisioner.git",
 				SourceDirectory: "github.com/bborbe/hostpath-provisioner",
 				Package:         "github.com/bborbe/hostpath-provisioner",
-				Image:           i.Image,
+				Image:           h.Image,
 			},
-		},
+		),
 	}
 }
 
-func (i *HostPathProvisioner) Applier() (world.Applier, error) {
+func (h *HostPathProvisioner) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: i.Image,
+		Image: h.Image,
 	}, nil
 }

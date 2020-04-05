@@ -2,43 +2,44 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package build
+package traefik
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
 
-type Traefik struct {
+type BuildApp struct {
 	Image docker.Image
 }
 
-func (w *Traefik) Validate(ctx context.Context) error {
+func (b *BuildApp) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		w.Image,
+		b.Image,
 	)
 }
 
-func (n *Traefik) Children() []world.Configuration {
+func (b *BuildApp) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "traefik",
-					Tag:        n.Image.Tag,
+					Tag:        b.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: b.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *Traefik) Applier() (world.Applier, error) {
+func (b *BuildApp) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: b.Image,
 	}, nil
 }

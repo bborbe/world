@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -18,32 +19,32 @@ type Jira struct {
 	GitBranch     docker.GitBranch
 }
 
-func (t *Jira) Validate(ctx context.Context) error {
+func (j *Jira) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
-		t.VendorVersion,
-		t.GitBranch,
+		j.Image,
+		j.VendorVersion,
+		j.GitBranch,
 	)
 }
 
-func (c *Jira) Children() []world.Configuration {
+func (j *Jira) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/atlassian-jira-software.git",
-				Image:   c.Image,
+				Image:   j.Image,
 				BuildArgs: docker.BuildArgs{
-					"VENDOR_VERSION": c.VendorVersion.String(),
+					"VENDOR_VERSION": j.VendorVersion.String(),
 				},
-				GitBranch: c.GitBranch,
+				GitBranch: j.GitBranch,
 			},
-		},
+		),
 	}
 }
 
-func (c *Jira) Applier() (world.Applier, error) {
+func (j *Jira) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: c.Image,
+		Image: j.Image,
 	}, nil
 }

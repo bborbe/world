@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type Mariadb struct {
 	Image docker.Image
 }
 
-func (t *Mariadb) Validate(ctx context.Context) error {
+func (m *Mariadb) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		m.Image,
 	)
 }
 
-func (n *Mariadb) Children() []world.Configuration {
+func (m *Mariadb) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "mariadb",
-					Tag:        n.Image.Tag,
+					Tag:        m.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: m.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *Mariadb) Applier() (world.Applier, error) {
+func (m *Mariadb) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: m.Image,
 	}, nil
 }

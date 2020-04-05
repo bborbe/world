@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,27 +17,27 @@ type PostgresBackup struct {
 	Image docker.Image
 }
 
-func (b *PostgresBackup) Children() []world.Configuration {
+func (p *PostgresBackup) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/postgres-backup.git",
-				Image:     b.Image,
-				GitBranch: docker.GitBranch(b.Image.Tag),
+				Image:     p.Image,
+				GitBranch: docker.GitBranch(p.Image.Tag),
 			},
-		},
+		),
 	}
 }
 
-func (b *PostgresBackup) Applier() (world.Applier, error) {
+func (p *PostgresBackup) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: b.Image,
+		Image: p.Image,
 	}, nil
 }
 
-func (t *PostgresBackup) Validate(ctx context.Context) error {
+func (p *PostgresBackup) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		p.Image,
 	)
 }

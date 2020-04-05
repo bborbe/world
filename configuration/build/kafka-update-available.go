@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,7 +26,7 @@ func (k *KafkaUpdateAvailable) Validate(ctx context.Context) error {
 
 func (k *KafkaUpdateAvailable) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-update-available",
 				GitRepo:         "https://github.com/bborbe/kafka-update-available.git",
@@ -33,7 +34,7 @@ func (k *KafkaUpdateAvailable) Children() []world.Configuration {
 				Package:         "github.com/bborbe/kafka-update-available",
 				Image:           k.Image,
 			},
-		},
+		),
 	}
 }
 

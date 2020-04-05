@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,7 +26,7 @@ func (k *KubeStateMetrics) Validate(ctx context.Context) error {
 
 func (k *KubeStateMetrics) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "quay.io/coreos/kube-state-metrics",
@@ -33,7 +34,7 @@ func (k *KubeStateMetrics) Children() []world.Configuration {
 				},
 				TargetImage: k.Image,
 			},
-		},
+		),
 	}
 }
 

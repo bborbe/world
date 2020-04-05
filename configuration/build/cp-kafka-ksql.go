@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,7 +26,7 @@ func (c *CpKafkaKsql) Validate(ctx context.Context) error {
 
 func (c *CpKafkaKsql) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "confluentinc/cp-ksql-server",
@@ -33,7 +34,7 @@ func (c *CpKafkaKsql) Children() []world.Configuration {
 				},
 				TargetImage: c.Image,
 			},
-		},
+		),
 	}
 }
 

@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type Metabase struct {
 	Image docker.Image
 }
 
-func (t *Metabase) Validate(ctx context.Context) error {
+func (m *Metabase) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		m.Image,
 	)
 }
 
-func (n *Metabase) Children() []world.Configuration {
+func (m *Metabase) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "metabase/metabase",
-					Tag:        n.Image.Tag,
+					Tag:        m.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: m.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *Metabase) Applier() (world.Applier, error) {
+func (m *Metabase) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: m.Image,
 	}, nil
 }

@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,16 +17,16 @@ type OverlayWebserver struct {
 	Image docker.Image
 }
 
-func (t *OverlayWebserver) Validate(ctx context.Context) error {
+func (o *OverlayWebserver) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		o.Image,
 	)
 }
 
 func (o *OverlayWebserver) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "overlay-server",
 				GitRepo:         "https://github.com/bborbe/server.git",
@@ -33,7 +34,7 @@ func (o *OverlayWebserver) Children() []world.Configuration {
 				Package:         "github.com/bborbe/server/cmd/overlay-server",
 				Image:           o.Image,
 			},
-		},
+		),
 	}
 }
 

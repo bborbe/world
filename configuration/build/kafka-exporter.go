@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,7 +26,7 @@ func (k *KafkaExporter) Validate(ctx context.Context) error {
 
 func (k *KafkaExporter) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-exporter",
 				GitRepo:         "https://github.com/danielqsj/kafka_exporter.git",
@@ -33,7 +34,7 @@ func (k *KafkaExporter) Children() []world.Configuration {
 				Package:         "github.com/danielqsj/kafka_exporter",
 				Image:           k.Image,
 			},
-		},
+		),
 	}
 }
 

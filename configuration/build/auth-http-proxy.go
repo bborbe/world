@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type AuthHttpProxy struct {
 	Image docker.Image
 }
 
-func (t *AuthHttpProxy) Validate(ctx context.Context) error {
+func (a *AuthHttpProxy) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		a.Image,
 	)
 }
 
-func (i *AuthHttpProxy) Children() []world.Configuration {
+func (a *AuthHttpProxy) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "auth-http-proxy",
 				GitRepo:         "https://github.com/bborbe/auth-http-proxy.git",
 				SourceDirectory: "github.com/bborbe/auth-http-proxy",
 				Package:         "github.com/bborbe/auth-http-proxy",
-				Image:           i.Image,
+				Image:           a.Image,
 			},
-		},
+		),
 	}
 }
 
-func (i *AuthHttpProxy) Applier() (world.Applier, error) {
+func (a *AuthHttpProxy) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: i.Image,
+		Image: a.Image,
 	}, nil
 }

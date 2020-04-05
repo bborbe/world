@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,13 +26,13 @@ func (m *Minecraft) Validate(ctx context.Context) error {
 
 func (m *Minecraft) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/itzg/docker-minecraft-server",
 				GitBranch: "master",
 				Image:     m.Image,
 			},
-		},
+		),
 	}
 }
 

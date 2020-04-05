@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -23,22 +24,22 @@ func (t *Monitoring) Validate(ctx context.Context) error {
 	)
 }
 
-func (i *Monitoring) Children() []world.Configuration {
+func (t *Monitoring) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "monitoring",
 				GitRepo:         "https://github.com/bborbe/monitoring.git",
 				SourceDirectory: "github.com/bborbe/monitoring",
 				Package:         "github.com/bborbe/monitoring/cmd/monitoring-server",
-				Image:           i.Image,
+				Image:           t.Image,
 			},
-		},
+		),
 	}
 }
 
-func (i *Monitoring) Applier() (world.Applier, error) {
+func (t *Monitoring) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: i.Image,
+		Image: t.Image,
 	}, nil
 }

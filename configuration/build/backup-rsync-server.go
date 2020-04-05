@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,22 +17,22 @@ type BackupRsyncServer struct {
 	Image docker.Image
 }
 
-func (t *BackupRsyncServer) Validate(ctx context.Context) error {
+func (b *BackupRsyncServer) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		b.Image,
 	)
 }
 
 func (b *BackupRsyncServer) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/backup-rsync-server.git",
 				Image:     b.Image,
 				GitBranch: docker.GitBranch(b.Image.Tag),
 			},
-		},
+		),
 	}
 }
 

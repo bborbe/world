@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,27 +17,27 @@ type GitSync struct {
 	Image docker.Image
 }
 
-func (t *GitSync) Validate(ctx context.Context) error {
+func (g *GitSync) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		g.Image,
 	)
 }
 
-func (m *GitSync) Children() []world.Configuration {
+func (g *GitSync) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/git-sync.git",
-				Image:     m.Image,
-				GitBranch: docker.GitBranch(m.Image.Tag),
+				Image:     g.Image,
+				GitBranch: docker.GitBranch(g.Image.Tag),
 			},
-		},
+		),
 	}
 }
 
-func (m *GitSync) Applier() (world.Applier, error) {
+func (g *GitSync) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: m.Image,
+		Image: g.Image,
 	}, nil
 }

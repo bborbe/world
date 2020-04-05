@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -18,18 +19,18 @@ type Confluence struct {
 	GitBranch     docker.GitBranch
 }
 
-func (t *Confluence) Validate(ctx context.Context) error {
+func (c *Confluence) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
-		t.VendorVersion,
-		t.GitBranch,
+		c.Image,
+		c.VendorVersion,
+		c.GitBranch,
 	)
 }
 
 func (c *Confluence) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/atlassian-confluence.git",
 				Image:   c.Image,
@@ -38,7 +39,7 @@ func (c *Confluence) Children() []world.Configuration {
 				},
 				GitBranch: c.GitBranch,
 			},
-		},
+		),
 	}
 }
 

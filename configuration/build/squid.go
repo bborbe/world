@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,27 +17,27 @@ type Squid struct {
 	Image docker.Image
 }
 
-func (w *Squid) Validate(ctx context.Context) error {
+func (s *Squid) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		w.Image,
+		s.Image,
 	)
 }
 
-func (p *Squid) Children() []world.Configuration {
+func (s *Squid) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/squid.git",
-				Image:     p.Image,
-				GitBranch: docker.GitBranch(p.Image.Tag),
+				Image:     s.Image,
+				GitBranch: docker.GitBranch(s.Image.Tag),
 			},
-		},
+		),
 	}
 }
 
-func (p *Squid) Applier() (world.Applier, error) {
+func (s *Squid) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: p.Image,
+		Image: s.Image,
 	}, nil
 }

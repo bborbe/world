@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,16 +17,16 @@ type Password struct {
 	Image docker.Image
 }
 
-func (t *Password) Validate(ctx context.Context) error {
+func (p *Password) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		p.Image,
 	)
 }
 
 func (p *Password) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "password",
 				GitRepo:         "https://github.com/bborbe/password.git",
@@ -33,7 +34,7 @@ func (p *Password) Children() []world.Configuration {
 				Package:         "github.com/bborbe/password/cmd/password-server",
 				Image:           p.Image,
 			},
-		},
+		),
 	}
 }
 

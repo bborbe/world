@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -25,7 +26,7 @@ func (c *CpKafkaConnect) Validate(ctx context.Context) error {
 
 func (c *CpKafkaConnect) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "confluentinc/cp-kafka-connect",
@@ -33,7 +34,7 @@ func (c *CpKafkaConnect) Children() []world.Configuration {
 				},
 				TargetImage: c.Image,
 			},
-		},
+		),
 	}
 }
 

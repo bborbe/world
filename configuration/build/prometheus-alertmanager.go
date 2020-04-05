@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type PrometheusAlertmanager struct {
 	Image docker.Image
 }
 
-func (t *PrometheusAlertmanager) Validate(ctx context.Context) error {
+func (p *PrometheusAlertmanager) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		p.Image,
 	)
 }
 
-func (n *PrometheusAlertmanager) Children() []world.Configuration {
+func (p *PrometheusAlertmanager) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "quay.io/prometheus/alertmanager",
-					Tag:        n.Image.Tag,
+					Tag:        p.Image.Tag,
 				},
-				TargetImage: n.Image,
+				TargetImage: p.Image,
 			},
-		},
+		),
 	}
 }
 
-func (n *PrometheusAlertmanager) Applier() (world.Applier, error) {
+func (p *PrometheusAlertmanager) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: n.Image,
+		Image: p.Image,
 	}, nil
 }

@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,27 +17,27 @@ type Smtp struct {
 	Image docker.Image
 }
 
-func (w *Smtp) Validate(ctx context.Context) error {
+func (s *Smtp) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		w.Image,
+		s.Image,
 	)
 }
 
-func (m *Smtp) Children() []world.Configuration {
+func (s *Smtp) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/smtp.git",
-				Image:     m.Image,
-				GitBranch: docker.GitBranch(m.Image.Tag),
+				Image:     s.Image,
+				GitBranch: docker.GitBranch(s.Image.Tag),
 			},
-		},
+		),
 	}
 }
 
-func (m *Smtp) Applier() (world.Applier, error) {
+func (s *Smtp) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: m.Image,
+		Image: s.Image,
 	}, nil
 }

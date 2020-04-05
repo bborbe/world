@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type KafkaRegexVersionCollector struct {
 	Image docker.Image
 }
 
-func (t *KafkaRegexVersionCollector) Validate(ctx context.Context) error {
+func (k *KafkaRegexVersionCollector) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		k.Image,
 	)
 }
 
-func (i *KafkaRegexVersionCollector) Children() []world.Configuration {
+func (k *KafkaRegexVersionCollector) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-regex-version-collector",
 				GitRepo:         "https://github.com/bborbe/kafka-regex-version-collector.git",
 				SourceDirectory: "github.com/bborbe/kafka-regex-version-collector",
 				Package:         "github.com/bborbe/kafka-regex-version-collector",
-				Image:           i.Image,
+				Image:           k.Image,
 			},
-		},
+		),
 	}
 }
 
-func (i *KafkaRegexVersionCollector) Applier() (world.Applier, error) {
+func (k *KafkaRegexVersionCollector) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: i.Image,
+		Image: k.Image,
 	}, nil
 }

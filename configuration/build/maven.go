@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,29 +17,29 @@ type Maven struct {
 	Image docker.Image
 }
 
-func (t *Maven) Validate(ctx context.Context) error {
+func (m *Maven) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		m.Image,
 	)
 }
 
-func (p *Maven) Children() []world.Configuration {
+func (m *Maven) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "maven",
 				GitRepo:         "https://github.com/bborbe/maven.git",
 				SourceDirectory: "github.com/bborbe/maven",
 				Package:         "github.com/bborbe/maven",
-				Image:           p.Image,
+				Image:           m.Image,
 			},
-		},
+		),
 	}
 }
 
-func (p *Maven) Applier() (world.Applier, error) {
+func (m *Maven) Applier() (world.Applier, error) {
 	return &docker.Uploader{
-		Image: p.Image,
+		Image: m.Image,
 	}, nil
 }

@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,16 +17,16 @@ type NginxAutoindex struct {
 	Image docker.Image
 }
 
-func (t *NginxAutoindex) Validate(ctx context.Context) error {
+func (n *NginxAutoindex) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		n.Image,
 	)
 }
 
 func (n *NginxAutoindex) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
 					Repository: "jrelva/nginx-autoindex",
@@ -33,7 +34,7 @@ func (n *NginxAutoindex) Children() []world.Configuration {
 				},
 				TargetImage: n.Image,
 			},
-		},
+		),
 	}
 }
 

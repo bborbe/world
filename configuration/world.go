@@ -6,6 +6,7 @@ package configuration
 
 import (
 	"context"
+	"github.com/bborbe/world/configuration/traefik"
 
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/backup"
@@ -151,7 +152,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			HostPath:            "/data",
 			DefaultStorageClass: true,
 		},
-		"traefik": &app.Traefik{
+		"traefik": &traefik.App{
 			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				"traefik.benjamin-borbe.de",
@@ -264,7 +265,7 @@ func (w *World) fire() map[AppName]world.Configuration {
 			),
 			Device: openvpn.Tun,
 		},
-		"traefik": &app.Traefik{
+		"traefik": &traefik.App{
 			Context: k8s.Context(fire.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.fire.hm.benjamin-borbe.de",
@@ -309,7 +310,7 @@ func (w *World) nuke() map[AppName]world.Configuration {
 		"dns": &app.CoreDns{
 			Context: k8s.Context(nuke.Name),
 		},
-		"traefik": &app.Traefik{
+		"traefik": &traefik.App{
 			Context: k8s.Context(nuke.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.nuke.hm.benjamin-borbe.de",
@@ -409,7 +410,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 				},
 			},
 		},
-		"traefik": &app.Traefik{
+		"traefik": &traefik.App{
 			Context: k8s.Context(sun.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.sun.pn.benjamin-borbe.de",
@@ -641,7 +642,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"dns": &app.CoreDns{
 			Context: k8s.Context(netcup.Name),
 		},
-		"traefik": &app.Traefik{
+		"traefik": &traefik.App{
 			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"traefik.benjamin-borbe.de",

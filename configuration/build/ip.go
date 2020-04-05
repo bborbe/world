@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,16 +17,16 @@ type Ip struct {
 	Image docker.Image
 }
 
-func (t *Ip) Validate(ctx context.Context) error {
+func (i *Ip) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		i.Image,
 	)
 }
 
 func (i *Ip) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "ip",
 				GitRepo:         "https://github.com/bborbe/ip.git",
@@ -33,7 +34,7 @@ func (i *Ip) Children() []world.Configuration {
 				Package:         "github.com/bborbe/ip/cmd/ip-server",
 				Image:           i.Image,
 			},
-		},
+		),
 	}
 }
 

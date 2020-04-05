@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/build"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/validation"
@@ -16,22 +17,22 @@ type BackupCleanupCron struct {
 	Image docker.Image
 }
 
-func (t *BackupCleanupCron) Validate(ctx context.Context) error {
+func (b *BackupCleanupCron) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Image,
+		b.Image,
 	)
 }
 
 func (b *BackupCleanupCron) Children() []world.Configuration {
 	return []world.Configuration{
-		&buildConfiguration{
+		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/backup-cleanup-cron.git",
 				Image:     b.Image,
 				GitBranch: docker.GitBranch(b.Image.Tag),
 			},
-		},
+		),
 	}
 }
 
