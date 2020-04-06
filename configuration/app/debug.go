@@ -133,5 +133,47 @@ func (k *Debug) debugApp() []world.Configuration {
 			Port:      port.Name,
 			Domains:   k8s.IngressHosts{k.Domain},
 		},
+		&k8s.IngresseConfiguration{
+			Context: k.Context,
+			Ingress: k8s.Ingress{
+				ApiVersion: "extensions/v1beta1",
+				Kind:       "Ingress",
+				Metadata: k8s.Metadata{
+					Namespace: "debug",
+					Name:      "debug",
+					Annotations: k8s.Annotations{
+						"kubernetes.io/ingress.class":                    "nginx",
+						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+						"cert-manager.io/cluster-issuer":                 "letsencrypt-http-live",
+					},
+				},
+				Spec: k8s.IngressSpec{
+					TLS: []k8s.IngressTLS{
+						{
+							Hosts: []string{
+								k.Domain.String(),
+							},
+							SecretName: k.Domain.String(),
+						},
+					},
+					Rules: []k8s.IngressRule{
+						{
+							Host: k8s.IngressHost(k.Domain.String()),
+							Http: k8s.IngressHttp{
+								Paths: []k8s.IngressPath{
+									{
+										Backends: k8s.IngressBackend{
+											ServiceName: "debug",
+											ServicePort: "http",
+										},
+										Path: "/",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }

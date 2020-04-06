@@ -173,7 +173,7 @@ func (i *Ip) ip() []world.Configuration {
 					},
 					Rules: []k8s.IngressRule{
 						{
-							Host: "ip.benjamin-borbe.de",
+							Host: k8s.IngressHost(i.Domain.String()),
 							Http: k8s.IngressHttp{
 								Paths: []k8s.IngressPath{
 									{

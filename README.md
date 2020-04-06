@@ -71,5 +71,5 @@ systemctl restart kubelet
 
 https://github.com/jetstack/cert-manager/releases/download/v0.13.1/cert-manager.yaml
 ```
-kubectl apply --validate=false -f cert-manger
+kubectl apply --validate=false -f cert-manager
 ```

@@ -622,7 +622,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"ingress-nginx": &ingress_nginx.App{
 			Context: k8s.Context(netcup.Name),
 		},
-		"cert_manager": &cert_manager.App{
+		"cert-manager": &cert_manager.App{
 			Context: k8s.Context(netcup.Name),
 		},
 		"debug": &app.Debug{
