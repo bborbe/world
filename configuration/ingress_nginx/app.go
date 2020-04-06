@@ -6,6 +6,7 @@ package ingress_nginx
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/docker"
 
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
@@ -23,6 +24,10 @@ func (a *App) Validate(ctx context.Context) error {
 	)
 }
 func (a *App) Children() []world.Configuration {
+	image := docker.Image{
+		Repository: "bborbe/nginx-ingress-controller",
+		Tag:        "0.30.0", // https://quay.io/repository/kubernetes-ingress-controller/nginx-ingress-controller?tag=latest&tab=tags
+	}
 	return []world.Configuration{
 		&k8s.NamespaceConfiguration{
 			Context: a.Context,
@@ -291,6 +296,9 @@ func (a *App) Children() []world.Configuration {
 				},
 			},
 		},
+		&Build{
+			Image: image,
+		},
 		&k8s.DeploymentConfiguration{
 			Context: a.Context,
 			Deployment: k8s.Deployment{
@@ -327,7 +335,7 @@ func (a *App) Children() []world.Configuration {
 							Containers: []k8s.Container{
 								{
 									Name:  "nginx-ingress-controller",
-									Image: "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.30.0",
+									Image: k8s.Image(image.String()),
 									Args: []k8s.Arg{
 										"/nginx-ingress-controller",
 										"--configmap=$(POD_NAMESPACE)/nginx-configuration",
