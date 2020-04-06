@@ -144,7 +144,51 @@ func (i *Ip) ip() []world.Configuration {
 			Namespace: "ip",
 			Name:      "ip",
 			Port:      "http",
-			Domains:   k8s.IngressHosts{i.Domain},
+			Domains: k8s.IngressHosts{
+				i.Domain,
+			},
+		},
+		&k8s.IngresseConfiguration{
+			Context: i.Context,
+			Ingress: k8s.Ingress{
+				ApiVersion: "extensions/v1beta1",
+				Kind:       "Ingress",
+				Metadata: k8s.Metadata{
+					Namespace: "ip",
+					Name:      "ip",
+					Annotations: k8s.Annotations{
+						"kubernetes.io/ingress.class":                    "nginx",
+						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+						"cert-manager.io/cluster-issuer":                 "letsencrypt-http-live",
+					},
+				},
+				Spec: k8s.IngressSpec{
+					TLS: []k8s.IngressTLS{
+						{
+							Hosts: []string{
+								i.Domain.String(),
+							},
+							SecretName: i.Domain.String(),
+						},
+					},
+					Rules: []k8s.IngressRule{
+						{
+							Host: "ip.benjamin-borbe.de",
+							Http: k8s.IngressHttp{
+								Paths: []k8s.IngressPath{
+									{
+										Backends: k8s.IngressBackend{
+											ServiceName: "ip",
+											ServicePort: "http",
+										},
+										Path: "/",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }

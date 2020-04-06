@@ -86,6 +86,20 @@ func (s Ingress) Validate(ctx context.Context) error {
 
 type IngressSpec struct {
 	Rules []IngressRule `yaml:"rules"`
+	TLS   []IngressTLS  `yaml:"tls,omitempty"`
+}
+
+func (i IngressSpec) Validate(ctx context.Context) error {
+	return nil
+}
+
+type IngressTLS struct {
+	Hosts      []string `yaml:"hosts,omitempty"`
+	SecretName string   `yaml:"secretName,omitempty"`
+}
+
+func (i IngressTLS) Validate(ctx context.Context) error {
+	return nil
 }
 
 type IngressHosts []IngressHost
