@@ -2,42 +2,46 @@
 
 My infrastructur as code
 
-## world-validate
+## validate
 
 Validate all
 
 ```
-world-validate \
--v=2 \
--logtostderr
+world validate \
+-v=2 
 ```
 
-## world-apply
+## apply
 
 Apply all applications
 
 ```
-world-apply \
--v=2 \
--logtostderr
+world apply \
+-v=2 
 ```
 
 Apply all applications on cluster netcup
 
 ```
-world-apply \
+world apply \
 -v=2 \
--logtostderr \
 -cluster=netcup
 ```
 
 Apply application monitoring on all clusters
 
 ```
-world-apply \
+world apply \
 -v=2 \
--logtostderr \
 -app=monitoring
+```
+
+## yaml-to-struct
+
+```
+world yaml-to-struct \
+-v=2 \
+-file=my.yaml
 ```
 
 ## Known Bugs

@@ -10,6 +10,7 @@ import (
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/backup"
 	"github.com/bborbe/world/configuration/cluster"
+	"github.com/bborbe/world/configuration/ingress_nginx"
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/configuration/traefik"
 	"github.com/bborbe/world/pkg/dns"
@@ -265,11 +266,8 @@ func (w *World) fire() map[AppName]world.Configuration {
 			),
 			Device: openvpn.Tun,
 		},
-		"traefik": &traefik.App{
+		"ingress-nginx": &ingress_nginx.App{
 			Context: k8s.Context(fire.Name),
-			Domains: k8s.IngressHosts{
-				"traefik.fire.hm.benjamin-borbe.de",
-			},
 		},
 		"backup": &app.BackupClient{
 			Context: k8s.Context(fire.Name),
@@ -310,11 +308,8 @@ func (w *World) nuke() map[AppName]world.Configuration {
 		"dns": &app.CoreDns{
 			Context: k8s.Context(nuke.Name),
 		},
-		"traefik": &traefik.App{
+		"ingress-nginx": &ingress_nginx.App{
 			Context: k8s.Context(nuke.Name),
-			Domains: k8s.IngressHosts{
-				"traefik.nuke.hm.benjamin-borbe.de",
-			},
 		},
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
@@ -410,11 +405,8 @@ func (w *World) sun() map[AppName]world.Configuration {
 				},
 			},
 		},
-		"traefik": &traefik.App{
+		"ingress-nginx": &ingress_nginx.App{
 			Context: k8s.Context(sun.Name),
-			Domains: k8s.IngressHosts{
-				"traefik.sun.pn.benjamin-borbe.de",
-			},
 		},
 		"backup": &app.BackupClient{
 			Context: k8s.Context(sun.Name),

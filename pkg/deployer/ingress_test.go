@@ -32,9 +32,6 @@ metadata:
   name: banana
   labels:
     app: banana
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.frontend.priority: "10000"
 spec:
   rules:
   - host: example.com

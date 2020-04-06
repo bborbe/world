@@ -77,10 +77,7 @@ func (o *OpenFaas) Children() []world.Configuration {
 				Metadata: k8s.Metadata{
 					Namespace: "openfaas",
 					Name:      "openfaas",
-					Annotations: k8s.Annotations{
-						"kubernetes.io/ingress.class": "traefik",
-						"traefik.frontend.priority":   "10000",
-					}},
+				},
 				Spec: k8s.IngressSpec{
 					Rules: []k8s.IngressRule{
 						{

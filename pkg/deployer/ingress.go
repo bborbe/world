@@ -56,10 +56,6 @@ func (i *IngressDeployer) ingress() k8s.Ingress {
 			Labels: k8s.Labels{
 				"app": i.Namespace.String(),
 			},
-			Annotations: k8s.Annotations{
-				"kubernetes.io/ingress.class": "traefik",
-				"traefik.frontend.priority":   "10000",
-			},
 		},
 		Spec: k8s.IngressSpec{},
 	}

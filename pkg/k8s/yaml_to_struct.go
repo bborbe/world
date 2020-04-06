@@ -28,17 +28,20 @@ func YamlToStruct(reader io.Reader, writer io.Writer) error {
 		return errors.New("kind missing in yaml")
 	}
 	mapping := map[string]interface{}{
+		"ClusterRole":         &ClusterRole{},
+		"ClusterRoleBinding":  &ClusterRoleBinding{},
 		"ConfigMap":           &ConfigMap{},
 		"DaemonSet":           &DaemonSet{},
 		"Deployment":          &Deployment{},
-		"StatefulSet":         &StatefulSet{},
-		"Secret":              &Secret{},
-		"Namespace":           &Namespace{},
 		"Ingress":             &Ingress{},
-		"Service":             &Service{},
+		"Namespace":           &Namespace{},
 		"PodDisruptionBudget": &PodDisruptionBudget{},
-		"ClusterRole":         &ClusterRole{},
-		"ClusterRoleBinding":  &ClusterRoleBinding{},
+		"Role":                &Role{},
+		"RoleBinding":         &RoleBinding{},
+		"Secret":              &Secret{},
+		"Service":             &Service{},
+		"ServiceAccount":      &ServiceAccount{},
+		"StatefulSet":         &StatefulSet{},
 	}
 
 	s, ok := mapping[kind.(string)]

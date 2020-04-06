@@ -699,9 +699,6 @@ func (e *ErpNext) erpnext() []world.Configuration {
 					Metadata: k8s.Metadata{
 						Namespace: "erpnext",
 						Name:      "erpnext",
-						Annotations: k8s.Annotations{
-							"kubernetes.io/ingress.class": "traefik",
-						},
 					},
 					Spec: k8s.IngressSpec{
 						Rules: []k8s.IngressRule{

@@ -19,33 +19,33 @@ type ClusterRoleConfiguration struct {
 	Requirements []world.Configuration
 }
 
-func (d *ClusterRoleConfiguration) Validate(ctx context.Context) error {
+func (c *ClusterRoleConfiguration) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		d.Context,
-		d.ClusterRole,
+		c.Context,
+		c.ClusterRole,
 	)
 }
 
-func (d *ClusterRoleConfiguration) Applier() (world.Applier, error) {
+func (c *ClusterRoleConfiguration) Applier() (world.Applier, error) {
 	return &ClusterRoleApplier{
-		Context:     d.Context,
-		ClusterRole: d.ClusterRole,
+		Context:     c.Context,
+		ClusterRole: c.ClusterRole,
 	}, nil
 }
 
-func (d *ClusterRoleConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (c *ClusterRoleConfiguration) Children() []world.Configuration {
+	return c.Requirements
 }
 
 type ClusterRoleName string
 
-func (n ClusterRoleName) String() string {
-	return string(n)
+func (c ClusterRoleName) String() string {
+	return string(c)
 }
 
-func (a ClusterRoleName) Validate(ctx context.Context) error {
-	if a == "" {
+func (c ClusterRoleName) Validate(ctx context.Context) error {
+	if c == "" {
 		return errors.New("ClusterRoleName missing")
 	}
 	return nil
@@ -56,23 +56,23 @@ type ClusterRoleApplier struct {
 	ClusterRole ClusterRole
 }
 
-func (s *ClusterRoleApplier) Satisfied(ctx context.Context) (bool, error) {
+func (c *ClusterRoleApplier) Satisfied(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (s *ClusterRoleApplier) Apply(ctx context.Context) error {
+func (c *ClusterRoleApplier) Apply(ctx context.Context) error {
 	deployer := &Deployer{
-		Context: s.Context,
-		Data:    s.ClusterRole,
+		Context: c.Context,
+		Data:    c.ClusterRole,
 	}
 	return deployer.Apply(ctx)
 }
 
-func (s *ClusterRoleApplier) Validate(ctx context.Context) error {
-	if s.Context == "" {
+func (c *ClusterRoleApplier) Validate(ctx context.Context) error {
+	if c.Context == "" {
 		return errors.New("context missing")
 	}
-	return s.ClusterRole.Validate(ctx)
+	return c.ClusterRole.Validate(ctx)
 }
 
 type PolicyRule struct {
@@ -90,19 +90,19 @@ type ClusterRole struct {
 	Rules      []PolicyRule `yaml:"rules,omitempty"`
 }
 
-func (s ClusterRole) Validate(ctx context.Context) error {
-	if s.ApiVersion != "rbac.authorization.k8s.io/v1" {
+func (c ClusterRole) Validate(ctx context.Context) error {
+	if c.ApiVersion != "rbac.authorization.k8s.io/v1" {
 		return errors.New("invalid ApiVersion")
 	}
-	if s.Kind != "ClusterRole" {
+	if c.Kind != "ClusterRole" {
 		return errors.New("invalid Kind")
 	}
 	return validation.Validate(ctx,
-		s.ApiVersion,
-		s.Kind,
+		c.ApiVersion,
+		c.Kind,
 	)
 }
 
-func (n ClusterRole) String() string {
-	return fmt.Sprintf("%s/%s", n.Kind, n.Metadata.Name)
+func (c ClusterRole) String() string {
+	return fmt.Sprintf("%s/%s", c.Kind, c.Metadata.Name)
 }

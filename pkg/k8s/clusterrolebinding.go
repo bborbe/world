@@ -19,23 +19,23 @@ type ClusterRoleBindingConfiguration struct {
 	Requirements       []world.Configuration
 }
 
-func (d *ClusterRoleBindingConfiguration) Validate(ctx context.Context) error {
+func (c *ClusterRoleBindingConfiguration) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		d.Context,
-		d.ClusterRoleBinding,
+		c.Context,
+		c.ClusterRoleBinding,
 	)
 }
 
-func (d *ClusterRoleBindingConfiguration) Applier() (world.Applier, error) {
+func (c *ClusterRoleBindingConfiguration) Applier() (world.Applier, error) {
 	return &ClusterRoleBindingApplier{
-		Context:            d.Context,
-		ClusterRoleBinding: d.ClusterRoleBinding,
+		Context:            c.Context,
+		ClusterRoleBinding: c.ClusterRoleBinding,
 	}, nil
 }
 
-func (d *ClusterRoleBindingConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (c *ClusterRoleBindingConfiguration) Children() []world.Configuration {
+	return c.Requirements
 }
 
 type ClusterRoleBindingName string
