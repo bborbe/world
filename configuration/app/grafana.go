@@ -20,7 +20,7 @@ import (
 
 type Grafana struct {
 	Context      k8s.Context
-	Domain       k8s.IngressHost
+	Domains       k8s.IngressHosts
 	LdapUsername deployer.SecretValue
 	LdapPassword deployer.SecretValue
 	Requirements []world.Configuration
@@ -30,7 +30,7 @@ func (g *Grafana) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		g.Context,
-		g.Domain,
+		g.Domains,
 		g.LdapPassword,
 		g.LdapUsername,
 	)
@@ -208,13 +208,15 @@ func (g *Grafana) grafana() []world.Configuration {
 			Name:      "grafana",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   g.Context,
-			Namespace: "grafana",
-			Name:      "grafana",
-			Port:      port.Name,
-			Domains:   k8s.IngressHosts{g.Domain},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			g.Context,
+			"grafana",
+			"grafana",
+			"grafana",
+			"http",
+			"/",
+			g.Domains...,
+		),
 	}
 }
 

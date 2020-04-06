@@ -16,9 +16,10 @@ import (
 )
 
 type HelloWorld struct {
-	Context k8s.Context
-	Domains k8s.IngressHosts
-	Tag     docker.Tag
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	Tag          docker.Tag
+	Requirements []world.Configuration
 }
 
 func (h *HelloWorld) Validate(ctx context.Context) error {
@@ -33,8 +34,14 @@ func (h *HelloWorld) Validate(ctx context.Context) error {
 func (h *HelloWorld) Applier() (world.Applier, error) {
 	return nil, nil
 }
-
 func (h *HelloWorld) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, h.Requirements...)
+	result = append(result, h.helloworld()...)
+	return result
+}
+
+func (h *HelloWorld) helloworld() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/hello-world",
 		Tag:        h.Tag,
@@ -114,12 +121,14 @@ func (h *HelloWorld) Children() []world.Configuration {
 			Name:      "hello-world",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   h.Context,
-			Namespace: "hello-world",
-			Name:      "hello-world",
-			Port:      "http",
-			Domains:   h.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			h.Context,
+			"hello-world",
+			"hello-world",
+			"hello-world",
+			"http",
+			"/",
+			h.Domains...,
+		),
 	}
 }

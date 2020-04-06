@@ -20,18 +20,19 @@ import (
 
 type Confluence struct {
 	Context          k8s.Context
-	Domain           k8s.IngressHost
+	Domains           k8s.IngressHosts
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
 	SmtpUsername     deployer.SecretValue
+	Requirements     []world.Configuration
 }
 
 func (c *Confluence) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		c.Context,
-		c.Domain,
+		c.Domains,
 		c.Version,
 		c.DatabasePassword,
 		c.SmtpPassword,
@@ -40,6 +41,13 @@ func (c *Confluence) Validate(ctx context.Context) error {
 }
 
 func (c *Confluence) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, c.Requirements...)
+	result = append(result, c.confluence()...)
+	return result
+}
+
+func (c *Confluence) confluence() []world.Configuration {
 	var buildVersion docker.GitBranch = "1.4.2"
 	image := docker.Image{
 		Repository: "bborbe/atlassian-confluence",
@@ -112,7 +120,7 @@ func (c *Confluence) Children() []world.Configuration {
 						},
 						{
 							Name:  "HOSTNAME",
-							Value: c.Domain.String(),
+							Value: c.Domains[0].String(),
 						},
 					},
 					Mounts: []k8s.ContainerMount{
@@ -159,19 +167,21 @@ func (c *Confluence) Children() []world.Configuration {
 			Name:      "confluence",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   c.Context,
-			Namespace: "confluence",
-			Name:      "confluence",
-			Port:      "http",
-			Domains:   k8s.IngressHosts{c.Domain},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			c.Context,
+			"confluence",
+			"confluence",
+			"confluence",
+			"http",
+			"/",
+			c.Domains...,
+		),
 	}
 }
 
 func (c *Confluence) smtp() *container.Smtp {
 	return &container.Smtp{
-		Hostname:     container.SmtpHostname(c.Domain.String()),
+		Hostname:     container.SmtpHostname(c.Domains[0].String()),
 		Context:      c.Context,
 		Namespace:    "confluence",
 		SmtpPassword: c.SmtpPassword,

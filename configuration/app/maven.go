@@ -19,18 +19,26 @@ type Maven struct {
 	Context          k8s.Context
 	Domains          k8s.IngressHosts
 	MavenRepoVersion docker.Tag
+	Requirements     []world.Configuration
 }
 
-func (t *Maven) Validate(ctx context.Context) error {
+func (m *Maven) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
-		t.MavenRepoVersion,
+		m.Context,
+		m.Domains,
+		m.MavenRepoVersion,
 	)
 }
 
 func (m *Maven) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, m.Requirements...)
+	result = append(result, m.maven()...)
+	return result
+}
+
+func (m *Maven) maven() []world.Configuration {
 	result := []world.Configuration{
 		&k8s.NamespaceConfiguration{
 			Context: m.Context,
@@ -133,13 +141,15 @@ func (m *Maven) public() []world.Configuration {
 			Name:      "public",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   m.Context,
-			Namespace: "maven",
-			Name:      "public",
-			Port:      "http",
-			Domains:   m.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			m.Context,
+			"maven",
+			"maven",
+			"maven",
+			"http",
+			"/",
+			m.Domains...,
+		),
 	}
 }
 

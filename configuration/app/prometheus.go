@@ -19,39 +19,40 @@ import (
 
 type Prometheus struct {
 	Context            k8s.Context
-	PrometheusDomain   k8s.IngressHost
-	AlertmanagerDomain k8s.IngressHost
+	PrometheusDomains   k8s.IngressHosts
+	AlertmanagerDomains k8s.IngressHosts
 	Secret             deployer.SecretValue
 	LdapUsername       deployer.SecretValue
 	LdapPassword       deployer.SecretValue
+	Requirements       []world.Configuration
 }
 
 func (p *Prometheus) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		p.Context,
-		p.PrometheusDomain,
-		p.AlertmanagerDomain,
+		p.PrometheusDomains,
+		p.AlertmanagerDomains,
 		p.Secret,
 		p.LdapUsername,
 		p.LdapPassword,
 	)
 }
-
 func (p *Prometheus) Children() []world.Configuration {
-	result := []world.Configuration{
-		&k8s.NamespaceConfiguration{
-			Context: p.Context,
-			Namespace: k8s.Namespace{
-				ApiVersion: "v1",
-				Kind:       "Namespace",
-				Metadata: k8s.Metadata{
-					Namespace: "prometheus",
-					Name:      "prometheus",
-				},
+	var result []world.Configuration
+	result = append(result, p.Requirements...)
+	result = append(result, &k8s.NamespaceConfiguration{
+		Context: p.Context,
+		Namespace: k8s.Namespace{
+			ApiVersion: "v1",
+			Kind:       "Namespace",
+			Metadata: k8s.Metadata{
+				Namespace: "prometheus",
+				Name:      "prometheus",
 			},
 		},
-	}
+	},
+	)
 	result = append(result, p.prometheus()...)
 	result = append(result, p.alertmanager()...)
 	result = append(result, p.nodeExporter()...)
@@ -181,7 +182,7 @@ func (p *Prometheus) prometheus() []world.Configuration {
 						"--storage.tsdb.path=/prometheus",
 						"--web.console.libraries=/etc/prometheus/console_libraries",
 						"--web.console.templates=/etc/prometheus/consoles",
-						k8s.Arg(fmt.Sprintf("--web.external-url=https://%s", p.PrometheusDomain)),
+						k8s.Arg(fmt.Sprintf("--web.external-url=https://%s", p.PrometheusDomains[0])),
 						"--web.enable-lifecycle",
 						"--log.level=info",
 					},
@@ -282,13 +283,15 @@ func (p *Prometheus) prometheus() []world.Configuration {
 				"prometheus.io/scrape": "true",
 			},
 		},
-		&deployer.IngressDeployer{
-			Context:   p.Context,
-			Namespace: "prometheus",
-			Name:      "prometheus",
-			Port:      "http-auth",
-			Domains:   k8s.IngressHosts{p.PrometheusDomain},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			p.Context,
+			"prometheus",
+			"prometheus",
+			"prometheus",
+			"http-auth",
+			"/",
+			p.PrometheusDomains...,
+		),
 	}
 }
 
@@ -336,7 +339,7 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 					Args: []k8s.Arg{
 						"--config.file=/config/alertmanager.yaml",
 						"--storage.path=/alertmanager",
-						k8s.Arg(fmt.Sprintf("--web.external-url=https://%s", p.AlertmanagerDomain)),
+						k8s.Arg(fmt.Sprintf("--web.external-url=https://%s", p.AlertmanagerDomains[0])),
 					},
 					Requirement: &build.PrometheusAlertmanager{
 						Image: image,
@@ -425,13 +428,15 @@ func (p *Prometheus) alertmanager() []world.Configuration {
 				authPort,
 			},
 		},
-		&deployer.IngressDeployer{
-			Context:   p.Context,
-			Namespace: "prometheus",
-			Name:      "alertmanager",
-			Port:      "http-auth",
-			Domains:   k8s.IngressHosts{p.AlertmanagerDomain},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			p.Context,
+			"prometheus",
+			"alertmanager",
+			"alertmanager",
+			"http-auth",
+			"/",
+			p.AlertmanagerDomains...,
+		),
 	}
 }
 

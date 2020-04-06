@@ -21,7 +21,7 @@ import (
 
 type Teamvault struct {
 	Context          k8s.Context
-	Domain           k8s.IngressHost
+	Domains           k8s.IngressHosts
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
 	SmtpUsername     deployer.SecretValue
@@ -29,13 +29,14 @@ type Teamvault struct {
 	SecretKey        deployer.SecretValue
 	FernetKey        deployer.SecretValue
 	Salt             deployer.SecretValue
+	Requirements     []world.Configuration
 }
 
 func (t *Teamvault) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		t.Context,
-		t.Domain,
+		t.Domains,
 		t.DatabasePassword,
 		t.SmtpPassword,
 		t.SmtpUsername,
@@ -47,6 +48,13 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 }
 
 func (t *Teamvault) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, t.Requirements...)
+	result = append(result, t.teamvault()...)
+	return result
+}
+
+func (t *Teamvault) teamvault() []world.Configuration {
 	version := "0.8.4"
 	image := docker.Image{
 		Repository: "bborbe/teamvault",
@@ -128,7 +136,7 @@ func (t *Teamvault) Children() []world.Configuration {
 					Env: []k8s.Env{
 						{
 							Name:  "BASE_URL",
-							Value: fmt.Sprintf("https://%s", t.Domain),
+							Value: fmt.Sprintf("https://%s", t.Domains[0]),
 						},
 						{
 							Name:  "DEBUG",
@@ -306,19 +314,21 @@ func (t *Teamvault) Children() []world.Configuration {
 			Name:      "teamvault",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   t.Context,
-			Namespace: "teamvault",
-			Name:      "teamvault",
-			Port:      "http",
-			Domains:   k8s.IngressHosts{t.Domain},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			t.Context,
+			"teamvault",
+			"teamvault",
+			"teamvault",
+			"http",
+			"/",
+			t.Domains...,
+		),
 	}
 }
 
 func (t *Teamvault) smtp() *container.Smtp {
 	return &container.Smtp{
-		Hostname:     container.SmtpHostname(t.Domain.String()),
+		Hostname:     container.SmtpHostname(t.Domains[0].String()),
 		Context:      t.Context,
 		Namespace:    "teamvault",
 		SmtpPassword: t.SmtpPassword,

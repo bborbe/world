@@ -16,21 +16,29 @@ import (
 )
 
 type Password struct {
-	Context k8s.Context
-	Domains k8s.IngressHosts
-	Tag     docker.Tag
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	Tag          docker.Tag
+	Requirements []world.Configuration
 }
 
-func (t *Password) Validate(ctx context.Context) error {
+func (p *Password) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
-		t.Tag,
+		p.Context,
+		p.Domains,
+		p.Tag,
 	)
 }
 
 func (p *Password) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, p.Requirements...)
+	result = append(result, p.password()...)
+	return result
+}
+
+func (p *Password) password() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/password",
 		Tag:        p.Tag,
@@ -111,13 +119,15 @@ func (p *Password) Children() []world.Configuration {
 			Name:      "password",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   p.Context,
-			Namespace: "password",
-			Name:      "password",
-			Port:      "http",
-			Domains:   p.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			p.Context,
+			"password",
+			"password",
+			"password",
+			"http",
+			"/",
+			p.Domains...,
+		),
 	}
 }
 

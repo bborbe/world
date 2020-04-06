@@ -17,9 +17,10 @@ import (
 )
 
 type Webdav struct {
-	Context  k8s.Context
-	Domains  k8s.IngressHosts
-	Password deployer.SecretValue
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	Password     deployer.SecretValue
+	Requirements []world.Configuration
 }
 
 func (w *Webdav) Validate(ctx context.Context) error {
@@ -30,8 +31,14 @@ func (w *Webdav) Validate(ctx context.Context) error {
 		w.Password,
 	)
 }
-
 func (w *Webdav) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, w.Requirements...)
+	result = append(result, w.webdav()...)
+	return result
+}
+
+func (w *Webdav) webdav() []world.Configuration {
 	version := "1.0.2"
 	image := docker.Image{
 		Repository: "bborbe/webdav",
@@ -152,13 +159,15 @@ func (w *Webdav) Children() []world.Configuration {
 			Name:      "webdav",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   w.Context,
-			Namespace: "webdav",
-			Name:      "webdav",
-			Port:      "http",
-			Domains:   w.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			w.Context,
+			"webdav",
+			"webdav",
+			"webdav",
+			"http",
+			"/",
+			w.Domains...,
+		),
 	}
 }
 

@@ -163,21 +163,10 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			Context: k8sContext,
 			IP:      ip,
 			Tag:     "1.1.0",
-			Domain:  "ip.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: "ip.benjamin-borbe.de",
-								IP:   ip,
-							},
-						},
-					},
-				),
+			Domains: k8s.IngressHosts{
+				k8s.IngressHost(IPHostname),
 			},
+			Requirements: buildDnsRequirements(ip, IPHostname),
 		},
 	}
 }
@@ -424,20 +413,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 			Context:          k8s.Context(sun.Name),
 			Domain:           "metabase.benjamin-borbe.de",
 			DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: MetabaseHostname,
-								IP:   sun.IP,
-							},
-						},
-					},
-				),
-			},
+			Requirements:     buildDnsRequirements(sun.IP, MetabaseHostname),
 		},
 		"kafka": &app.Kafka{
 			AccessMode:        "ReadWriteMany",
@@ -452,23 +428,10 @@ func (w *World) sun() map[AppName]world.Configuration {
 			Version:           "5.3.1", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
 		},
 		"kafka-status": &app.KafkaStatus{
-			Context:  k8s.Context(sun.Name),
-			Replicas: 1,
-			Domain:   "kafka-status.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: KafkaStatus,
-								IP:   sun.IP,
-							},
-						},
-					},
-				),
-			},
+			Context:      k8s.Context(sun.Name),
+			Replicas:     1,
+			Domain:       "kafka-status.benjamin-borbe.de",
+			Requirements: buildDnsRequirements(sun.IP, KafkaStatus),
 		},
 		"kafka-latest-versions": &app.KafkaLatestVersions{
 			Context:      k8s.Context(sun.Name),
@@ -476,20 +439,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 			AccessMode:   "ReadWriteMany",
 			StorageClass: "hostpath",
 			Domain:       "versions.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: VersionsHostname,
-								IP:   sun.IP,
-							},
-						},
-					},
-				),
-			},
+			Requirements: buildDnsRequirements(sun.IP, VersionsHostname),
 		},
 		"kafka-update-available": &app.KafkaUpdateAvailable{
 			Context:      k8s.Context(sun.Name),
@@ -497,20 +447,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 			AccessMode:   "ReadWriteMany",
 			StorageClass: "hostpath",
 			Domain:       "updates.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: UpdatesHostname,
-								IP:   sun.IP,
-							},
-						},
-					},
-				),
-			},
+			Requirements: buildDnsRequirements(sun.IP, UpdatesHostname),
 		},
 		"kafka-k8s-version-collector": &app.KafkaK8sVersionCollector{
 			Context: k8s.Context(sun.Name),
@@ -568,22 +505,9 @@ func (w *World) sun() map[AppName]world.Configuration {
 			},
 		},
 		"kafka-sample": &app.KafkaSample{
-			Context: k8s.Context(sun.Name),
-			Domain:  "kafka-sample.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: KafkaSampleHostname,
-								IP:   sun.IP,
-							},
-						},
-					},
-				),
-			},
+			Context:      k8s.Context(sun.Name),
+			Domain:       "kafka-sample.benjamin-borbe.de",
+			Requirements: buildDnsRequirements(sun.IP, KafkaSampleHostname),
 		},
 	}
 }
@@ -627,49 +551,28 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"debug": &app.Debug{
 			Context: k8s.Context(netcup.Name),
-			Domain:  "debug.benjamin-borbe.de",
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: DebugHostname,
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
+			Domains: k8s.IngressHosts{
+				k8s.IngressHost(DebugHostname.String()),
 			},
+			Requirements: buildDnsRequirements(netcup.IP, DebugHostname),
 		},
 		"grafana": &app.Grafana{
-			Context:      k8s.Context(netcup.Name),
-			Domain:       k8s.IngressHost(GrafanaHostname.String()),
+			Context: k8s.Context(netcup.Name),
+			Domains: k8s.IngressHosts{
+				k8s.IngressHost(GrafanaHostname.String()),
+			},
 			LdapUsername: w.TeamvaultSecrets.Username("MOPMLG"),
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
-			Requirements: []world.Configuration{
-				world.NewConfiguraionBuilder().WithApplier(
-					&dns.Server{
-						Host:    "ns.rocketsource.de",
-						KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-						List: []dns.Entry{
-							{
-								Host: GrafanaHostname,
-								IP:   netcup.IP,
-							},
-						},
-					},
-				),
-			},
+			Requirements: buildDnsRequirements(netcup.IP, GrafanaHostname),
 		},
 		"prometheus": &app.Prometheus{
-			Context:            k8s.Context(netcup.Name),
-			PrometheusDomain:   "prometheus.benjamin-borbe.de",
-			AlertmanagerDomain: "prometheus-alertmanager.benjamin-borbe.de",
-			Secret:             w.TeamvaultSecrets.Password("aqMr6w"),
-			LdapUsername:       w.TeamvaultSecrets.Username("MOPMLG"),
-			LdapPassword:       w.TeamvaultSecrets.Password("MOPMLG"),
+			Context:             k8s.Context(netcup.Name),
+			PrometheusDomains:   k8s.IngressHosts{k8s.IngressHost(PrometheusHostname)},
+			AlertmanagerDomains: k8s.IngressHosts{k8s.IngressHost(AlertmanagerHostname)},
+			Secret:              w.TeamvaultSecrets.Password("aqMr6w"),
+			LdapUsername:        w.TeamvaultSecrets.Username("MOPMLG"),
+			LdapPassword:        w.TeamvaultSecrets.Password("MOPMLG"),
+			Requirements:        buildDnsRequirements(netcup.IP, PrometheusHostname, AlertmanagerHostname),
 		},
 		"ldap": &app.Ldap{
 			Context:      k8s.Context(netcup.Name),
@@ -677,8 +580,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"teamvault": &app.Teamvault{
-			Context:          k8s.Context(netcup.Name),
-			Domain:           "teamvault.benjamin-borbe.de",
+			Context: k8s.Context(netcup.Name),
+			Domains: k8s.IngressHosts{
+				k8s.IngressHost(TeamvaultHostname.String()),
+			},
 			DatabasePassword: w.TeamvaultSecrets.Password("VO0W5w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("3OlNaq"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("3OlNaq"),
@@ -686,6 +591,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			SecretKey:        w.TeamvaultSecrets.Password("NqA68w"),
 			FernetKey:        w.TeamvaultSecrets.Password("5wYZ2O"),
 			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
+			Requirements:     buildDnsRequirements(netcup.IP, TeamvaultHostname),
 		},
 		"monitoring": &app.Monitoring{
 			Context:         k8s.Context(netcup.Name),
@@ -705,20 +611,26 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"confluence": &app.Confluence{
-			Context:          k8s.Context(netcup.Name),
-			Domain:           "confluence.benjamin-borbe.de",
+			Context: k8s.Context(netcup.Name),
+			Domains: k8s.IngressHosts{
+				k8s.IngressHost(ConfluenceHostname),
+			},
 			Version:          "7.3.3",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
+			Requirements:     buildDnsRequirements(netcup.IP, ConfluenceHostname),
 		},
 		"jira": &app.Jira{
-			Context:          k8s.Context(netcup.Name),
-			Domain:           "jira.benjamin-borbe.de",
+			Context: k8s.Context(netcup.Name),
+			Domains: k8s.IngressHosts{
+				k8s.IngressHost(JiraHostname),
+			},
 			Version:          "8.8.0",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
+			Requirements:     buildDnsRequirements(netcup.IP, JiraHostname),
 		},
 		"backup": &app.BackupServer{
 			Context: k8s.Context(netcup.Name),
@@ -727,15 +639,17 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Context:      k8s.Context(netcup.Name),
 			PosteVersion: "2.2.19", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
-				"mail.benjamin-borbe.de",
+				k8s.IngressHost(MailHostname),
 			},
+			Requirements: buildDnsRequirements(netcup.IP, MailHostname),
 		},
 		"maven": &app.Maven{
 			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
-				"maven.benjamin-borbe.de",
+				k8s.IngressHost(MavenHostname),
 			},
 			MavenRepoVersion: "1.0.0",
+			Requirements:     buildDnsRequirements(netcup.IP, MavenHostname),
 		},
 		"portfolio": &app.Portfolio{
 			Context: k8s.Context(netcup.Name),
@@ -747,6 +661,13 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 			OverlayServerVersion: "1.0.0",
 			GitSyncPassword:      w.TeamvaultSecrets.Password("YLb4wV"),
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"benjamin-borbe.de",
+				"www.benjamin-borbe.de",
+				"benjaminborbe.de",
+				"www.benjaminborbe.de",
+			),
 		},
 		"webdav": &app.Webdav{
 			Context: k8s.Context(netcup.Name),
@@ -754,6 +675,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				"webdav.benjamin-borbe.de",
 			},
 			Password: w.TeamvaultSecrets.Password("VOzvAO"),
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"webdav.benjamin-borbe.de",
+			),
 		},
 		"bind": &app.Bind{
 			Context: k8s.Context(netcup.Name),
@@ -762,7 +687,13 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"dl.benjamin-borbe.de",
+				"download.benjamin-borbe.de",
 			},
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"dl.benjamin-borbe.de",
+				"download.benjamin-borbe.de",
+			),
 		},
 		"mumble": &app.Mumble{
 			Context: k8s.Context(netcup.Name),
@@ -774,6 +705,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"password.benjamin-borbe.de",
 			},
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"password.benjamin-borbe.de",
+			),
 		},
 		"now": &app.Now{
 			Context: k8s.Context(netcup.Name),
@@ -781,6 +716,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				"now.benjamin-borbe.de",
 			},
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"now.benjamin-borbe.de",
+			),
 		},
 		"helloworld": &app.HelloWorld{
 			Context: k8s.Context(netcup.Name),
@@ -791,12 +730,21 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				"rocketnews.de",
 				"www.rocketnews.de",
 			},
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"rocketnews.de",
+				"www.rocketnews.de",
+			),
 		},
 		"slideshow": &app.Slideshow{
 			Context: k8s.Context(netcup.Name),
 			Domains: k8s.IngressHosts{
 				"slideshow.benjamin-borbe.de",
 			},
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"slideshow.benjamin-borbe.de",
+			),
 		},
 		"kickstart": &app.Kickstart{
 			Context: k8s.Context(netcup.Name),
@@ -804,6 +752,11 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				"kickstart.benjamin-borbe.de",
 				"ks.benjamin-borbe.de",
 			},
+			Requirements: buildDnsRequirements(
+				netcup.IP,
+				"kickstart.benjamin-borbe.de",
+				"ks.benjamin-borbe.de",
+			),
 		},
 	}
 }
@@ -872,4 +825,22 @@ func (w *World) co2wz() map[AppName]world.Configuration {
 			Device:        openvpn.Tun,
 		},
 	}
+}
+func buildDnsRequirements(ip network.IP, hosts ...network.Host) []world.Configuration {
+	var result []world.Configuration
+	for _, host := range hosts {
+		result = append(result, world.NewConfiguraionBuilder().WithApplier(
+			&dns.Server{
+				Host:    "ns.rocketsource.de",
+				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+				List: []dns.Entry{
+					{
+						Host: host,
+						IP:   ip,
+					},
+				},
+			},
+		))
+	}
+	return result
 }

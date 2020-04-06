@@ -9,7 +9,6 @@ import (
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/deployer"
-	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/network"
@@ -19,7 +18,7 @@ import (
 
 type Ip struct {
 	Context      k8s.Context
-	Domain       k8s.IngressHost
+	Domains      k8s.IngressHosts
 	Tag          docker.Tag
 	IP           network.IP
 	Requirements []world.Configuration
@@ -29,7 +28,7 @@ func (i *Ip) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
 		i.Context,
-		i.Domain,
+		i.Domains,
 		i.Tag,
 		i.IP,
 	)
@@ -57,18 +56,6 @@ func (i *Ip) ip() []world.Configuration {
 		Protocol: "TCP",
 	}
 	return []world.Configuration{
-		world.NewConfiguraionBuilder().WithApplier(
-			&dns.Server{
-				Host:    "ns.rocketsource.de",
-				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-				List: []dns.Entry{
-					{
-						Host: network.Host(i.Domain.String()),
-						IP:   i.IP,
-					},
-				},
-			},
-		),
 		&k8s.NamespaceConfiguration{
 			Context: i.Context,
 			Namespace: k8s.Namespace{
@@ -139,56 +126,14 @@ func (i *Ip) ip() []world.Configuration {
 			Name:      "ip",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   i.Context,
-			Namespace: "ip",
-			Name:      "ip",
-			Port:      "http",
-			Domains: k8s.IngressHosts{
-				i.Domain,
-			},
-		},
-		&k8s.IngresseConfiguration{
-			Context: i.Context,
-			Ingress: k8s.Ingress{
-				ApiVersion: "extensions/v1beta1",
-				Kind:       "Ingress",
-				Metadata: k8s.Metadata{
-					Namespace: "ip",
-					Name:      "ip",
-					Annotations: k8s.Annotations{
-						"kubernetes.io/ingress.class":                    "nginx",
-						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
-						"cert-manager.io/cluster-issuer":                 "letsencrypt-http-live",
-					},
-				},
-				Spec: k8s.IngressSpec{
-					TLS: []k8s.IngressTLS{
-						{
-							Hosts: []string{
-								i.Domain.String(),
-							},
-							SecretName: i.Domain.String(),
-						},
-					},
-					Rules: []k8s.IngressRule{
-						{
-							Host: k8s.IngressHost(i.Domain.String()),
-							Http: k8s.IngressHttp{
-								Paths: []k8s.IngressPath{
-									{
-										Backends: k8s.IngressBackend{
-											ServiceName: "ip",
-											ServicePort: "http",
-										},
-										Path: "/",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			i.Context,
+			"ip",
+			"ip",
+			"ip",
+			"http",
+			"/",
+			i.Domains...,
+		),
 	}
 }

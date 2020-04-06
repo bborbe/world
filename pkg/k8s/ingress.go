@@ -14,6 +14,56 @@ import (
 	"github.com/pkg/errors"
 )
 
+func BuildIngressConfigurationWithCertManager(
+	context Context,
+	namespace NamespaceName,
+	name MetadataName,
+	serviceName IngressBackendServiceName,
+	servicePort IngressBackendServicePort,
+	path IngressPathPath,
+	hosts ...IngressHost,
+) *IngresseConfiguration {
+	result := &IngresseConfiguration{
+		Context: context,
+		Ingress: Ingress{
+			ApiVersion: "extensions/v1beta1",
+			Kind:       "Ingress",
+			Metadata: Metadata{
+				Namespace: namespace,
+				Name:      name,
+				Annotations: Annotations{
+					"kubernetes.io/ingress.class":                    "nginx",
+					"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+					"cert-manager.io/cluster-issuer":                 "letsencrypt-http-live",
+				},
+			},
+		},
+	}
+	for _, host := range hosts {
+		result.Ingress.Spec.TLS = append(result.Ingress.Spec.TLS, IngressTLS{
+			Hosts: []string{
+				host.String(),
+			},
+			SecretName: host.String(),
+		})
+		result.Ingress.Spec.Rules = append(result.Ingress.Spec.Rules, IngressRule{
+			Host: host,
+			Http: IngressHttp{
+				Paths: []IngressPath{
+					{
+						Backends: IngressBackend{
+							ServiceName: serviceName,
+							ServicePort: servicePort,
+						},
+						Path: path,
+					},
+				},
+			},
+		})
+	}
+	return result
+}
+
 type IngresseConfiguration struct {
 	Context      Context
 	Ingress      Ingress

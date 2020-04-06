@@ -17,8 +17,9 @@ import (
 )
 
 type Slideshow struct {
-	Context k8s.Context
-	Domains k8s.IngressHosts
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	Requirements []world.Configuration
 }
 
 func (s *Slideshow) Validate(ctx context.Context) error {
@@ -33,7 +34,14 @@ func (s *Slideshow) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (s *Slideshow) Children() []world.Configuration {
+func (p *Slideshow) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, p.Requirements...)
+	result = append(result, p.slideshow()...)
+	return result
+}
+
+func (s *Slideshow) slideshow() []world.Configuration {
 	nginxImage := docker.Image{
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
@@ -130,12 +138,14 @@ func (s *Slideshow) Children() []world.Configuration {
 			Name:      "slideshow",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   s.Context,
-			Namespace: "slideshow",
-			Name:      "slideshow",
-			Port:      "http",
-			Domains:   s.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			s.Context,
+			"slideshow",
+			"slideshow",
+			"slideshow",
+			"http",
+			"/",
+			s.Domains...,
+		),
 	}
 }

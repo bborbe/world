@@ -17,30 +17,30 @@ import (
 
 type Debug struct {
 	Context      k8s.Context
-	Domain       k8s.IngressHost
+	Domains       k8s.IngressHosts
 	Requirements []world.Configuration
 }
 
-func (k *Debug) Validate(ctx context.Context) error {
+func (d *Debug) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		k.Context,
-		k.Domain,
+		d.Context,
+		d.Domains,
 	)
 }
 
-func (k *Debug) Applier() (world.Applier, error) {
+func (d *Debug) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (k *Debug) Children() []world.Configuration {
+func (d *Debug) Children() []world.Configuration {
 	var result []world.Configuration
-	result = append(result, k.Requirements...)
-	result = append(result, k.debugApp()...)
+	result = append(result, d.Requirements...)
+	result = append(result, d.debug()...)
 	return result
 }
 
-func (k *Debug) debugApp() []world.Configuration {
+func (d *Debug) debug() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/debug-server",
 		Tag:        "1.0.0",
@@ -52,7 +52,7 @@ func (k *Debug) debugApp() []world.Configuration {
 	}
 	return []world.Configuration{
 		&k8s.NamespaceConfiguration{
-			Context: k.Context,
+			Context: d.Context,
 			Namespace: k8s.Namespace{
 				ApiVersion: "v1",
 				Kind:       "Namespace",
@@ -63,7 +63,7 @@ func (k *Debug) debugApp() []world.Configuration {
 			},
 		},
 		&deployer.DeploymentDeployer{
-			Context:   k.Context,
+			Context:   d.Context,
 			Namespace: "debug",
 			Name:      "debug",
 			Strategy: k8s.DeploymentStrategy{
@@ -121,59 +121,19 @@ func (k *Debug) debugApp() []world.Configuration {
 			},
 		},
 		&deployer.ServiceDeployer{
-			Context:   k.Context,
+			Context:   d.Context,
 			Namespace: "debug",
 			Name:      "debug",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   k.Context,
-			Namespace: "debug",
-			Name:      "debug",
-			Port:      port.Name,
-			Domains:   k8s.IngressHosts{k.Domain},
-		},
-		&k8s.IngresseConfiguration{
-			Context: k.Context,
-			Ingress: k8s.Ingress{
-				ApiVersion: "extensions/v1beta1",
-				Kind:       "Ingress",
-				Metadata: k8s.Metadata{
-					Namespace: "debug",
-					Name:      "debug",
-					Annotations: k8s.Annotations{
-						"kubernetes.io/ingress.class":                    "nginx",
-						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
-						"cert-manager.io/cluster-issuer":                 "letsencrypt-http-live",
-					},
-				},
-				Spec: k8s.IngressSpec{
-					TLS: []k8s.IngressTLS{
-						{
-							Hosts: []string{
-								k.Domain.String(),
-							},
-							SecretName: k.Domain.String(),
-						},
-					},
-					Rules: []k8s.IngressRule{
-						{
-							Host: k8s.IngressHost(k.Domain.String()),
-							Http: k8s.IngressHttp{
-								Paths: []k8s.IngressPath{
-									{
-										Backends: k8s.IngressBackend{
-											ServiceName: "debug",
-											ServicePort: "http",
-										},
-										Path: "/",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			d.Context,
+			"debug",
+			"debug",
+			"debug",
+			"http",
+			"/",
+			d.Domains...,
+		),
 	}
 }

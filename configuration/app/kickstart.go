@@ -17,8 +17,9 @@ import (
 )
 
 type Kickstart struct {
-	Context k8s.Context
-	Domains k8s.IngressHosts
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	Requirements []world.Configuration
 }
 
 func (k *Kickstart) Validate(ctx context.Context) error {
@@ -33,7 +34,14 @@ func (k *Kickstart) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (k *Kickstart) Children() []world.Configuration {
+func (p *Kickstart) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, p.Requirements...)
+	result = append(result, p.kickstart()...)
+	return result
+}
+
+func (k *Kickstart) kickstart() []world.Configuration {
 	nginxImage := docker.Image{
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
@@ -130,12 +138,14 @@ func (k *Kickstart) Children() []world.Configuration {
 			Name:      "kickstart",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   k.Context,
-			Namespace: "kickstart",
-			Name:      "kickstart",
-			Port:      "http",
-			Domains:   k.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			k.Context,
+			"kickstart",
+			"kickstart",
+			"kickstart",
+			"http",
+			"/",
+			k.Domains...,
+		),
 	}
 }

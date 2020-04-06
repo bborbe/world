@@ -16,8 +16,9 @@ import (
 )
 
 type Download struct {
-	Context k8s.Context
-	Domains k8s.IngressHosts
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	Requirements []world.Configuration
 }
 
 func (d *Download) Validate(ctx context.Context) error {
@@ -33,6 +34,13 @@ func (d *Download) Applier() (world.Applier, error) {
 }
 
 func (d *Download) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, d.Requirements...)
+	result = append(result, d.download()...)
+	return result
+}
+
+func (d *Download) download() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/nginx-autoindex",
 		Tag:        "latest",
@@ -127,12 +135,14 @@ func (d *Download) Children() []world.Configuration {
 			Name:      "download",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   d.Context,
-			Namespace: "download",
-			Name:      "download",
-			Port:      "http",
-			Domains:   d.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			d.Context,
+			"download",
+			"download",
+			"download",
+			"http",
+			"/",
+			d.Domains...,
+		),
 	}
 }

@@ -16,9 +16,10 @@ import (
 )
 
 type Now struct {
-	Context k8s.Context
-	Domains k8s.IngressHosts
-	Tag     docker.Tag
+	Context      k8s.Context
+	Domains      k8s.IngressHosts
+	Tag          docker.Tag
+	Requirements []world.Configuration
 }
 
 func (n *Now) Validate(ctx context.Context) error {
@@ -31,6 +32,13 @@ func (n *Now) Validate(ctx context.Context) error {
 }
 
 func (n *Now) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, n.Requirements...)
+	result = append(result, n.now()...)
+	return result
+}
+
+func (n *Now) now() []world.Configuration {
 	image := docker.Image{
 		Repository: "bborbe/now",
 		Tag:        n.Tag,
@@ -117,13 +125,15 @@ func (n *Now) Children() []world.Configuration {
 			Name:      "now",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   n.Context,
-			Namespace: "now",
-			Name:      "now",
-			Port:      "http",
-			Domains:   n.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			n.Context,
+			"now",
+			"now",
+			"now",
+			"http",
+			"/",
+			n.Domains...,
+		),
 	}
 }
 

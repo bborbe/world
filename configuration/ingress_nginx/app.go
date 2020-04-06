@@ -314,6 +314,9 @@ func (a *App) Children() []world.Configuration {
 				},
 				Spec: k8s.DeploymentSpec{
 					Replicas: 1,
+					Strategy: k8s.DeploymentStrategy{
+						Type: "Recreate",
+					},
 					Selector: k8s.LabelSelector{
 						MatchLabels: k8s.Labels{
 							"app.kubernetes.io/name":    "ingress-nginx",
@@ -376,12 +379,12 @@ func (a *App) Children() []world.Configuration {
 									},
 									Resources: k8s.Resources{
 										Limits: k8s.ContainerResource{
-											Cpu:    "100m",
-											Memory: "90Mi",
+											Cpu:    "200m",
+											Memory: "200Mi",
 										},
 										Requests: k8s.ContainerResource{
 											Cpu:    "100m",
-											Memory: "90Mi",
+											Memory: "100Mi",
 										},
 									},
 									ReadinessProbe: k8s.Probe{
@@ -428,13 +431,41 @@ func (a *App) Children() []world.Configuration {
 				},
 			},
 		},
+		&k8s.ServiceConfiguration{
+			Context: a.Context,
+			Service: k8s.Service{
+				ApiVersion: "v1",
+				Kind:       "Service",
+				Metadata: k8s.Metadata{
+					Namespace: "ingress-nginx",
+					Name:      "ingress-nginx",
+				},
+				Spec: k8s.ServiceSpec{
+					Ports: []k8s.ServicePort{
+						{
+							Name: "http",
+							Port: 80,
+						},
+						{
+							Name: "https",
+							Port: 443,
+						},
+					},
+					Selector: k8s.ServiceSelector{
+						"app.kubernetes.io/name":    "ingress-nginx",
+						"app.kubernetes.io/part-of": "ingress-nginx",
+					},
+				},
+			},
+		},
 		&k8s.ConfigMapConfiguration{
 			Context: a.Context,
 			ConfigMap: k8s.ConfigMap{
 				ApiVersion: "v1",
 				Kind:       "ConfigMap",
-				Metadata: k8s.Metadata{Namespace: "ingress-nginx",
-					Name: "tcp-services",
+				Metadata: k8s.Metadata{
+					Namespace: "ingress-nginx",
+					Name:      "tcp-services",
 					Labels: k8s.Labels{
 						"app.kubernetes.io/name":    "ingress-nginx",
 						"app.kubernetes.io/part-of": "ingress-nginx"},

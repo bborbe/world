@@ -21,19 +21,27 @@ type Portfolio struct {
 	Domains              k8s.IngressHosts
 	OverlayServerVersion docker.Tag
 	GitSyncPassword      deployer.SecretValue
+	Requirements         []world.Configuration
 }
 
-func (t *Portfolio) Validate(ctx context.Context) error {
+func (p *Portfolio) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domains,
-		t.OverlayServerVersion,
-		t.GitSyncPassword,
+		p.Context,
+		p.Domains,
+		p.OverlayServerVersion,
+		p.GitSyncPassword,
 	)
 }
 
 func (p *Portfolio) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, p.Requirements...)
+	result = append(result, p.portfolio()...)
+	return result
+}
+
+func (p *Portfolio) portfolio() []world.Configuration {
 	overlayServerImage := docker.Image{
 		Repository: "bborbe/portfolio",
 		Tag:        p.OverlayServerVersion,
@@ -175,13 +183,15 @@ func (p *Portfolio) Children() []world.Configuration {
 				port,
 			},
 		},
-		&deployer.IngressDeployer{
-			Context:   p.Context,
-			Namespace: "portfolio",
-			Name:      "portfolio",
-			Port:      "http",
-			Domains:   p.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			p.Context,
+			"portfolio",
+			"portfolio",
+			"portfolio",
+			"http",
+			"/",
+			p.Domains...,
+		),
 	}
 }
 

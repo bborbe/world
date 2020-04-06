@@ -20,26 +20,34 @@ import (
 
 type Jira struct {
 	Context          k8s.Context
-	Domain           k8s.IngressHost
+	Domains           k8s.IngressHosts
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
 	SmtpUsername     deployer.SecretValue
+	Requirements     []world.Configuration
 }
 
-func (t *Jira) Validate(ctx context.Context) error {
+func (j *Jira) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.Domain,
-		t.Version,
-		t.DatabasePassword,
-		t.SmtpPassword,
-		t.SmtpUsername,
+		j.Context,
+		j.Domains,
+		j.Version,
+		j.DatabasePassword,
+		j.SmtpPassword,
+		j.SmtpUsername,
 	)
 }
 
 func (j *Jira) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, j.Requirements...)
+	result = append(result, j.jira()...)
+	return result
+}
+
+func (j *Jira) jira() []world.Configuration {
 	var buildVersion docker.GitBranch = "1.3.2"
 	image := docker.Image{
 		Repository: "bborbe/atlassian-jira-software",
@@ -112,7 +120,7 @@ func (j *Jira) Children() []world.Configuration {
 						},
 						{
 							Name:  "HOSTNAME",
-							Value: j.Domain.String(),
+							Value: j.Domains[0].String(),
 						},
 					},
 					Mounts: []k8s.ContainerMount{
@@ -159,19 +167,21 @@ func (j *Jira) Children() []world.Configuration {
 			Name:      "jira",
 			Ports:     []deployer.Port{port},
 		},
-		&deployer.IngressDeployer{
-			Context:   j.Context,
-			Namespace: "jira",
-			Name:      "jira",
-			Port:      "http",
-			Domains:   k8s.IngressHosts{j.Domain},
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			j.Context,
+			"jira",
+			"jira",
+			"jira",
+			"http",
+			"/",
+			j.Domains...,
+		),
 	}
 }
 
 func (j *Jira) smtp() *container.Smtp {
 	return &container.Smtp{
-		Hostname:     container.SmtpHostname(j.Domain.String()),
+		Hostname:     container.SmtpHostname(j.Domains[0].String()),
 		Context:      j.Context,
 		Namespace:    "jira",
 		SmtpPassword: j.SmtpPassword,

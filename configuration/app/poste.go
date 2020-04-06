@@ -20,18 +20,26 @@ type Poste struct {
 	Context      k8s.Context
 	PosteVersion docker.Tag
 	Domains      k8s.IngressHosts
+	Requirements []world.Configuration
 }
 
-func (t *Poste) Validate(ctx context.Context) error {
+func (p *Poste) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		t.Context,
-		t.PosteVersion,
-		t.Domains,
+		p.Context,
+		p.PosteVersion,
+		p.Domains,
 	)
 }
 
 func (p *Poste) Children() []world.Configuration {
+	var result []world.Configuration
+	result = append(result, p.Requirements...)
+	result = append(result, p.poste()...)
+	return result
+}
+
+func (p *Poste) poste() []world.Configuration {
 	var buildVersion docker.GitBranch = "2.0.1"
 	image := docker.Image{
 		Repository: "bborbe/poste.io",
@@ -161,13 +169,15 @@ func (p *Poste) Children() []world.Configuration {
 			Name:      "poste",
 			Ports:     ports,
 		},
-		&deployer.IngressDeployer{
-			Context:   p.Context,
-			Namespace: "poste",
-			Name:      "poste",
-			Port:      "http",
-			Domains:   p.Domains,
-		},
+		k8s.BuildIngressConfigurationWithCertManager(
+			p.Context,
+			"poste",
+			"poste",
+			"poste",
+			"http",
+			"/",
+			p.Domains...,
+		),
 	}
 }
 
