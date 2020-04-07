@@ -14,11 +14,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bborbe/world/pkg/hetzner"
-
 	"github.com/bborbe/http/client_builder"
 	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/world/configuration"
+	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/world"
@@ -39,10 +38,15 @@ func main() {
 	go func() {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-		select {
-		case <-ch:
+		var canceled bool
+		for range ch {
+			if canceled {
+				fmt.Println("force exit")
+				os.Exit(1)
+			}
+			fmt.Println("execution canceled")
 			cancel()
-		case <-ctx.Done():
+			canceled = true
 		}
 	}()
 
