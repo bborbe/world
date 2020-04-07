@@ -187,14 +187,11 @@ func (k *Kubelet) Children() []world.Configuration {
 				if err != nil {
 					return nil, errors.Wrap(err, "get ip failed")
 				}
-
 				args := []string{
 					"kubelet",
 					"--config=/var/lib/kubelet/config.yaml",
 					fmt.Sprintf("--pod-infra-container-image=%s", k.pauseImage().String()),
-					"--containerized",
 					"--register-node=true",
-					"--allow-privileged=true",
 					fmt.Sprintf("--hostname-override=%s", ip.String()),
 					"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
 					"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
@@ -228,7 +225,6 @@ func (k *Kubelet) Children() []world.Configuration {
 					Privileged: true,
 					Volumes:    volumes,
 					Image:      k.hyperkubeImage(),
-					Command:    "/hyperkube",
 					Args:       args,
 					Requires: []remote.ServiceName{
 						"etcd.service",
