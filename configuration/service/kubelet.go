@@ -44,6 +44,7 @@ type Kubelet struct {
 	DisableRBAC bool
 	DisableCNI  bool
 	ResolvConf  string
+	LogLevel    int
 }
 
 func (k *Kubelet) Children() []world.Configuration {
@@ -54,9 +55,6 @@ func (k *Kubelet) Children() []world.Configuration {
 		}),
 		&build.Hyperkube{
 			Image: k.hyperkubeImage(),
-		},
-		&build.Podmaster{
-			Image: k.podmasterImage(),
 		},
 		&build.Pause{
 			Image: k.pauseImage(),
@@ -92,13 +90,6 @@ func (k *Kubelet) Children() []world.Configuration {
 		&Directory{
 			SSH:   k.SSH,
 			Path:  file.Path("/srv/kubernetes"),
-			User:  "root",
-			Group: "root",
-			Perm:  0755,
-		},
-		&Directory{
-			SSH:   k.SSH,
-			Path:  file.Path("/srv/kubernetes/manifests"),
 			User:  "root",
 			Group: "root",
 			Perm:  0755,
@@ -158,14 +149,6 @@ func (k *Kubelet) Children() []world.Configuration {
 		},
 		&remote.File{
 			SSH:     k.SSH,
-			Path:    file.Path("/etc/kubernetes/manifests/kube-podmaster.yaml"),
-			User:    "root",
-			Group:   "root",
-			Perm:    0644,
-			Content: content.Func(k.kubePodmasterYaml),
-		},
-		&remote.File{
-			SSH:     k.SSH,
 			Path:    file.Path("/etc/kubernetes/kubeconfig.yaml"),
 			User:    "root",
 			Group:   "root",
@@ -182,7 +165,7 @@ func (k *Kubelet) Children() []world.Configuration {
 		},
 		&remote.File{
 			SSH:     k.SSH,
-			Path:    file.Path("/srv/kubernetes/manifests/kube-scheduler.yaml"),
+			Path:    file.Path("/etc/kubernetes/manifests/kube-scheduler.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
@@ -190,7 +173,7 @@ func (k *Kubelet) Children() []world.Configuration {
 		},
 		&remote.File{
 			SSH:     k.SSH,
-			Path:    file.Path("/srv/kubernetes/manifests/kube-controller-manager.yaml"),
+			Path:    file.Path("/etc/kubernetes/manifests/kube-controller-manager.yaml"),
 			User:    "root",
 			Group:   "root",
 			Perm:    0644,
@@ -215,7 +198,7 @@ func (k *Kubelet) Children() []world.Configuration {
 					fmt.Sprintf("--hostname-override=%s", ip.String()),
 					"--kubeconfig=/etc/kubernetes/kubeconfig.yaml",
 					"--node-labels=etcd=true,nfsd=true,worker=true,master=true",
-					"--v=0",
+					fmt.Sprintf("--v=%d", k.LogLevel),
 				}
 				if k.ResolvConf != "" {
 					args = append(args, fmt.Sprintf("--resolv-conf=%s", k.ResolvConf))
@@ -331,7 +314,11 @@ spec:
     image: {{.Image}}
     command:
     - /hyperkube
-    - apiserver
+    - kube-apiserver
+{{- if .RBAC }} 
+    - --authorization-mode=RBAC
+{{- end }}
+    - --http2-max-streams-per-connection=1000
     - --bind-address=0.0.0.0
     - --etcd-servers=http://{{.ClusterIP}}:2379
     - --storage-backend=etcd3
@@ -339,16 +326,14 @@ spec:
     - --service-cluster-ip-range=10.103.0.0/16
     - --secure-port=6443
     - --advertise-address={{.ClusterIP}}
-    - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
+    - --enable-admission-plugins=NamespaceLifecycle,NamespaceExists,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
     - --tls-cert-file=/etc/kubernetes/ssl/node.pem
     - --tls-private-key-file=/etc/kubernetes/ssl/node-key.pem
     - --client-ca-file=/etc/kubernetes/ssl/ca.pem
     - --service-account-key-file=/etc/kubernetes/ssl/node-key.pem
     - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true
     - --anonymous-auth=false
-{{- if .RBAC }} 
-    - --authorization-mode=RBAC
-{{- end }}
+    - --v={{ .LogLevel }}
     livenessProbe:
       httpGet:
         host: 127.0.0.1
@@ -381,71 +366,12 @@ spec:
 		Image     string
 		ClusterIP string
 		RBAC      bool
+		LogLevel  int
 	}{
 		Image:     k.hyperkubeImage().String(),
 		ClusterIP: ip.String(),
 		RBAC:      !k.DisableRBAC,
-	})
-}
-
-func (k *Kubelet) kubePodmasterYaml(ctx context.Context) ([]byte, error) {
-	ip, err := k.ClusterIP.IP(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return template.Render(`
-apiVersion: v1
-kind: Pod
-metadata:
-  name: kube-podmaster
-  namespace: kube-system
-spec:
-  hostNetwork: true
-  containers:
-  - name: controller-manager-elector
-    image: {{.Image}}
-    command:
-    - /podmaster
-    - --etcd-servers=http://{{.ClusterIP}}:2379
-    - --key=controller
-    - --whoami={{.ClusterIP}}
-    - --source-file=/src/manifests/kube-controller-manager.yaml
-    - --dest-file=/dst/manifests/kube-controller-manager.yaml
-    terminationMessagePath: /dev/termination-log
-    volumeMounts:
-    - mountPath: /src/manifests
-      name: manifest-src
-      readOnly: true
-    - mountPath: /dst/manifests
-      name: manifest-dst
-  - name: scheduler-elector
-    image: {{.Image}}
-    command:
-    - /podmaster
-    - --etcd-servers=http://{{.ClusterIP}}:2379
-    - --key=scheduler
-    - --whoami={{.ClusterIP}}
-    - --source-file=/src/manifests/kube-scheduler.yaml
-    - --dest-file=/dst/manifests/kube-scheduler.yaml
-    volumeMounts:
-    - mountPath: /src/manifests
-      name: manifest-src
-      readOnly: true
-    - mountPath: /dst/manifests
-      name: manifest-dst
-  volumes:
-  - hostPath:
-      path: /srv/kubernetes/manifests
-    name: manifest-src
-  - hostPath:
-      path: /etc/kubernetes/manifests
-    name: manifest-dst
-`, struct {
-		Image     string
-		ClusterIP string
-	}{
-		Image:     k.podmasterImage().String(),
-		ClusterIP: ip.String(),
+		LogLevel:  k.LogLevel,
 	})
 }
 
@@ -486,9 +412,10 @@ spec:
     image: {{.Image}}
     command:
     - /hyperkube
-    - proxy
+    - kube-proxy
     - --master=http://127.0.0.1:8080
     - --proxy-mode=iptables
+    - --v={{ .LogLevel }}
     securityContext:
       privileged: true
     volumeMounts:
@@ -500,9 +427,11 @@ spec:
       hostPath:
         path: "/usr/share/ca-certificates"
 `, struct {
-		Image string
+		Image    string
+		LogLevel int
 	}{
-		Image: k.hyperkubeImage().String(),
+		Image:    k.hyperkubeImage().String(),
+		LogLevel: k.LogLevel,
 	})
 }
 
@@ -520,8 +449,9 @@ spec:
     image: {{.Image}}
     command:
     - /hyperkube
-    - scheduler
+    - kube-scheduler
     - --master=http://127.0.0.1:8080
+    - --v={{ .LogLevel }}
     livenessProbe:
       httpGet:
         host: 127.0.0.1
@@ -530,9 +460,11 @@ spec:
       initialDelaySeconds: 15
       timeoutSeconds: 1
 `, struct {
-		Image string
+		Image    string
+		LogLevel int
 	}{
-		Image: k.hyperkubeImage().String(),
+		Image:    k.hyperkubeImage().String(),
+		LogLevel: k.LogLevel,
 	})
 }
 
@@ -550,10 +482,13 @@ spec:
     image: {{.Image}}
     command:
     - /hyperkube
-    - controller-manager
+    - kube-controller-manager
+    - --node-monitor-grace-period=5m
+    - --kubeconfig=/etc/kubernetes/kubeconfig.yaml
     - --master=http://127.0.0.1:8080
     - --service-account-private-key-file=/etc/kubernetes/ssl/node-key.pem
     - --root-ca-file=/etc/kubernetes/ssl/ca.pem
+    - --v={{ .LogLevel }}
     livenessProbe:
       httpGet:
         host: 127.0.0.1
@@ -562,23 +497,25 @@ spec:
       initialDelaySeconds: 15
       timeoutSeconds: 1
     volumeMounts:
-    - mountPath: /etc/kubernetes/ssl
-      name: ssl-certs-kubernetes
+    - mountPath: /etc/kubernetes
+      name: etc-kubernetes
       readOnly: true
     - mountPath: /etc/ssl/certs
       name: ssl-certs-host
       readOnly: true
   volumes:
-  - name: ssl-certs-kubernetes 
+  - name: etc-kubernetes 
     hostPath:
-      path: /etc/kubernetes/ssl
+      path: /etc/kubernetes
   - name: ssl-certs-host 
     hostPath:
       path: /usr/share/ca-certificates
 `, struct {
-		Image string
+		Image    string
+		LogLevel int
 	}{
-		Image: k.hyperkubeImage().String(),
+		Image:    k.hyperkubeImage().String(),
+		LogLevel: k.LogLevel,
 	})
 }
 
@@ -586,13 +523,6 @@ func (k *Kubelet) hyperkubeImage() docker.Image {
 	return docker.Image{
 		Repository: "bborbe/hyperkube",
 		Tag:        k.Version,
-	}
-}
-
-func (k *Kubelet) podmasterImage() docker.Image {
-	return docker.Image{
-		Repository: "bborbe/podmaster",
-		Tag:        "1.1",
 	}
 }
 
@@ -685,6 +615,7 @@ func (k *Kubelet) readPem(ctx context.Context, name string) ([]byte, error) {
 	return ioutil.ReadFile(filepath)
 }
 
+// https://godoc.org/k8s.io/kubelet/config/v1beta1#KubeletConfiguration
 func (k *Kubelet) kubeletConf(ctx context.Context) ([]byte, error) {
 	return template.Render(`
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -722,6 +653,7 @@ streamingConnectionIdleTimeout: 0s
 syncFrequency: 0s
 volumeStatsAggPeriod: 0s
 failSwapOn: false
+maxPods: 250
 `, struct {
 	}{})
 }

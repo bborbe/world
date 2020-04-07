@@ -42,6 +42,7 @@ func (k *Kubernetes) Children() []world.Configuration {
 			DisableRBAC: k.DisableRBAC,
 			DisableCNI:  k.DisableCNI,
 			ResolvConf:  k.ResolvConf,
+			LogLevel:    0,
 		},
 	}
 }
