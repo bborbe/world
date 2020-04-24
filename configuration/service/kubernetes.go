@@ -28,7 +28,7 @@ type Kubernetes struct {
 func (k *Kubernetes) Children() []world.Configuration {
 	version := k.Version
 	if version == "" {
-		version = "v1.18.0"
+		version = "v1.18.2"
 	}
 	return []world.Configuration{
 		&Etcd{
