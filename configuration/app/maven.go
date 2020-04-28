@@ -145,7 +145,7 @@ func (m *Maven) public() []world.Configuration {
 			m.Context,
 			"maven",
 			"maven",
-			"maven",
+			"public",
 			"http",
 			"/",
 			m.Domains...,
