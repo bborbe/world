@@ -615,7 +615,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(ConfluenceHostname),
 			},
-			Version:          "7.3.4",
+			Version:          "7.3.5",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
@@ -626,7 +626,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(JiraHostname),
 			},
-			Version:          "8.8.0",
+			Version:          "8.8.1",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
