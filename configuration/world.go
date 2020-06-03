@@ -626,7 +626,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(JiraHostname),
 			},
-			Version:          "8.8.1",
+			Version:          "8.9.0",
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
