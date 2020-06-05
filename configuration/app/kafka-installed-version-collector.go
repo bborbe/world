@@ -21,7 +21,7 @@ type KafkaInstalledVersionCollector struct {
 	Apps    []struct {
 		Name  string
 		Regex string
-		Url   string
+		URL   string
 	}
 }
 
@@ -102,7 +102,7 @@ func (k *KafkaInstalledVersionCollector) Children() []world.Configuration {
 						},
 						{
 							Name:  "APP_URL",
-							Value: app.Url,
+							Value: app.URL,
 						},
 					},
 					Image: image,
