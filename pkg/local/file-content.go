@@ -9,9 +9,10 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/file"
-	"github.com/pkg/errors"
 )
 
 type FileContent struct {

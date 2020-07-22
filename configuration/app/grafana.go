@@ -9,18 +9,19 @@ import (
 	"context"
 	"text/template"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
-	"github.com/pkg/errors"
 )
 
 type Grafana struct {
 	Context      k8s.Context
-	Domains       k8s.IngressHosts
+	Domains      k8s.IngressHosts
 	LdapUsername deployer.SecretValue
 	LdapPassword deployer.SecretValue
 	Requirements []world.Configuration

@@ -12,6 +12,10 @@ import (
 	"os/user"
 	"path"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/cert/triple"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/docker"
@@ -24,9 +28,6 @@ import (
 	"github.com/bborbe/world/pkg/template"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/util/cert"
-	"k8s.io/client-go/util/cert/triple"
 )
 
 const caKey = "ca-key.pem"

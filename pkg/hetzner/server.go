@@ -9,14 +9,15 @@ import (
 	"context"
 	"io/ioutil"
 
-	"github.com/bborbe/world/pkg/deployer"
-	"github.com/bborbe/world/pkg/k8s"
-	"github.com/bborbe/world/pkg/ssh"
-	"github.com/bborbe/world/pkg/validation"
 	"github.com/golang/glog"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/bborbe/world/pkg/deployer"
+	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/ssh"
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type ServerType string

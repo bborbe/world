@@ -8,8 +8,9 @@ import (
 	"context"
 
 	teamvault "github.com/bborbe/teamvault-utils"
-	"github.com/bborbe/world/pkg/deployer"
 	"github.com/pkg/errors"
+
+	"github.com/bborbe/world/pkg/deployer"
 )
 
 type Teamvault struct {

@@ -5,9 +5,10 @@
 package file_test
 
 import (
-	"github.com/bborbe/world/pkg/file"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/bborbe/world/pkg/file"
 )
 
 var _ = Describe("Remote", func() {

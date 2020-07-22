@@ -13,10 +13,11 @@ import (
 	"sync"
 
 	"github.com/bborbe/run"
-	"github.com/bborbe/world/pkg/network"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/bborbe/world/pkg/network"
 )
 
 type Host struct {

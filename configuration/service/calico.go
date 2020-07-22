@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -14,7 +16,6 @@ import (
 	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
-	"github.com/pkg/errors"
 )
 
 type Calico struct {

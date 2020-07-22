@@ -22,12 +22,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/file"
 	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/template"
 	"github.com/bborbe/world/pkg/validation"
-	"github.com/pkg/errors"
 )
 
 type ServerConfig struct {

@@ -17,7 +17,7 @@ import (
 
 type Debug struct {
 	Context      k8s.Context
-	Domains       k8s.IngressHosts
+	Domains      k8s.IngressHosts
 	Requirements []world.Configuration
 }
 

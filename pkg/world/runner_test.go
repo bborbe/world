@@ -8,10 +8,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bborbe/world/pkg/hetzner"
-
 	"github.com/bborbe/teamvault-utils"
+
 	"github.com/bborbe/world/configuration"
+	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/world"
 )

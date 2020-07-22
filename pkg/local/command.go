@@ -8,8 +8,9 @@ import (
 	"context"
 	"os/exec"
 
-	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
+
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type Command struct {

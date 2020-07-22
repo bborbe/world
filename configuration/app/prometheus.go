@@ -18,13 +18,13 @@ import (
 )
 
 type Prometheus struct {
-	Context            k8s.Context
+	Context             k8s.Context
 	PrometheusDomains   k8s.IngressHosts
 	AlertmanagerDomains k8s.IngressHosts
-	Secret             deployer.SecretValue
-	LdapUsername       deployer.SecretValue
-	LdapPassword       deployer.SecretValue
-	Requirements       []world.Configuration
+	Secret              deployer.SecretValue
+	LdapUsername        deployer.SecretValue
+	LdapPassword        deployer.SecretValue
+	Requirements        []world.Configuration
 }
 
 func (p *Prometheus) Validate(ctx context.Context) error {

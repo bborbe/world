@@ -15,9 +15,9 @@ precommit: ensure format generate test check addlicense
 	@echo "ready to commit"
 
 format:
-	@GO111MODULE=on go get golang.org/x/tools/cmd/goimports
-	@find . -type f -name '*.go' -not -path './vendor/*' -exec gofmt -w "{}" +
-	@find . -type f -name '*.go' -not -path './vendor/*' -exec goimports -w "{}" +
+	@GO111MODULE=off go get github.com/seibert-media/goimports-reviser
+	find . -type f -name '*.go' -not -path './vendor/*' -exec gofmt -w "{}" +
+	find . -type f -name '*.go' -not -path './vendor/*' -exec goimports-reviser -project-name github.com/bborbe/world -file-path "{}" \;
 
 ensure:
 	GO111MODULE=on go mod verify

@@ -11,9 +11,10 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/bborbe/world/pkg/network"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"github.com/bborbe/world/pkg/network"
 )
 
 type KeyPath string

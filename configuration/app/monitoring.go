@@ -7,6 +7,8 @@ package app
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/configuration/container"
 	"github.com/bborbe/world/pkg/deployer"
@@ -14,7 +16,6 @@ import (
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
-	"github.com/pkg/errors"
 )
 
 type MonitoringConfig struct {

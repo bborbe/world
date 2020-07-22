@@ -8,11 +8,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/world/pkg/file"
+	"github.com/pkg/errors"
 
+	"github.com/bborbe/world/pkg/file"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
-	"github.com/pkg/errors"
 )
 
 type Directory struct {

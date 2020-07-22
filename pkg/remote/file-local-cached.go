@@ -8,13 +8,14 @@ import (
 	"context"
 	"io/ioutil"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/file"
 	"github.com/bborbe/world/pkg/local"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
-	"github.com/pkg/errors"
 )
 
 type FileLocalCached struct {

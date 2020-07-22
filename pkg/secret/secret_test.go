@@ -9,10 +9,11 @@ import (
 
 	"github.com/bborbe/teamvault-utils"
 	"github.com/bborbe/teamvault-utils/mocks"
-	"github.com/bborbe/world/pkg/deployer"
-	"github.com/bborbe/world/pkg/secret"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/bborbe/world/pkg/deployer"
+	"github.com/bborbe/world/pkg/secret"
 )
 
 var _ = Describe("Secret", func() {

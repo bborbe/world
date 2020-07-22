@@ -7,9 +7,10 @@ package openvpn
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/validation"
-	"github.com/pkg/errors"
 )
 
 type Device string

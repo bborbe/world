@@ -7,12 +7,12 @@ package service_test
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/remote"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/docker"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/bborbe/world/pkg/remote"
 )
 
 var _ = Describe("Docker", func() {

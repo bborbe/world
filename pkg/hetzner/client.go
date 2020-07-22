@@ -8,8 +8,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/bborbe/world/pkg/k8s"
 	"github.com/pkg/errors"
+
+	"github.com/bborbe/world/pkg/k8s"
 )
 
 type Client interface {

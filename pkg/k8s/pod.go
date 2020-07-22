@@ -7,8 +7,9 @@ package k8s
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/validation"
 	"github.com/pkg/errors"
+
+	"github.com/bborbe/world/pkg/validation"
 )
 
 type PodTemplate struct {

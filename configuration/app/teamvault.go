@@ -21,7 +21,7 @@ import (
 
 type Teamvault struct {
 	Context          k8s.Context
-	Domains           k8s.IngressHosts
+	Domains          k8s.IngressHosts
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
 	SmtpUsername     deployer.SecretValue

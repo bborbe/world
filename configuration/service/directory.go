@@ -7,9 +7,9 @@ package service
 import (
 	"context"
 
-	"github.com/bborbe/world/pkg/file"
 	"github.com/pkg/errors"
 
+	"github.com/bborbe/world/pkg/file"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"

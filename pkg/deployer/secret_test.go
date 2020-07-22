@@ -8,10 +8,11 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/bborbe/world/pkg/k8s"
 	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/bborbe/world/pkg/k8s"
 )
 
 var _ = Describe("SecretApplier", func() {

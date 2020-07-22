@@ -9,11 +9,11 @@ import (
 	"net"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 
 	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/validation"
-	"github.com/pkg/errors"
 )
 
 type IP struct {
