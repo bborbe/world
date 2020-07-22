@@ -20,7 +20,7 @@ import (
 
 type Confluence struct {
 	Context          k8s.Context
-	Domains           k8s.IngressHosts
+	Domains          k8s.IngressHosts
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
@@ -75,10 +75,10 @@ func (c *Confluence) confluence() []world.Configuration {
 			Namespace:            "confluence",
 			DataPath:             "/data/confluence-postgres",
 			BackupPath:           "/data/confluence-postgres-backup",
-			PostgresVersion:      "9.5.14",
+			PostgresVersion:      "10.13",
 			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 			PostgresDatabaseName: "confluence",
-			PostgresUsername:     deployer.SecretValueStatic([]byte("confluence")),
+			PostgresUsername:     deployer.SecretValueStatic("confluence"),
 			PostgresPassword:     c.DatabasePassword,
 		},
 		&deployer.DeploymentDeployer{

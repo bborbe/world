@@ -20,7 +20,7 @@ import (
 
 type Jira struct {
 	Context          k8s.Context
-	Domains           k8s.IngressHosts
+	Domains          k8s.IngressHosts
 	Version          docker.Tag
 	DatabasePassword deployer.SecretValue
 	SmtpPassword     deployer.SecretValue
@@ -75,10 +75,10 @@ func (j *Jira) jira() []world.Configuration {
 			Namespace:            "jira",
 			DataPath:             "/data/jira-postgres",
 			BackupPath:           "/data/jira-postgres-backup",
-			PostgresVersion:      "9.6-alpine",
-			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=POSIX.UTF-8 --lc-ctype=POSIX.UTF-8 -T",
+			PostgresVersion:      "10.13",
+			PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=C.UTF-8 --lc-ctype=C.UTF-8 -T template0",
 			PostgresDatabaseName: "jira",
-			PostgresUsername:     deployer.SecretValueStatic([]byte("jira")),
+			PostgresUsername:     deployer.SecretValueStatic("jira"),
 			PostgresPassword:     j.DatabasePassword,
 		},
 		&deployer.DeploymentDeployer{
