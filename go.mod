@@ -12,6 +12,7 @@ require (
 	github.com/foomo/htpasswd v0.0.0-20200116085101-e3a90e78da9c // indirect
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/google/addlicense v0.0.0-20200817051935-6f4cd4aacc89 // indirect
 	github.com/hetznercloud/hcloud-go v1.18.2
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3 // indirect
 	github.com/onsi/ginkgo v1.8.0

@@ -22,8 +22,10 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/bborbe/world/configuration"
+	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/secret"
 	"github.com/bborbe/world/pkg/world"
 )
@@ -33,6 +35,38 @@ func main() {
 	glog.CopyStandardLogTo("info")
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	_ = pflag.Set("logtostderr", "true")
+
+	ctx, cancel := createContext()
+	defer cancel()
+
+	if err := createRootCommand(ctx).Execute(); err != nil {
+		if glog.V(4) {
+			fmt.Fprintf(os.Stderr, "%+v", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "%v", err)
+		}
+		os.Exit(1)
+	}
+}
+
+func createRootCommand(ctx context.Context) *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:          "world",
+		Short:        "Manage the world",
+		SilenceUsage: true,
+	}
+	rootCmd.PersistentFlags().StringP("app", "a", "", "app name")
+	rootCmd.PersistentFlags().StringP("cluster", "c", "", "cluster name")
+	rootCmd.AddCommand(createApplyCommand(ctx))
+	rootCmd.AddCommand(createValidateCommand(ctx))
+	rootCmd.AddCommand(createYamlToStructCommand(ctx))
+	rootCmd.AddCommand(createSetDnsCommand(ctx))
+	return rootCmd
+}
+
+func createContext() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -50,18 +84,11 @@ func main() {
 			canceled = true
 		}
 	}()
+	return ctx, cancel
+}
 
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	_ = pflag.Set("logtostderr", "true")
-
-	rootCmd := &cobra.Command{
-		Use:          "world",
-		Short:        "Manage the world",
-		SilenceUsage: true,
-	}
-	rootCmd.PersistentFlags().StringP("app", "a", "", "app name")
-	rootCmd.PersistentFlags().StringP("cluster", "c", "", "cluster name")
-	rootCmd.AddCommand(&cobra.Command{
+func createApplyCommand(ctx context.Context) *cobra.Command {
+	return &cobra.Command{
 		Use:   "apply",
 		Short: "Apply the configuration to the world",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -78,8 +105,11 @@ func main() {
 			}
 			return nil
 		},
-	})
-	rootCmd.AddCommand(&cobra.Command{
+	}
+}
+
+func createValidateCommand(ctx context.Context) *cobra.Command {
+	return &cobra.Command{
 		Use:   "validate",
 		Short: "Validate the configuration of the world",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -92,7 +122,46 @@ func main() {
 			}
 			return nil
 		},
-	})
+	}
+}
+func createSetDnsCommand(ctx context.Context) *cobra.Command {
+	command := &cobra.Command{
+		Use:   "set-dns",
+		Short: "Set dns entry",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			hostname, err := cmd.Flags().GetString("host")
+			if err != nil {
+				return err
+			}
+			ip, err := cmd.Flags().GetString("ip")
+			if err != nil {
+				return err
+			}
+
+			dnsSever := &dns.Server{
+				Host:    "ns.rocketsource.de",
+				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
+				List: []dns.Entry{
+					{
+						Host: network.Host(hostname),
+						IP:   network.IPStatic(ip),
+					},
+				},
+			}
+
+			if err := dnsSever.Apply(ctx); err != nil {
+				glog.Fatal(err)
+			}
+			glog.V(0).Infof("done")
+			return nil
+		},
+	}
+	command.Flags().StringP("host", "h", "", "hostname")
+	command.Flags().StringP("ip", "i", "", "ip")
+	return command
+}
+
+func createYamlToStructCommand(context.Context) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "yaml-to-struct",
 		Short: "Convert the given yaml to world struct",
@@ -110,16 +179,7 @@ func main() {
 		},
 	}
 	command.Flags().StringP("file", "f", "", "filename")
-	rootCmd.AddCommand(command)
-
-	if err := rootCmd.Execute(); err != nil {
-		if glog.V(4) {
-			fmt.Fprintf(os.Stderr, "%+v", err)
-		} else {
-			fmt.Fprintf(os.Stderr, "%v", err)
-		}
-		os.Exit(1)
-	}
+	return command
 }
 
 func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error) {
