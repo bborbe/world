@@ -68,20 +68,27 @@ func createRootCommand(ctx context.Context) *cobra.Command {
 
 func createContext() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	go func() {
+		defer cancel()
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 		var canceled bool
-		for range ch {
-			if canceled {
-				fmt.Println("force exit")
-				os.Exit(1)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case _, ok := <-ch:
+				if !ok {
+					return
+				}
+				if canceled {
+					fmt.Println("force exit")
+					os.Exit(1)
+				}
+				fmt.Println("execution canceled")
+				cancel()
+				canceled = true
 			}
-			fmt.Println("execution canceled")
-			cancel()
-			canceled = true
 		}
 	}()
 	return ctx, cancel
@@ -95,14 +102,16 @@ func createApplyCommand(ctx context.Context) *cobra.Command {
 			flag.Parse()
 			runner, err := createRunner(ctx, cmd)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "create runner failed")
 			}
 			if err := runner.Validate(ctx); err != nil {
-				return err
+				return errors.Wrap(err, "validate failed")
 			}
+			glog.V(4).Infof("validate finished")
 			if err := runner.Apply(ctx); err != nil {
-				return err
+				return errors.Wrap(err, "apply failed")
 			}
+			glog.V(4).Infof("apply finished")
 			return nil
 		},
 	}
@@ -183,25 +192,25 @@ func createYamlToStructCommand(context.Context) *cobra.Command {
 }
 
 func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error) {
-
 	teamvaultConfigPath := teamvault.TeamvaultConfigPath("~/.teamvault.json")
 	teamvaultConfigPath, err := teamvaultConfigPath.NormalizePath()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "normalize teamvaul path failed")
 	}
 	teamvaultConfig, err := teamvaultConfigPath.Parse()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parse teamvault config failed")
 	}
-
 	appName, err := cmd.Flags().GetString("app")
 	if err != nil {
 		glog.V(2).Infof("get parameter app failed: %v", err)
 	}
+	glog.V(4).Infof("flag app: %s", appName)
 	clusterName, err := cmd.Flags().GetString("cluster")
 	if err != nil {
 		glog.V(2).Infof("get parameter cluster failed: %v", err)
 	}
+	glog.V(4).Infof("flag cluster: %s", clusterName)
 
 	builder := world.Builder{
 		Configuration: &configuration.World{
