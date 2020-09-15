@@ -311,8 +311,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 	sun := Sun
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			//IP: sun.IP,
-			IP:   network.IPStatic("87.181.145.72"),
+			IP: sun.IP,
 			Port: 22,
 		},
 		User:           "bborbe",
