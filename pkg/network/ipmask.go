@@ -7,6 +7,7 @@ package network
 import (
 	"context"
 	"net"
+	"strconv"
 )
 
 type IPMask interface {
@@ -21,7 +22,11 @@ func (i MaskStatic) IPMask(ctx context.Context) (net.IPMask, error) {
 }
 
 func (i MaskStatic) String() string {
-	return string(i)
+	return strconv.Itoa(i.Int())
+}
+
+func (i MaskStatic) Int() int {
+	return int(i)
 }
 
 func (i MaskStatic) Validate(ctx context.Context) error {
