@@ -615,7 +615,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(ConfluenceHostname),
 			},
-			Version:          "7.7.3",
+			Version:          "7.6.2",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
@@ -637,7 +637,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"poste": &app.Poste{
 			Context:      k8s.Context(netcup.Name),
-			PosteVersion: "2.2.19", // https://hub.docker.com/r/analogic/poste.io/tags
+			PosteVersion: "2.2.21", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(MailHostname),
 			},
