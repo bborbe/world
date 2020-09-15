@@ -18,11 +18,12 @@ require (
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.9.0
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/common v0.13.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
-	golang.org/x/sys v0.0.0-20200722175500-76b94024e4b6 // indirect
+	golang.org/x/sys v0.0.0-20200821140526-fda516888d29 // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/client-go v9.0.0+incompatible
