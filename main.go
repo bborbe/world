@@ -165,7 +165,7 @@ func createSetDnsCommand(ctx context.Context) *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringP("host", "h", "", "hostname")
+	command.Flags().StringP("host", "", "", "hostname")
 	command.Flags().StringP("ip", "i", "", "ip")
 	return command
 }
