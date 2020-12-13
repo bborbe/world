@@ -636,7 +636,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"poste": &app.Poste{
 			Context:      k8s.Context(netcup.Name),
-			PosteVersion: "2.2.25", // https://hub.docker.com/r/analogic/poste.io/tags
+			PosteVersion: "2.2.26", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(MailHostname),
 			},
