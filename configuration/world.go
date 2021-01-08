@@ -160,15 +160,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		"cert-manager": &cert_manager.App{
 			Context: k8sContext,
 		},
-		"ip": &app.Ip{
-			Context: k8sContext,
-			IP:      ip,
-			Tag:     "1.1.0",
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(IPHostname),
-			},
-			Requirements: buildDNSRequirements(ip, IPHostname),
-		},
 	}
 }
 
@@ -515,73 +506,75 @@ func (w *World) sun() map[AppName]world.Configuration {
 
 func (w *World) netcup() map[AppName]world.Configuration {
 	netcup := Netcup
+	ip := netcup.IP
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			IP:   netcup.IP,
+			IP:   ip,
 			Port: 22,
 		},
 		User:           ssh.User("bborbe"),
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
+	k8sContext := k8s.Context(netcup.Name)
 	return map[AppName]world.Configuration{
 		"cluster": &cluster.Netcup{
 			SSH:     ssh,
-			Context: k8s.Context(netcup.Name),
-			IP:      netcup.IP,
+			Context: k8sContext,
+			IP:      ip,
 		},
 		"cluster-admin": &service.ClusterAdmin{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 		},
 		"calico": &service.Calico{
-			Context:   k8s.Context(netcup.Name),
-			ClusterIP: netcup.IP,
+			Context:   k8sContext,
+			ClusterIP: ip,
 		},
 		"hostpath": &app.HostPathProvisioner{
-			Context:             k8s.Context(netcup.Name),
+			Context:             k8sContext,
 			HostPath:            "/data/hostpath-provisioner",
 			DefaultStorageClass: true,
 		},
 		"dns": &app.CoreDns{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 		},
 		"ingress-nginx": &ingress_nginx.App{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 		},
 		"cert-manager": &cert_manager.App{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 		},
 		"debug": &app.Debug{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(DebugHostname.String()),
 			},
-			Requirements: buildDNSRequirements(netcup.IP, DebugHostname),
+			Requirements: buildDNSRequirements(ip, DebugHostname),
 		},
 		"grafana": &app.Grafana{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(GrafanaHostname.String()),
 			},
 			LdapUsername: w.TeamvaultSecrets.Username("MOPMLG"),
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
-			Requirements: buildDNSRequirements(netcup.IP, GrafanaHostname),
+			Requirements: buildDNSRequirements(ip, GrafanaHostname),
 		},
 		"prometheus": &app.Prometheus{
-			Context:             k8s.Context(netcup.Name),
+			Context:             k8sContext,
 			PrometheusDomains:   k8s.IngressHosts{k8s.IngressHost(PrometheusHostname)},
 			AlertmanagerDomains: k8s.IngressHosts{k8s.IngressHost(AlertmanagerHostname)},
 			Secret:              w.TeamvaultSecrets.Password("aqMr6w"),
 			LdapUsername:        w.TeamvaultSecrets.Username("MOPMLG"),
 			LdapPassword:        w.TeamvaultSecrets.Password("MOPMLG"),
-			Requirements:        buildDNSRequirements(netcup.IP, PrometheusHostname, AlertmanagerHostname),
+			Requirements:        buildDNSRequirements(ip, PrometheusHostname, AlertmanagerHostname),
 		},
 		"ldap": &app.Ldap{
-			Context:      k8s.Context(netcup.Name),
+			Context:      k8sContext,
 			Tag:          "1.3.0",
 			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 		},
 		"teamvault": &app.Teamvault{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(TeamvaultHostname.String()),
 			},
@@ -592,10 +585,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			SecretKey:        w.TeamvaultSecrets.Password("NqA68w"),
 			FernetKey:        w.TeamvaultSecrets.Password("5wYZ2O"),
 			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
-			Requirements:     buildDNSRequirements(netcup.IP, TeamvaultHostname),
+			Requirements:     buildDNSRequirements(ip, TeamvaultHostname),
 		},
 		"monitoring": &app.Monitoring{
-			Context:         k8s.Context(netcup.Name),
+			Context:         k8sContext,
 			GitSyncPassword: w.TeamvaultSecrets.Password("YLb4wV"),
 			SmtpPassword:    w.TeamvaultSecrets.Password("QL3VQO"),
 			Configs: []app.MonitoringConfig{
@@ -612,7 +605,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			},
 		},
 		"confluence": &app.Confluence{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(ConfluenceHostname),
 			},
@@ -620,10 +613,10 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
-			Requirements:     buildDNSRequirements(netcup.IP, ConfluenceHostname),
+			Requirements:     buildDNSRequirements(ip, ConfluenceHostname),
 		},
 		"jira": &app.Jira{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(JiraHostname),
 			},
@@ -631,29 +624,29 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
-			Requirements:     buildDNSRequirements(netcup.IP, JiraHostname),
+			Requirements:     buildDNSRequirements(ip, JiraHostname),
 		},
 		"backup": &app.BackupServer{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 		},
 		"poste": &app.Poste{
-			Context:      k8s.Context(netcup.Name),
+			Context:      k8sContext,
 			PosteVersion: "2.2.26", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(MailHostname),
 			},
-			Requirements: buildDNSRequirements(netcup.IP, MailHostname),
+			Requirements: buildDNSRequirements(ip, MailHostname),
 		},
 		"maven": &app.Maven{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(MavenHostname),
 			},
 			MavenRepoVersion: "1.0.0",
-			Requirements:     buildDNSRequirements(netcup.IP, MavenHostname),
+			Requirements:     buildDNSRequirements(ip, MavenHostname),
 		},
 		"portfolio": &app.Portfolio{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				"benjamin-borbe.de",
 				"www.benjamin-borbe.de",
@@ -663,7 +656,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			OverlayServerVersion: "1.0.0",
 			GitSyncPassword:      w.TeamvaultSecrets.Password("YLb4wV"),
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"benjamin-borbe.de",
 				"www.benjamin-borbe.de",
 				"benjaminborbe.de",
@@ -671,59 +664,59 @@ func (w *World) netcup() map[AppName]world.Configuration {
 			),
 		},
 		"webdav": &app.Webdav{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				"webdav.benjamin-borbe.de",
 			},
 			Password: w.TeamvaultSecrets.Password("VOzvAO"),
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"webdav.benjamin-borbe.de",
 			),
 		},
 		"bind": &app.Bind{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 		},
 		"download": &app.Download{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				"dl.benjamin-borbe.de",
 				"download.benjamin-borbe.de",
 			},
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"dl.benjamin-borbe.de",
 				"download.benjamin-borbe.de",
 			),
 		},
 		"mumble": &app.Mumble{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Tag:     "1.1.1",
 		},
 		"password": &app.Password{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Tag:     "1.1.0",
 			Domains: k8s.IngressHosts{
 				"password.benjamin-borbe.de",
 			},
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"password.benjamin-borbe.de",
 			),
 		},
 		"now": &app.Now{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Tag:     "1.3.0",
 			Domains: k8s.IngressHosts{
 				"now.benjamin-borbe.de",
 			},
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"now.benjamin-borbe.de",
 			),
 		},
 		"helloworld": &app.HelloWorld{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Tag:     "1.0.1",
 			Domains: k8s.IngressHosts{
 				"rocketsource.de",
@@ -732,32 +725,41 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				"www.rocketnews.de",
 			},
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"rocketnews.de",
 				"www.rocketnews.de",
 			),
 		},
 		"slideshow": &app.Slideshow{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				"slideshow.benjamin-borbe.de",
 			},
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"slideshow.benjamin-borbe.de",
 			),
 		},
 		"kickstart": &app.Kickstart{
-			Context: k8s.Context(netcup.Name),
+			Context: k8sContext,
 			Domains: k8s.IngressHosts{
 				"kickstart.benjamin-borbe.de",
 				"ks.benjamin-borbe.de",
 			},
 			Requirements: buildDNSRequirements(
-				netcup.IP,
+				ip,
 				"kickstart.benjamin-borbe.de",
 				"ks.benjamin-borbe.de",
 			),
+		},
+		"ip": &app.Ip{
+			Context: k8sContext,
+			IP:      ip,
+			Tag:     "1.1.0",
+			Domains: k8s.IngressHosts{
+				k8s.IngressHost(IPHostname),
+			},
+			Requirements: buildDNSRequirements(ip, IPHostname),
 		},
 	}
 }
