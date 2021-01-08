@@ -99,7 +99,8 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 
 	openvpnClients := []Server{
 		Sun,
-		Rasp,
+		Rasp3,
+		Rasp4,
 		Fire,
 		Nuke,
 		Co2hz,
@@ -311,7 +312,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 	sun := Sun
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			IP: sun.IP,
+			IP:   sun.IP,
 			Port: 22,
 		},
 		User:           "bborbe",
@@ -347,7 +348,8 @@ func (w *World) sun() map[AppName]world.Configuration {
 			Routes: BuildRoutes(
 				Co2hz,
 				Co2wz,
-				Rasp,
+				Rasp3,
+				Rasp4,
 				Fire,
 				Nuke,
 			),
@@ -761,7 +763,7 @@ func (w *World) netcup() map[AppName]world.Configuration {
 }
 
 func (w *World) rasp() map[AppName]world.Configuration {
-	rasp := Rasp
+	rasp := Rasp3
 	return map[AppName]world.Configuration{
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH: &ssh.SSH{
