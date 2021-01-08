@@ -54,10 +54,16 @@ var Co2wz = Server{
 	VpnIP: network.IPStatic("172.16.90.24"),
 }
 
-var Rasp = Server{
-	Name:  "rasp",
+var Rasp3 = Server{
+	Name:  "rasp3",
 	IP:    network.IPStatic("192.168.178.2"),
 	VpnIP: network.IPStatic("172.16.90.20"),
+}
+
+var Rasp4 = Server{
+	Name:  "rasp4",
+	IP:    network.IPStatic("192.168.178.8"),
+	VpnIP: network.IPStatic("172.16.90.29"),
 }
 
 var Star = Server{
