@@ -71,7 +71,8 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 		"nuke":      w.nuke(),
 		"hetzner-1": w.hetzner1(),
 		"nova":      w.nova(),
-		"rasp":      w.rasp(),
+		"rasp3":     w.rasp3(),
+		"rasp4":     w.rasp4(),
 		"co2hz":     w.co2hz(),
 		"co2wz":     w.co2wz(),
 		"star":      w.star(),
@@ -394,7 +395,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 		},
 		"mqtt-kafka-connector-co2mon": &app.MqttKafkaConnector{
 			Context:      k8s.Context(sun.Name),
-			MqttBroker:   "tcp://rasp.hm.benjamin-borbe.de:1883",
+			MqttBroker:   "tcp://rasp3.hm.benjamin-borbe.de:1883",
 			MqttUser:     w.TeamvaultSecrets.Username("9qNx3O"),
 			MqttPassword: w.TeamvaultSecrets.Password("9qNx3O"),
 			MqttTopic:    "co2mon",
@@ -764,8 +765,30 @@ func (w *World) netcup() map[AppName]world.Configuration {
 	}
 }
 
-func (w *World) rasp() map[AppName]world.Configuration {
+func (w *World) rasp3() map[AppName]world.Configuration {
 	rasp := Rasp3
+	return map[AppName]world.Configuration{
+		"openvpn-client": &openvpn.RemoteClient{
+			SSH: &ssh.SSH{
+				Host: ssh.Host{
+					IP:   rasp.IP,
+					Port: 22,
+				},
+				User:           "bborbe",
+				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+			},
+			ClientName:    openvpn.ClientName(rasp.Name),
+			ServerName:    HetznerVPNServer.ServerName,
+			ServerAddress: HetznerVPNServer.ServerAddress,
+			ServerPort:    HetznerVPNServer.Port,
+			Routes:        BuildRoutes(),
+			Device:        openvpn.Tun,
+		},
+	}
+}
+
+func (w *World) rasp4() map[AppName]world.Configuration {
+	rasp := Rasp4
 	return map[AppName]world.Configuration{
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH: &ssh.SSH{
