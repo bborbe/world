@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/bborbe/world/configuration/build"
-	"github.com/bborbe/world/configuration/component"
 	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"
@@ -61,7 +60,7 @@ func (m *Metabase) metabase() []world.Configuration {
 				},
 			},
 		},
-		&component.Postgres{
+		&Postgres{
 			Context:              m.Context,
 			Namespace:            "metabase",
 			DataPath:             "/data/metabase-postgres",

@@ -34,10 +34,10 @@ func (k *Kickstart) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (p *Kickstart) Children() []world.Configuration {
+func (k *Kickstart) Children() []world.Configuration {
 	var result []world.Configuration
-	result = append(result, p.Requirements...)
-	result = append(result, p.kickstart()...)
+	result = append(result, k.Requirements...)
+	result = append(result, k.kickstart()...)
 	return result
 }
 

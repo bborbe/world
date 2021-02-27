@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/bborbe/world/pkg/network"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -27,6 +29,14 @@ func (m Memory) Validate(ctx context.Context) error {
 		return errors.New("Memory empty")
 	}
 	return nil
+}
+
+func (m Memory) String() string {
+	return strconv.Itoa(m.Int())
+}
+
+func (m Memory) Int() int {
+	return int(m)
 }
 
 type Docker struct {
@@ -66,22 +76,52 @@ func (d *Docker) Validate(ctx context.Context) error {
 	)
 }
 
+type Port struct {
+	HostPort   network.Port
+	DockerPort network.Port
+}
+
+func (v Port) String() string {
+	return fmt.Sprintf("%v:%v", v.HostPort, v.DockerPort)
+}
+
+type Volume struct {
+	HostPath   string
+	DockerPath string
+	Opts       string
+}
+
+func (v Volume) String() string {
+	buf := bytes.Buffer{}
+	buf.WriteString(v.HostPath)
+	buf.WriteString(":")
+	buf.WriteString(v.DockerPath)
+	if v.Opts != "" {
+		buf.WriteString(":")
+		buf.WriteString(v.Opts)
+	}
+	return buf.String()
+}
+
 type DockerServiceContent struct {
-	Name            remote.ServiceName
-	Ports           []int
-	Volumes         []string
-	Image           docker.Image
-	Command         string
-	Args            []string
-	Memory          Memory
-	HostNet         bool
-	Privileged      bool
-	HostPid         bool
-	Requires        []remote.ServiceName
-	Before          []remote.ServiceName
-	After           []remote.ServiceName
-	TimeoutStartSec string
-	TimeoutStopSec  string
+	After            []remote.ServiceName
+	Args             []string
+	Before           []remote.ServiceName
+	Command          string
+	EnvironmentFiles []string
+	HostNet          bool
+	HostPid          bool
+	Image            docker.Image
+	Memory           Memory
+	Name             remote.ServiceName
+	Ports            []Port
+	Privileged       bool
+	Requires         []remote.ServiceName
+	TimeoutStartSec  string
+	TimeoutStopSec   string
+	Volumes          []Volume
+	UID              int
+	GID              int
 }
 
 func (d *DockerServiceContent) Content(ctx context.Context) ([]byte, error) {
@@ -123,12 +163,27 @@ func (d *DockerServiceContent) Content(ctx context.Context) ([]byte, error) {
 	if d.HostPid {
 		fmt.Fprintf(b, "--pid=host \\\n")
 	}
+	for _, file := range d.EnvironmentFiles {
+		fmt.Fprintf(b, "--env-file %s \\\n", file)
+	}
 	for _, port := range d.Ports {
-		fmt.Fprintf(b, "-p %d:%d \\\n", port, port)
+		dockerPort, err := port.DockerPort.Port(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get docker port failed")
+		}
+		hostPort, err := port.HostPort.Port(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get host port failed")
+		}
+		fmt.Fprintf(b, "-p %d:%d \\\n", hostPort, dockerPort)
 	}
 	for _, volume := range d.Volumes {
-		fmt.Fprintf(b, "--volume=%s \\\n", volume)
+		fmt.Fprintf(b, "--volume=%s \\\n", volume.String())
 	}
+	if d.UID > 0 && d.GID > 0 {
+		fmt.Fprintf(b, "--user %d:%d \\\n", d.UID, d.GID)
+	}
+
 	fmt.Fprintf(b, "--name %s \\\n", d.Name)
 	fmt.Fprintf(b, "%s \\\n", d.Image.String())
 	fmt.Fprintf(b, "%s \\\n", d.Command)

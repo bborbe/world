@@ -6,6 +6,7 @@ package network
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -23,6 +24,10 @@ func (i PortStatic) Port(ctx context.Context) (int, error) {
 
 func (i PortStatic) Int() int {
 	return int(i)
+}
+
+func (i PortStatic) String() string {
+	return strconv.Itoa(i.Int())
 }
 
 func (i PortStatic) Validate(ctx context.Context) error {

@@ -6,6 +6,7 @@ package service_test
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/network"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,12 +17,31 @@ import (
 )
 
 var _ = Describe("Docker", func() {
+	var ctx context.Context
+	BeforeEach(func() {
+		ctx = context.Background()
+	})
 	It("generate systemd service", func() {
 		service := service.DockerServiceContent{
-			Name:    "etcd",
-			Memory:  1024,
-			Ports:   []int{2379, 2380},
-			Volumes: []string{"/var/lib/etcd:/var/lib/etcd"},
+			Name:   "etcd",
+			Memory: 1024,
+			Ports: []service.Port{
+				{
+					HostPort:   network.PortStatic(2379),
+					DockerPort: network.PortStatic(2379),
+				},
+				{
+					HostPort:   network.PortStatic(2380),
+					DockerPort: network.PortStatic(2380),
+				},
+			},
+			Volumes: []service.Volume{
+				{
+					HostPath:   "/var/lib/etcd",
+					DockerPath: "/var/lib/etcd",
+					Opts:       "",
+				},
+			},
 			Image: docker.Image{
 				Repository: "quay.io/coreos/etcd",
 				Tag:        "v3.3.1",
@@ -50,7 +70,7 @@ var _ = Describe("Docker", func() {
 			TimeoutStartSec: "30s",
 			TimeoutStopSec:  "10s",
 		}
-		bytes, err := service.Content(context.Background())
+		bytes, err := service.Content(ctx)
 		Expect(err).To(BeNil())
 		Expect(string(bytes)).To(Equal(`[Unit]
 Description=etcd

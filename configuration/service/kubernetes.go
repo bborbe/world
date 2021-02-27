@@ -20,7 +20,6 @@ type Kubernetes struct {
 	Context     k8s.Context
 	ClusterIP   network.IP
 	DisableRBAC bool
-	DisableCNI  bool
 	ResolvConf  string
 	Version     docker.Tag
 }
@@ -40,7 +39,6 @@ func (k *Kubernetes) Children() []world.Configuration {
 			Context:     k.Context,
 			ClusterIP:   k.ClusterIP,
 			DisableRBAC: k.DisableRBAC,
-			DisableCNI:  k.DisableCNI,
 			ResolvConf:  k.ResolvConf,
 			LogLevel:    0,
 		},

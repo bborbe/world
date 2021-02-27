@@ -51,15 +51,16 @@ func (fake *Configuration) Applier() (world.Applier, error) {
 	ret, specificReturn := fake.applierReturnsOnCall[len(fake.applierArgsForCall)]
 	fake.applierArgsForCall = append(fake.applierArgsForCall, struct {
 	}{})
+	stub := fake.ApplierStub
+	fakeReturns := fake.applierReturns
 	fake.recordInvocation("Applier", []interface{}{})
 	fake.applierMutex.Unlock()
-	if fake.ApplierStub != nil {
-		return fake.ApplierStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.applierReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -106,15 +107,16 @@ func (fake *Configuration) Children() []world.Configuration {
 	ret, specificReturn := fake.childrenReturnsOnCall[len(fake.childrenArgsForCall)]
 	fake.childrenArgsForCall = append(fake.childrenArgsForCall, struct {
 	}{})
+	stub := fake.ChildrenStub
+	fakeReturns := fake.childrenReturns
 	fake.recordInvocation("Children", []interface{}{})
 	fake.childrenMutex.Unlock()
-	if fake.ChildrenStub != nil {
-		return fake.ChildrenStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.childrenReturns
 	return fakeReturns.result1
 }
 
@@ -159,15 +161,16 @@ func (fake *Configuration) Validate(arg1 context.Context) error {
 	fake.validateArgsForCall = append(fake.validateArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
+	stub := fake.ValidateStub
+	fakeReturns := fake.validateReturns
 	fake.recordInvocation("Validate", []interface{}{arg1})
 	fake.validateMutex.Unlock()
-	if fake.ValidateStub != nil {
-		return fake.ValidateStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.validateReturns
 	return fakeReturns.result1
 }
 

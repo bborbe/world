@@ -43,13 +43,13 @@ func (c *ClusterAdmin) Children() []world.Configuration {
 		},
 	}
 }
-func (k *ClusterAdmin) Applier() (world.Applier, error) {
+func (c *ClusterAdmin) Applier() (world.Applier, error) {
 	return nil, nil
 }
 
-func (k *ClusterAdmin) Validate(ctx context.Context) error {
+func (c *ClusterAdmin) Validate(ctx context.Context) error {
 	return validation.Validate(
 		ctx,
-		k.Context,
+		c.Context,
 	)
 }

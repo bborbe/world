@@ -12,6 +12,10 @@ import (
 
 type ServiceName string
 
+func (s ServiceName) String() string {
+	return string(s)
+}
+
 func (h ServiceName) Validate(ctx context.Context) error {
 	if h == "" {
 		return errors.New("ServiceName missing")

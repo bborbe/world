@@ -23,7 +23,6 @@ type Nuke struct {
 	Context     k8s.Context
 	ClusterIP   network.IP
 	DisableRBAC bool
-	DisableCNI  bool
 	Version     docker.Tag
 }
 
@@ -54,7 +53,6 @@ func (n *Nuke) Children() []world.Configuration {
 			Context:     n.Context,
 			ClusterIP:   n.ClusterIP,
 			DisableRBAC: n.DisableRBAC,
-			DisableCNI:  n.DisableCNI,
 			Version:     n.Version,
 		},
 	}

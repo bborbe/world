@@ -14,6 +14,12 @@ type Validator interface {
 	Validate(ctx context.Context) error
 }
 
+type ValidatorFunc func(ctx context.Context) error
+
+func (v ValidatorFunc) Validate(ctx context.Context) error {
+	return v(ctx)
+}
+
 func Validate(ctx context.Context, validators ...Validator) error {
 	for _, v := range validators {
 		if v == nil {

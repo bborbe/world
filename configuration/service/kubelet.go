@@ -43,7 +43,6 @@ type Kubelet struct {
 	Context     k8s.Context
 	ClusterIP   network.IP
 	DisableRBAC bool
-	DisableCNI  bool
 	ResolvConf  string
 	LogLevel    int
 }
@@ -204,22 +203,50 @@ func (k *Kubelet) Children() []world.Configuration {
 				if k.ResolvConf != "" {
 					args = append(args, fmt.Sprintf("--resolv-conf=%s", k.ResolvConf))
 				}
-				if !k.DisableCNI {
-					args = append(args, "--network-plugin=cni", "--cni-conf-dir=/etc/cni/net.d", "--cni-bin-dir=/opt/cni/bin")
-				}
-				volumes := []string{
-					"/:/rootfs:ro",
-					"/sys:/sys:ro",
-					"/var/log/:/var/log:rw",
-					"/var/lib/docker/:/var/lib/docker:rw",
-					"/var/lib/kubelet/:/var/lib/kubelet:rw,rslave",
-					"/run:/run:rw",
-					"/var/run:/var/run:rw",
-					"/etc/kubernetes:/etc/kubernetes",
-					"/srv/kubernetes:/srv/kubernetes",
-				}
-				if !k.DisableCNI {
-					volumes = append(volumes, "/etc/cni/net.d:/etc/cni/net.d", "/opt/cni/bin:/opt/cni/bin", "/var/lib/calico:/var/lib/calico")
+				volumes := []Volume{
+					{
+						HostPath:   "/",
+						DockerPath: "/rootfs",
+						Opts:       "ro",
+					},
+					{
+						HostPath:   "/sys",
+						DockerPath: "/sys",
+						Opts:       "ro",
+					},
+					{
+						HostPath:   "/var/log/",
+						DockerPath: "/var/log",
+						Opts:       "rw",
+					},
+					{
+						HostPath:   "/var/lib/docker/",
+						DockerPath: "/var/lib/docker",
+						Opts:       "rw",
+					},
+					{
+						HostPath:   "/var/lib/kubelet/",
+						DockerPath: "/var/lib/kubelet",
+						Opts:       "rw,rslave",
+					},
+					{
+						HostPath:   "/run",
+						DockerPath: "/run",
+						Opts:       "rw",
+					},
+					{
+						HostPath:   "/var/run",
+						DockerPath: "/var/run",
+						Opts:       "rw",
+					},
+					{
+						HostPath:   "/etc/kubernetes",
+						DockerPath: "/etc/kubernetes",
+					},
+					{
+						HostPath:   "/srv/kubernetes",
+						DockerPath: "/srv/kubernetes",
+					},
 				}
 				return &DockerServiceContent{
 					Name:       "kubelet",

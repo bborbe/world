@@ -6,6 +6,7 @@ package configuration
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bborbe/world/configuration/app"
 	"github.com/bborbe/world/configuration/backup"
@@ -14,7 +15,6 @@ import (
 	"github.com/bborbe/world/configuration/ingress_nginx"
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
-	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/hetzner"
 	"github.com/bborbe/world/pkg/k8s"
 	"github.com/bborbe/world/pkg/network"
@@ -80,14 +80,12 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 }
 
 func (w *World) hetzner1() map[AppName]world.Configuration {
-	k8sContext := k8s.Context("hetzner-1")
 	apiKey := w.TeamvaultSecrets.Password("kLolmq")
 	ip := &hetzner.IP{
 		Client: w.HetznerClient,
 		ApiKey: apiKey,
-		Name:   k8sContext,
+		Name:   "hetzner-1",
 	}
-
 	user := ssh.User("bborbe")
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
@@ -97,7 +95,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		User:           user,
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
-
 	openvpnClients := []Server{
 		Sun,
 		Rasp3,
@@ -109,15 +106,9 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		Nova,
 		Star,
 	}
-
 	return map[AppName]world.Configuration{
-		"cluster": &cluster.Hetzner{
-			Context:    k8sContext,
-			ApiKey:     apiKey,
-			IP:         ip,
-			ServerType: "cx11",
-			User:       user,
-			SSH:        ssh,
+		"ubuntu-unattended-upgrades": &service.UbuntuUnattendedUpgrades{
+			SSH: ssh,
 		},
 		"openvpn-net": &openvpn.Server{
 			SSH:         ssh,
@@ -128,38 +119,48 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			ClientIPs:   BuildClientIPs(openvpnClients...),
 			Device:      openvpn.Tun,
 		},
-		"cluster-admin": &service.ClusterAdmin{
-			Context: k8sContext,
+		"nginx": &service.Nginx{
+			SSH: ssh,
 		},
-		"calico": &service.Calico{
-			Context:   k8sContext,
-			ClusterIP: ip,
+		"ip-proxy": &service.NginxProxy{
+			SSH:          ssh,
+			Domain:       IPHostname,
+			Target:       "http://localhost:8080",
+			Requirements: buildDNSRequirements(ip, IPHostname),
 		},
-		"dns": &app.CoreDns{
-			Context: k8sContext,
+		"teamvault-proxy": &service.NginxProxy{
+			SSH:          ssh,
+			Domain:       TeamvaultHostname,
+			Target:       fmt.Sprintf("http://%s:8000", Sun.VpnIP),
+			Requirements: buildDNSRequirements(ip, TeamvaultHostname),
 		},
-		"kubeless": world.NewConfiguraionBuilder().WithApplier(
-			&dns.Server{
-				Host:    "ns.rocketsource.de",
-				KeyPath: "/Users/bborbe/.dns/home.benjamin-borbe.de.key",
-				List: []dns.Entry{
-					{
-						Host: "kubeless.hetzner-1.benjamin-borbe.de",
-						IP:   ip,
-					},
-				},
-			},
-		),
-		"hostpath": &app.HostPathProvisioner{
-			Context:             k8sContext,
-			HostPath:            "/data",
-			DefaultStorageClass: true,
+		"confluence-proxy": &service.NginxProxy{
+			SSH:          ssh,
+			Domain:       ConfluenceHostname,
+			Target:       fmt.Sprintf("http://%s:8002", Sun.VpnIP),
+			Requirements: buildDNSRequirements(ip, ConfluenceHostname),
 		},
-		"ingress-nginx": &ingress_nginx.App{
-			Context: k8sContext,
+		"webdav-proxy": &service.NginxProxy{
+			SSH:          ssh,
+			Domain:       WebdavHostname,
+			Target:       fmt.Sprintf("http://%s:8004", Sun.VpnIP),
+			Requirements: buildDNSRequirements(ip, WebdavHostname),
 		},
-		"cert-manager": &cert_manager.App{
-			Context: k8sContext,
+		"ip": &service.Ip{
+			SSH: ssh,
+			Tag: "1.1.0",
+			Port: network.PortStatic(8000),
+		},
+		"poste-proxy": &service.NginxProxy{
+			SSH:          ssh,
+			Domain:       MailHostname,
+			Target:       "http://localhost:8001",
+			Requirements: buildDNSRequirements(ip, MailHostname),
+		},
+		"poste": &service.Poste{
+			SSH:          ssh,
+			PosteVersion: "2.2.29", // https://hub.docker.com/r/analogic/poste.io/tags
+			Port:         network.PortStatic(8001),
 		},
 	}
 }
@@ -215,10 +216,6 @@ func (w *World) fire() map[AppName]world.Configuration {
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8s.Context(fire.Name),
 		},
-		"calico": &service.Calico{
-			Context:   k8s.Context(fire.Name),
-			ClusterIP: fire.IP,
-		},
 		"dns": &app.CoreDns{
 			Context: k8s.Context(fire.Name),
 		},
@@ -268,10 +265,6 @@ func (w *World) nuke() map[AppName]world.Configuration {
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8s.Context(nuke.Name),
 		},
-		"calico": &service.Calico{
-			Context:   k8s.Context(nuke.Name),
-			ClusterIP: nuke.IP,
-		},
 		"dns": &app.CoreDns{
 			Context: k8s.Context(nuke.Name),
 		},
@@ -302,9 +295,10 @@ func (w *World) nuke() map[AppName]world.Configuration {
 
 func (w *World) sun() map[AppName]world.Configuration {
 	sun := Sun
+	ip := sun.IP
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			IP:   sun.IP,
+			IP:   ip,
 			Port: 22,
 		},
 		User:           "bborbe",
@@ -314,14 +308,10 @@ func (w *World) sun() map[AppName]world.Configuration {
 		"cluster": &cluster.Sun{
 			SSH:       ssh,
 			Context:   k8s.Context(sun.Name),
-			ClusterIP: sun.IP,
+			ClusterIP: ip,
 		},
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8s.Context(sun.Name),
-		},
-		"calico": &service.Calico{
-			Context:   k8s.Context(sun.Name),
-			ClusterIP: sun.IP,
 		},
 		"dns": &app.CoreDns{
 			Context: k8s.Context(sun.Name),
@@ -402,105 +392,38 @@ func (w *World) sun() map[AppName]world.Configuration {
 			KafkaBrokers: []string{"kafka-cp-kafka-headless.kafka.svc.cluster.local:9092"},
 			KafkaTopic:   "co2mon",
 		},
-		"metabase": &app.Metabase{
-			Context:          k8s.Context(sun.Name),
-			Domain:           "metabase.benjamin-borbe.de",
-			DatabasePassword: w.TeamvaultSecrets.Password("dwkWAw"),
-			Requirements:     buildDNSRequirements(sun.IP, MetabaseHostname),
+		"ldap": &service.Ldap{
+			SSH:          ssh,
+			Tag:          "1.3.0",
+			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
 		},
-		"kafka": &app.Kafka{
-			AccessMode:        "ReadWriteMany",
-			Context:           k8s.Context(sun.Name),
-			DisableConnect:    true,
-			DisableRest:       true,
-			KafkaReplicas:     1,
-			KafkaStorage:      "5Gi",
-			StorageClass:      "hostpath",
-			ZookeeperReplicas: 1,
-			ZookeeperStorage:  "5Gi",
-			Version:           "5.3.1", // https://hub.docker.com/r/confluentinc/cp-kafka/tags
+		"teamvault": &service.Teamvault{
+			SSH:              ssh,
+			AppPort:          network.PortStatic(8000),
+			DBPort:           network.PortStatic(8001),
+			Domain:           "teamvault.benjamin-borbe.de",
+			DatabasePassword: w.TeamvaultSecrets.Password("VO0W5w"),
+			SmtpUsername:     w.TeamvaultSecrets.Username("3OlNaq"),
+			SmtpPassword:     w.TeamvaultSecrets.Password("3OlNaq"),
+			LdapPassword:     w.TeamvaultSecrets.Password("MOPMLG"),
+			SecretKey:        w.TeamvaultSecrets.Password("NqA68w"),
+			FernetKey:        w.TeamvaultSecrets.Password("5wYZ2O"),
+			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
 		},
-		"kafka-status": &app.KafkaStatus{
-			Context:      k8s.Context(sun.Name),
-			Replicas:     1,
-			Domain:       "kafka-status.benjamin-borbe.de",
-			Requirements: buildDNSRequirements(sun.IP, KafkaStatus),
+		"confluence": &service.Confluence{
+			SSH:              ssh,
+			AppPort:          network.PortStatic(8002),
+			DBPort:           network.PortStatic(8003),
+			Domain:           ConfluenceHostname,
+			Version:          "7.11.1",
+			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
+			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
+			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
 		},
-		"kafka-latest-versions": &app.KafkaLatestVersions{
-			Context:      k8s.Context(sun.Name),
-			Replicas:     2,
-			AccessMode:   "ReadWriteMany",
-			StorageClass: "hostpath",
-			Domain:       "versions.benjamin-borbe.de",
-			Requirements: buildDNSRequirements(sun.IP, VersionsHostname),
-		},
-		"kafka-update-available": &app.KafkaUpdateAvailable{
-			Context:      k8s.Context(sun.Name),
-			Replicas:     2,
-			AccessMode:   "ReadWriteMany",
-			StorageClass: "hostpath",
-			Domain:       "updates.benjamin-borbe.de",
-			Requirements: buildDNSRequirements(sun.IP, UpdatesHostname),
-		},
-		"kafka-k8s-version-collector": &app.KafkaK8sVersionCollector{
-			Context: k8s.Context(sun.Name),
-		},
-		"kafka-dockerhub-version-collector": &app.KafkaDockerhubVersionCollector{
-			Context: k8s.Context(sun.Name),
-			Repositories: []docker.Repository{
-				"confluentinc/cp-kafka-connect",
-				"confluentinc/cp-kafka-rest",
-				"confluentinc/cp-kafka-rest",
-				"confluentinc/cp-kafka",
-				"confluentinc/cp-ksql-net",
-				"confluentinc/cp-ksql-net",
-				"confluentinc/cp-schema-registry",
-				"confluentinc/cp-zookeeper",
-				"coredns/coredns",
-				"grafana/grafana",
-				"jrelva/nginx-autoindex",
-				"library/alpine",
-				"library/golang",
-				"library/mariadb",
-				"library/postgres",
-				"library/redis",
-				"library/traefik",
-				"library/ubuntu",
-				"metabase/metabase",
-			},
-		},
-		"kafka-regex-version-collector": &app.KafkaRegexVersionCollector{
-			Context:     k8s.Context(sun.Name),
-			Application: "Golang",
-			Url:         "https://golang.org/dl/",
-			Regex:       `https://dl.google.com/go/go([\d\.]+)\.src\.tar\.gz`,
-		},
-		"kafka-atlassian-version-collector": &app.KafkaAtlassianVersionCollector{
-			Context: k8s.Context(sun.Name),
-		},
-		"kafka-installed-version-collector": &app.KafkaInstalledVersionCollector{
-			Context: k8s.Context(sun.Name),
-			Apps: []struct {
-				Name  string
-				Regex string
-				URL   string
-			}{
-				{
-					Name:  "Confluence",
-					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
-					URL:   "https://confluence.benjamin-borbe.de",
-				},
-				{
-					Name:  "Jira",
-					Regex: `<meta\s+name="ajs-version-number"\s+content="([^"]+)">`,
-					URL:   "https://jira.benjamin-borbe.de",
-				},
-			},
-		},
-		"kafka-sample": &app.KafkaSample{
-			Context:      k8s.Context(sun.Name),
-			Domain:       "kafka-sample.benjamin-borbe.de",
-			Requirements: buildDNSRequirements(sun.IP, KafkaSampleHostname),
+		"webdav": &service.Webdav{
+			SSH:            ssh,
+			Port:           network.PortStatic(8004),
+			WebdavPassword: w.TeamvaultSecrets.Password("VOzvAO"),
 		},
 	}
 }
@@ -526,10 +449,6 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		"cluster-admin": &service.ClusterAdmin{
 			Context: k8sContext,
 		},
-		"calico": &service.Calico{
-			Context:   k8sContext,
-			ClusterIP: ip,
-		},
 		"hostpath": &app.HostPathProvisioner{
 			Context:             k8sContext,
 			HostPath:            "/data/hostpath-provisioner",
@@ -543,50 +462,6 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"cert-manager": &cert_manager.App{
 			Context: k8sContext,
-		},
-		"debug": &app.Debug{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(DebugHostname.String()),
-			},
-			Requirements: buildDNSRequirements(ip, DebugHostname),
-		},
-		"grafana": &app.Grafana{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(GrafanaHostname.String()),
-			},
-			LdapUsername: w.TeamvaultSecrets.Username("MOPMLG"),
-			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
-			Requirements: buildDNSRequirements(ip, GrafanaHostname),
-		},
-		"prometheus": &app.Prometheus{
-			Context:             k8sContext,
-			PrometheusDomains:   k8s.IngressHosts{k8s.IngressHost(PrometheusHostname)},
-			AlertmanagerDomains: k8s.IngressHosts{k8s.IngressHost(AlertmanagerHostname)},
-			Secret:              w.TeamvaultSecrets.Password("aqMr6w"),
-			LdapUsername:        w.TeamvaultSecrets.Username("MOPMLG"),
-			LdapPassword:        w.TeamvaultSecrets.Password("MOPMLG"),
-			Requirements:        buildDNSRequirements(ip, PrometheusHostname, AlertmanagerHostname),
-		},
-		"ldap": &app.Ldap{
-			Context:      k8sContext,
-			Tag:          "1.3.0",
-			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
-		},
-		"teamvault": &app.Teamvault{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(TeamvaultHostname.String()),
-			},
-			DatabasePassword: w.TeamvaultSecrets.Password("VO0W5w"),
-			SmtpUsername:     w.TeamvaultSecrets.Username("3OlNaq"),
-			SmtpPassword:     w.TeamvaultSecrets.Password("3OlNaq"),
-			LdapPassword:     w.TeamvaultSecrets.Password("MOPMLG"),
-			SecretKey:        w.TeamvaultSecrets.Password("NqA68w"),
-			FernetKey:        w.TeamvaultSecrets.Password("5wYZ2O"),
-			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
-			Requirements:     buildDNSRequirements(ip, TeamvaultHostname),
 		},
 		"monitoring": &app.Monitoring{
 			Context:         k8sContext,
@@ -605,162 +480,19 @@ func (w *World) netcup() map[AppName]world.Configuration {
 				},
 			},
 		},
-		"confluence": &app.Confluence{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(ConfluenceHostname),
-			},
-			Version:          "7.10.2",
-			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
-			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
-			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
-			Requirements:     buildDNSRequirements(ip, ConfluenceHostname),
-		},
-		"jira": &app.Jira{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(JiraHostname),
-			},
-			Version:          "8.14.1",
-			DatabasePassword: w.TeamvaultSecrets.Password("eOB12w"),
-			SmtpUsername:     w.TeamvaultSecrets.Username("MwmE0w"),
-			SmtpPassword:     w.TeamvaultSecrets.Password("MwmE0w"),
-			Requirements:     buildDNSRequirements(ip, JiraHostname),
-		},
 		"backup": &app.BackupServer{
 			Context: k8sContext,
 		},
 		"poste": &app.Poste{
 			Context:      k8sContext,
-			PosteVersion: "2.2.26", // https://hub.docker.com/r/analogic/poste.io/tags
+			PosteVersion: "2.2.29", // https://hub.docker.com/r/analogic/poste.io/tags
 			Domains: k8s.IngressHosts{
 				k8s.IngressHost(MailHostname),
 			},
 			Requirements: buildDNSRequirements(ip, MailHostname),
 		},
-		"maven": &app.Maven{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(MavenHostname),
-			},
-			MavenRepoVersion: "1.0.0",
-			Requirements:     buildDNSRequirements(ip, MavenHostname),
-		},
-		"portfolio": &app.Portfolio{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				"benjamin-borbe.de",
-				"www.benjamin-borbe.de",
-				"benjaminborbe.de",
-				"www.benjaminborbe.de",
-			},
-			OverlayServerVersion: "1.0.0",
-			GitSyncPassword:      w.TeamvaultSecrets.Password("YLb4wV"),
-			Requirements: buildDNSRequirements(
-				ip,
-				"benjamin-borbe.de",
-				"www.benjamin-borbe.de",
-				"benjaminborbe.de",
-				"www.benjaminborbe.de",
-			),
-		},
-		"webdav": &app.Webdav{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				"webdav.benjamin-borbe.de",
-			},
-			Password: w.TeamvaultSecrets.Password("VOzvAO"),
-			Requirements: buildDNSRequirements(
-				ip,
-				"webdav.benjamin-borbe.de",
-			),
-		},
 		"bind": &app.Bind{
 			Context: k8sContext,
-		},
-		"download": &app.Download{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				"dl.benjamin-borbe.de",
-				"download.benjamin-borbe.de",
-			},
-			Requirements: buildDNSRequirements(
-				ip,
-				"dl.benjamin-borbe.de",
-				"download.benjamin-borbe.de",
-			),
-		},
-		"mumble": &app.Mumble{
-			Context: k8sContext,
-			Tag:     "1.1.1",
-		},
-		"password": &app.Password{
-			Context: k8sContext,
-			Tag:     "1.1.0",
-			Domains: k8s.IngressHosts{
-				"password.benjamin-borbe.de",
-			},
-			Requirements: buildDNSRequirements(
-				ip,
-				"password.benjamin-borbe.de",
-			),
-		},
-		"now": &app.Now{
-			Context: k8sContext,
-			Tag:     "1.3.0",
-			Domains: k8s.IngressHosts{
-				"now.benjamin-borbe.de",
-			},
-			Requirements: buildDNSRequirements(
-				ip,
-				"now.benjamin-borbe.de",
-			),
-		},
-		"helloworld": &app.HelloWorld{
-			Context: k8sContext,
-			Tag:     "1.0.1",
-			Domains: k8s.IngressHosts{
-				"rocketsource.de",
-				"www.rocketsource.de",
-				"rocketnews.de",
-				"www.rocketnews.de",
-			},
-			Requirements: buildDNSRequirements(
-				ip,
-				"rocketnews.de",
-				"www.rocketnews.de",
-			),
-		},
-		"slideshow": &app.Slideshow{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				"slideshow.benjamin-borbe.de",
-			},
-			Requirements: buildDNSRequirements(
-				ip,
-				"slideshow.benjamin-borbe.de",
-			),
-		},
-		"kickstart": &app.Kickstart{
-			Context: k8sContext,
-			Domains: k8s.IngressHosts{
-				"kickstart.benjamin-borbe.de",
-				"ks.benjamin-borbe.de",
-			},
-			Requirements: buildDNSRequirements(
-				ip,
-				"kickstart.benjamin-borbe.de",
-				"ks.benjamin-borbe.de",
-			),
-		},
-		"ip": &app.Ip{
-			Context: k8sContext,
-			IP:      ip,
-			Tag:     "1.1.0",
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(IPHostname),
-			},
-			Requirements: buildDNSRequirements(ip, IPHostname),
 		},
 	}
 }

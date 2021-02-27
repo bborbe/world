@@ -20,7 +20,6 @@ type Netcup struct {
 	Context           k8s.Context
 	IP                network.IP
 	DisableRBAC       bool
-	DisableCNI        bool
 	KubernetesVersion docker.Tag
 	SSH               *ssh.SSH
 }
@@ -45,7 +44,6 @@ func (n *Netcup) Children() []world.Configuration {
 			Context:     n.Context,
 			ClusterIP:   n.IP,
 			DisableRBAC: n.DisableRBAC,
-			DisableCNI:  n.DisableCNI,
 			Version:     n.KubernetesVersion,
 		},
 	}

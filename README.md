@@ -58,11 +58,9 @@ rm -rf /srv/kubernetes /etc/kubernetes /var/lib/etcd /var/lib/kubelet /var/lib/d
 exit
 world apply -c fire -a cluster -v=1
 world apply -c fire -a cluster-admin -v=1
-world apply -c fire -a calico -v=1
 world apply -c fire -v=1
 
 // maybe
-DisableCNI:  true,
 DisableRBAC: true,
 systemctl restart kubelet
 ```

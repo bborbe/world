@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	"github.com/bborbe/world/pkg/network"
 
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/docker"
@@ -41,10 +42,24 @@ func (e *Etcd) Children() []world.Configuration {
 			Name: "etcd",
 			BuildDockerServiceContent: func(ctx context.Context) (*DockerServiceContent, error) {
 				return &DockerServiceContent{
-					Name:    "etcd",
-					Memory:  512,
-					Ports:   []int{2379, 2380},
-					Volumes: []string{"/var/lib/etcd:/var/lib/etcd"},
+					Name:   "etcd",
+					Memory: 512,
+					Ports: []Port{
+						{
+							HostPort:   network.PortStatic(2379),
+							DockerPort: network.PortStatic(2379),
+						},
+						{
+							HostPort:   network.PortStatic(2380),
+							DockerPort: network.PortStatic(2380),
+						},
+					},
+					Volumes: []Volume{
+						{
+							HostPath:   "/var/lib/etcd",
+							DockerPath: "/var/lib/etcd",
+						},
+					},
 					Image:   image,
 					Command: "/usr/local/bin/etcd",
 					Args: []string{

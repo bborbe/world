@@ -51,7 +51,6 @@ func (f *Fire) Children() []world.Configuration {
 			Context:     f.Context,
 			ClusterIP:   f.ClusterIP,
 			DisableRBAC: f.DisableRBAC,
-			DisableCNI:  f.DisableCNI,
 		},
 	}
 }

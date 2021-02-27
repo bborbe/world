@@ -54,15 +54,16 @@ func (fake *Applier) Apply(arg1 context.Context) error {
 	fake.applyArgsForCall = append(fake.applyArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
+	stub := fake.ApplyStub
+	fakeReturns := fake.applyReturns
 	fake.recordInvocation("Apply", []interface{}{arg1})
 	fake.applyMutex.Unlock()
-	if fake.ApplyStub != nil {
-		return fake.ApplyStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.applyReturns
 	return fakeReturns.result1
 }
 
@@ -114,15 +115,16 @@ func (fake *Applier) Satisfied(arg1 context.Context) (bool, error) {
 	fake.satisfiedArgsForCall = append(fake.satisfiedArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
+	stub := fake.SatisfiedStub
+	fakeReturns := fake.satisfiedReturns
 	fake.recordInvocation("Satisfied", []interface{}{arg1})
 	fake.satisfiedMutex.Unlock()
-	if fake.SatisfiedStub != nil {
-		return fake.SatisfiedStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.satisfiedReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -177,15 +179,16 @@ func (fake *Applier) Validate(arg1 context.Context) error {
 	fake.validateArgsForCall = append(fake.validateArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
+	stub := fake.ValidateStub
+	fakeReturns := fake.validateReturns
 	fake.recordInvocation("Validate", []interface{}{arg1})
 	fake.validateMutex.Unlock()
-	if fake.ValidateStub != nil {
-		return fake.ValidateStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.validateReturns
 	return fakeReturns.result1
 }
 

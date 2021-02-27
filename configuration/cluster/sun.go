@@ -22,7 +22,6 @@ type Sun struct {
 	Context     k8s.Context
 	ClusterIP   network.IP
 	DisableRBAC bool
-	DisableCNI  bool
 }
 
 func (s *Sun) Children() []world.Configuration {
@@ -51,7 +50,6 @@ func (s *Sun) Children() []world.Configuration {
 			Context:     s.Context,
 			ClusterIP:   s.ClusterIP,
 			DisableRBAC: s.DisableRBAC,
-			DisableCNI:  s.DisableCNI,
 		},
 	}
 }

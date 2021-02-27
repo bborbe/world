@@ -125,8 +125,8 @@ func (p *Poste) poste() []world.Configuration {
 					Name: "poste",
 					Resources: k8s.Resources{
 						Limits: k8s.ContainerResource{
-							Cpu:    "1500m",
-							Memory: "1000Mi",
+								Cpu:    "1500m",
+								Memory: "1000Mi",
 						},
 						Requests: k8s.ContainerResource{
 							Cpu:    "250m",
