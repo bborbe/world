@@ -100,7 +100,7 @@ func (t *Teamvault) teamvault() []world.Configuration {
 				if err != nil {
 					return nil, err
 				}
-				port, err := t.DBPort.Port(ctx)
+				dbPort, err := t.DBPort.Port(ctx)
 				if err != nil {
 					return nil, err
 				}
@@ -115,7 +115,7 @@ func (t *Teamvault) teamvault() []world.Configuration {
 					"EMAIL_USE_TLS":            "False",
 					"EMAIL_USE_SSL":            "False",
 					"DATABASE_HOST":            "localhost",
-					"DATABASE_PORT":            strconv.Itoa(port),
+					"DATABASE_PORT":            strconv.Itoa(dbPort),
 					"DATABASE_NAME":            "teamvault",
 					"DATABASE_USER":            "teamvault",
 					"DATABASE_PASSWORD":        string(databasePassword),
@@ -136,6 +136,7 @@ func (t *Teamvault) teamvault() []world.Configuration {
 					"LDAP_ATTR_FIRST_NAME":     "givenName",
 					"LDAP_ATTR_LAST_NAME":      "sn",
 					"LDAP_CACHE_TIMEOUT":       "60",
+					"SECURE_SSL_REDIRECT":      "true",
 				}.Content(ctx)
 			}),
 			User:  "root",

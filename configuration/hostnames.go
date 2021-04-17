@@ -7,9 +7,9 @@ package configuration
 import "github.com/bborbe/world/pkg/network"
 
 const (
-	TeamvaultHostname    = network.Host("teamvault.benjamin-borbe.de")
-	ConfluenceHostname   = network.Host("confluence.benjamin-borbe.de")
-	MailHostname         = network.Host("mail.benjamin-borbe.de")
-	IPHostname           = network.Host("ip.benjamin-borbe.de")
-	WebdavHostname       = network.Host("webdav.benjamin-borbe.de")
+	TeamvaultHostname  = network.Host("teamvault.benjamin-borbe.de")
+	ConfluenceHostname = network.Host("confluence.benjamin-borbe.de")
+	MailHostname       = network.Host("mail.benjamin-borbe.de")
+	IPHostname         = network.Host("ip.benjamin-borbe.de")
+	WebdavHostname     = network.Host("webdav.benjamin-borbe.de")
 )

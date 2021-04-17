@@ -125,7 +125,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		"ip-proxy": &service.NginxProxy{
 			SSH:          ssh,
 			Domain:       IPHostname,
-			Target:       "http://localhost:8080",
+			Target:       "http://localhost:8000",
 			Requirements: buildDNSRequirements(ip, IPHostname),
 		},
 		"teamvault-proxy": &service.NginxProxy{
@@ -147,8 +147,8 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			Requirements: buildDNSRequirements(ip, WebdavHostname),
 		},
 		"ip": &service.Ip{
-			SSH: ssh,
-			Tag: "1.1.0",
+			SSH:  ssh,
+			Tag:  "1.1.0",
 			Port: network.PortStatic(8000),
 		},
 		"poste-proxy": &service.NginxProxy{
@@ -159,7 +159,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		},
 		"poste": &service.Poste{
 			SSH:          ssh,
-			PosteVersion: "2.2.29", // https://hub.docker.com/r/analogic/poste.io/tags
+			PosteVersion: "2.2.30", // https://hub.docker.com/r/analogic/poste.io/tags
 			Port:         network.PortStatic(8001),
 		},
 	}
@@ -482,14 +482,6 @@ func (w *World) netcup() map[AppName]world.Configuration {
 		},
 		"backup": &app.BackupServer{
 			Context: k8sContext,
-		},
-		"poste": &app.Poste{
-			Context:      k8sContext,
-			PosteVersion: "2.2.29", // https://hub.docker.com/r/analogic/poste.io/tags
-			Domains: k8s.IngressHosts{
-				k8s.IngressHost(MailHostname),
-			},
-			Requirements: buildDNSRequirements(ip, MailHostname),
 		},
 		"bind": &app.Bind{
 			Context: k8sContext,

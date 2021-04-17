@@ -6,13 +6,13 @@ package service_test
 
 import (
 	"context"
-	"github.com/bborbe/world/pkg/network"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/remote"
 )
 

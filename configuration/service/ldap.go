@@ -73,7 +73,6 @@ func (l *Ldap) ldap() []world.Configuration {
 						{
 							HostPath:   "/home/ldap",
 							DockerPath: "/var/lib/openldap/openldap-data",
-							Opts:       "",
 						},
 					},
 					EnvironmentFiles: []string{

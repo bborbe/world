@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/bborbe/world/pkg/network"
 	"strconv"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 
 	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/docker"
+	"github.com/bborbe/world/pkg/network"
 	"github.com/bborbe/world/pkg/remote"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"

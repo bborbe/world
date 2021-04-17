@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 
 	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func YamlToStruct(reader io.Reader, writer io.Writer) error {

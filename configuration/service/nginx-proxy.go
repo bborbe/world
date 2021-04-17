@@ -49,11 +49,13 @@ func (s *NginxProxy) proxy() []world.Configuration {
 				return template.Render(`
 server {
 	server_name {{ .Domain }};
+	client_max_body_size 100M;
 
 	location / {
 		proxy_set_header X-Forwarded-Host $host:$server_port;
 		proxy_set_header X-Forwarded-Server $host;
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto https;
 		proxy_set_header Host $host;
 		proxy_pass {{ .Target }}/;
 	}
@@ -69,7 +71,7 @@ server {
 	listen 80;
 
 	server_name {{ .Domain }};
-	return 301 https://$host$request_uri;
+    return 301 https://$server_name$request_uri;
 }
 `, struct {
 					Domain string
