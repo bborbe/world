@@ -68,14 +68,15 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 		"netcup":    w.netcup(),
 		"sun":       w.sun(),
 		"fire":      w.fire(),
-		"nuke":      w.nuke(),
 		"hetzner-1": w.hetzner1(),
-		"nova":      w.nova(),
-		"rasp3":     w.rasp3(),
-		"rasp4":     w.rasp4(),
-		"co2hz":     w.co2hz(),
-		"co2wz":     w.co2wz(),
-		"star":      w.star(),
+		// rasp
+		"rasp3": w.rasp3(),
+		"rasp4": w.rasp4(),
+		"co2hz": w.co2hz(),
+		"co2wz": w.co2wz(),
+		// mac
+		"nova": w.nova(),
+		"star": w.star(),
 	}
 }
 
@@ -107,6 +108,9 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		Star,
 	}
 	return map[AppName]world.Configuration{
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"ubuntu-unattended-upgrades": &service.UbuntuUnattendedUpgrades{
 			SSH: ssh,
 		},
@@ -208,6 +212,9 @@ func (w *World) fire() map[AppName]world.Configuration {
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
 	return map[AppName]world.Configuration{
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"cluster": &cluster.Fire{
 			SSH:       ssh,
 			Context:   k8s.Context(fire.Name),
@@ -246,53 +253,6 @@ func (w *World) fire() map[AppName]world.Configuration {
 	}
 }
 
-func (w *World) nuke() map[AppName]world.Configuration {
-	nuke := Nuke
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   nuke.IP,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-	}
-	return map[AppName]world.Configuration{
-		"cluster": &cluster.Nuke{
-			SSH:       ssh,
-			Context:   k8s.Context(nuke.Name),
-			ClusterIP: nuke.IP,
-		},
-		"cluster-admin": &service.ClusterAdmin{
-			Context: k8s.Context(nuke.Name),
-		},
-		"dns": &app.CoreDns{
-			Context: k8s.Context(nuke.Name),
-		},
-		"ingress-nginx": &ingress_nginx.App{
-			Context: k8s.Context(nuke.Name),
-		},
-		"openvpn-client": &openvpn.RemoteClient{
-			SSH:           ssh,
-			ClientName:    openvpn.ClientName(nuke.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes:        BuildRoutes(),
-			Device:        openvpn.Tun,
-		},
-		"backup": &app.BackupClient{
-			Context: k8s.Context(nuke.Name),
-			Domains: k8s.IngressHosts{
-				"backup.nuke.hm.benjamin-borbe.de",
-			},
-			BackupSshKey: w.TeamvaultSecrets.File("8q1bJw"),
-			BackupTargets: app.BackupTargets{
-				backup.Fire,
-			},
-		},
-	}
-}
-
 func (w *World) sun() map[AppName]world.Configuration {
 	sun := Sun
 	ip := sun.IP
@@ -305,6 +265,16 @@ func (w *World) sun() map[AppName]world.Configuration {
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
 	}
 	return map[AppName]world.Configuration{
+		"dns-update-pn.benjamin-borbe.de": &service.DnsUpdate{
+			SSH:        ssh,
+			DnsKey:     w.TeamvaultSecrets.File("9L64w3"),
+			DnsPrivate: w.TeamvaultSecrets.File("aL50O8"),
+			DnsName:    "pn",
+			DnsZone:    "benjamin-borbe.de",
+		},
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"cluster": &cluster.Sun{
 			SSH:       ssh,
 			Context:   k8s.Context(sun.Name),
@@ -415,7 +385,7 @@ func (w *World) sun() map[AppName]world.Configuration {
 			AppPort:          network.PortStatic(8002),
 			DBPort:           network.PortStatic(8003),
 			Domain:           ConfluenceHostname,
-			Version:          "7.11.1",
+			Version:          "7.12.1",
 			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
 			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
 			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
@@ -441,6 +411,9 @@ func (w *World) netcup() map[AppName]world.Configuration {
 	}
 	k8sContext := k8s.Context(netcup.Name)
 	return map[AppName]world.Configuration{
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"cluster": &cluster.Netcup{
 			SSH:     ssh,
 			Context: k8sContext,
@@ -491,16 +464,20 @@ func (w *World) netcup() map[AppName]world.Configuration {
 
 func (w *World) rasp3() map[AppName]world.Configuration {
 	rasp := Rasp3
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   rasp.IP,
+			Port: 22,
+		},
+		User:           "bborbe",
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
 	return map[AppName]world.Configuration{
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"openvpn-client": &openvpn.RemoteClient{
-			SSH: &ssh.SSH{
-				Host: ssh.Host{
-					IP:   rasp.IP,
-					Port: 22,
-				},
-				User:           "bborbe",
-				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-			},
+			SSH:           ssh,
 			ClientName:    openvpn.ClientName(rasp.Name),
 			ServerName:    HetznerVPNServer.ServerName,
 			ServerAddress: HetznerVPNServer.ServerAddress,
@@ -513,16 +490,39 @@ func (w *World) rasp3() map[AppName]world.Configuration {
 
 func (w *World) rasp4() map[AppName]world.Configuration {
 	rasp := Rasp4
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   rasp.IP,
+			Port: 22,
+		},
+		User:           "bborbe",
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
 	return map[AppName]world.Configuration{
+		"fritzbox-restart": &service.FritzBoxRestart{
+			SSH:        ssh,
+			FritzBoxUser:     w.TeamvaultSecrets.Username("7qGGQq"),
+			FritzBoxPassword: w.TeamvaultSecrets.Password("7qGGQq"),
+		},
+		"dns-update-home.benjamin-borbe.de": &service.DnsUpdate{
+			SSH:        ssh,
+			DnsKey:     w.TeamvaultSecrets.File("9L64w3"),
+			DnsPrivate: w.TeamvaultSecrets.File("aL50O8"),
+			DnsName:    "home",
+			DnsZone:    "benjamin-borbe.de",
+		},
+		"dns-update-home.rocketnews.de": &service.DnsUpdate{
+			SSH:        ssh,
+			DnsKey:     w.TeamvaultSecrets.File("9L64w3"),
+			DnsPrivate: w.TeamvaultSecrets.File("aL50O8"),
+			DnsName:    "home",
+			DnsZone:    "rocketnews.de",
+		},
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"openvpn-client": &openvpn.RemoteClient{
-			SSH: &ssh.SSH{
-				Host: ssh.Host{
-					IP:   rasp.IP,
-					Port: 22,
-				},
-				User:           "bborbe",
-				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-			},
+			SSH:           ssh,
 			ClientName:    openvpn.ClientName(rasp.Name),
 			ServerName:    HetznerVPNServer.ServerName,
 			ServerAddress: HetznerVPNServer.ServerAddress,
@@ -535,16 +535,20 @@ func (w *World) rasp4() map[AppName]world.Configuration {
 
 func (w *World) co2hz() map[AppName]world.Configuration {
 	co2hz := Co2hz
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   co2hz.IP,
+			Port: 22,
+		},
+		User:           "bborbe",
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
 	return map[AppName]world.Configuration{
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"openvpn-client": &openvpn.RemoteClient{
-			SSH: &ssh.SSH{
-				Host: ssh.Host{
-					IP:   co2hz.IP,
-					Port: 22,
-				},
-				User:           "bborbe",
-				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-			},
+			SSH:           ssh,
 			ClientName:    openvpn.ClientName(co2hz.Name),
 			ServerName:    HetznerVPNServer.ServerName,
 			ServerAddress: HetznerVPNServer.ServerAddress,
@@ -557,16 +561,20 @@ func (w *World) co2hz() map[AppName]world.Configuration {
 
 func (w *World) co2wz() map[AppName]world.Configuration {
 	co2wz := Co2wz
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   co2wz.IP,
+			Port: 22,
+		},
+		User:           "bborbe",
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
+	}
 	return map[AppName]world.Configuration{
+		"ntpdate": &service.NtpDate{
+			SSH: ssh,
+		},
 		"openvpn-client": &openvpn.RemoteClient{
-			SSH: &ssh.SSH{
-				Host: ssh.Host{
-					IP:   co2wz.IP,
-					Port: 22,
-				},
-				User:           "bborbe",
-				PrivateKeyPath: "/Users/bborbe/.ssh/id_rsa",
-			},
+			SSH:           ssh,
 			ClientName:    openvpn.ClientName(co2wz.Name),
 			ServerName:    HetznerVPNServer.ServerName,
 			ServerAddress: HetznerVPNServer.ServerAddress,

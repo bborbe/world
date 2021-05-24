@@ -12,7 +12,7 @@ require (
 	github.com/foomo/htpasswd v0.0.0-20200116085101-e3a90e78da9c // indirect
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/google/addlicense v0.0.0-20200906110928-a0294312aa76 // indirect
+	github.com/google/addlicense v0.0.0-20210428195630-6d92264d7170 // indirect
 	github.com/hetznercloud/hcloud-go v1.18.2
 	github.com/kisielk/errcheck v1.6.0 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1 // indirect
@@ -25,7 +25,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
-	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/tools v0.1.0 // indirect
