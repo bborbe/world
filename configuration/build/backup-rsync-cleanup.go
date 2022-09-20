@@ -24,8 +24,8 @@ func (b *BackupRsyncCleanup) Validate(ctx context.Context) error {
 	)
 }
 
-func (b *BackupRsyncCleanup) Children() []world.Configuration {
-	return []world.Configuration{
+func (b *BackupRsyncCleanup) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "backup-cleanup",
@@ -35,7 +35,7 @@ func (b *BackupRsyncCleanup) Children() []world.Configuration {
 				Image:           b.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (b *BackupRsyncCleanup) Applier() (world.Applier, error) {

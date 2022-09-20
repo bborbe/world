@@ -24,8 +24,8 @@ func (h *Healthz) Validate(ctx context.Context) error {
 	)
 }
 
-func (h *Healthz) Children() []world.Configuration {
-	return []world.Configuration{
+func (h *Healthz) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (h *Healthz) Children() []world.Configuration {
 				TargetImage: h.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (h *Healthz) Applier() (world.Applier, error) {

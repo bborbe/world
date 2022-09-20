@@ -31,12 +31,12 @@ func (i *Ip) Validate(ctx context.Context) error {
 	)
 }
 
-func (i *Ip) Children() []world.Configuration {
+func (i *Ip) Children(ctx context.Context) (world.Configurations, error) {
 	image := docker.Image{
 		Repository: "bborbe/ip",
 		Tag:        i.Tag,
 	}
-	return []world.Configuration{
+	return world.Configurations{
 		&build.Ip{
 			Image: image,
 		},
@@ -71,7 +71,7 @@ func (i *Ip) Children() []world.Configuration {
 				}, nil
 			},
 		},
-	}
+	}, nil
 }
 
 func (i *Ip) Applier() (world.Applier, error) {

@@ -34,8 +34,8 @@ func (n *StatefulSetConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (n *StatefulSetConfiguration) Children() []world.Configuration {
-	return n.Requirements
+func (n *StatefulSetConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return n.Requirements, nil
 }
 
 type StatefulSetApplier struct {

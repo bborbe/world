@@ -24,8 +24,8 @@ func (a *AuthHttpProxy) Validate(ctx context.Context) error {
 	)
 }
 
-func (a *AuthHttpProxy) Children() []world.Configuration {
-	return []world.Configuration{
+func (a *AuthHttpProxy) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "auth-http-proxy",
@@ -35,7 +35,7 @@ func (a *AuthHttpProxy) Children() []world.Configuration {
 				Image:           a.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (a *AuthHttpProxy) Applier() (world.Applier, error) {

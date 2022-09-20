@@ -43,8 +43,8 @@ func (i *IngressDeployer) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (i *IngressDeployer) Children() []world.Configuration {
-	return i.Requirements
+func (i *IngressDeployer) Children(ctx context.Context) (world.Configurations, error) {
+	return i.Requirements, nil
 }
 
 func (i *IngressDeployer) ingress() k8s.Ingress {

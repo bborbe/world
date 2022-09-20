@@ -4,9 +4,7 @@
 
 package backup
 
-import "github.com/bborbe/world/configuration/app"
-
-var Star = app.BackupTarget{
+var Star = BackupTarget{
 	User:      "root",
 	Host:      "star.hm.benjamin-borbe.de",
 	IP:        "172.16.90.32",

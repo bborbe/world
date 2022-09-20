@@ -24,8 +24,8 @@ func (k *KubednsMasq) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KubednsMasq) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KubednsMasq) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (k *KubednsMasq) Children() []world.Configuration {
 				TargetImage: k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KubednsMasq) Applier() (world.Applier, error) {

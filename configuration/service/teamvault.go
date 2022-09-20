@@ -46,7 +46,7 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 	)
 }
 
-func (t *Teamvault) Children() []world.Configuration {
+func (t *Teamvault) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, t.Requirements...)
 	result = append(result, &Postgres{
@@ -61,7 +61,7 @@ func (t *Teamvault) Children() []world.Configuration {
 		DataPath:             "/home/teamvault-postgres",
 	})
 	result = append(result, t.teamvault()...)
-	return result
+	return result, nil
 }
 
 func (t *Teamvault) teamvault() []world.Configuration {
@@ -71,7 +71,7 @@ func (t *Teamvault) teamvault() []world.Configuration {
 		Tag:        docker.TagWithTime(version, time.Now()),
 	}
 	envFile := "/home/teamvault.environment"
-	return []world.Configuration{
+	return world.Configurations{
 		&build.Teamvault{
 			Image:   image,
 			Version: version,
@@ -167,8 +167,9 @@ func (t *Teamvault) teamvault() []world.Configuration {
 			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  t.SSH,
-			Port: t.AppPort,
+			SSH:      t.SSH,
+			Port:     t.AppPort,
+			Protocol: network.TCP,
 		}),
 	}
 }

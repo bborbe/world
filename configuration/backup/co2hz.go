@@ -4,9 +4,7 @@
 
 package backup
 
-import "github.com/bborbe/world/configuration/app"
-
-var Co2hz = app.BackupTarget{
+var Co2hz = BackupTarget{
 	User:      "root",
 	Host:      "co2hz.hm.benjamin-borbe.de",
 	Port:      22,

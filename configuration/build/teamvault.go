@@ -25,8 +25,8 @@ func (t *Teamvault) Validate(ctx context.Context) error {
 	)
 }
 
-func (t *Teamvault) Children() []world.Configuration {
-	return []world.Configuration{
+func (t *Teamvault) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/teamvault.git",
@@ -37,7 +37,7 @@ func (t *Teamvault) Children() []world.Configuration {
 				GitBranch: "master",
 			},
 		),
-	}
+	}, nil
 }
 
 func (t *Teamvault) Applier() (world.Applier, error) {

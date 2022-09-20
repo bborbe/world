@@ -37,11 +37,11 @@ func (l *Webdav) Validate(ctx context.Context) error {
 	)
 }
 
-func (l *Webdav) Children() []world.Configuration {
+func (l *Webdav) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, l.Requirements...)
 	result = append(result, l.webdav()...)
-	return result
+	return result, nil
 }
 
 func (l *Webdav) webdav() []world.Configuration {
@@ -51,7 +51,7 @@ func (l *Webdav) webdav() []world.Configuration {
 		Tag:        docker.TagWithTime(version, time.Now()),
 	}
 	envFile := "/home/webdav.environment"
-	return []world.Configuration{
+	return world.Configurations{
 		&build.Webdav{
 			GitBranch: docker.GitBranch(version),
 			Image:     image,
@@ -108,8 +108,9 @@ func (l *Webdav) webdav() []world.Configuration {
 			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  l.SSH,
-			Port: l.Port,
+			SSH:      l.SSH,
+			Port:     l.Port,
+			Protocol: network.TCP,
 		}),
 	}
 }

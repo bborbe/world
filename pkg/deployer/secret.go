@@ -192,8 +192,8 @@ func (s *SecretApplier) Apply(ctx context.Context) error {
 	return applier.Apply(ctx)
 }
 
-func (s *SecretApplier) Children() []world.Configuration {
-	return s.Requirements
+func (s *SecretApplier) Children(ctx context.Context) (world.Configurations, error) {
+	return s.Requirements, nil
 }
 
 func (s *SecretApplier) secret(ctx context.Context) (*k8s.Secret, error) {

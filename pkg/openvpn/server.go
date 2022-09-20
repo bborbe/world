@@ -48,7 +48,7 @@ func (s *Server) Validate(ctx context.Context) error {
 	)
 }
 
-func (s *Server) Children() []world.Configuration {
+func (s *Server) Children(ctx context.Context) (world.Configurations, error) {
 	serverConfig := s.serverConfig()
 
 	configurations := []world.Configuration{
@@ -141,8 +141,9 @@ func (s *Server) Children() []world.Configuration {
 			Content:   serverConfig.ServerCrt(),
 		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  s.SSH,
-			Port: network.PortStatic(563),
+			SSH:      s.SSH,
+			Port:     network.PortStatic(563),
+			Protocol: network.TCP,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&apt.Update{
 			SSH: s.SSH,
@@ -183,8 +184,9 @@ func (s *Server) Children() []world.Configuration {
 			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  s.SSH,
-			Port: serverConfig.ServerPort,
+			SSH:      s.SSH,
+			Port:     serverConfig.ServerPort,
+			Protocol: network.TCP,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowForward{
 			SSH: s.SSH,
@@ -212,9 +214,9 @@ func (s *Server) Children() []world.Configuration {
 			Perm:  0600,
 		})
 	}
-
-	return configurations
+	return configurations, nil
 }
+
 func (s *Server) serverConfig() ServerConfig {
 	return ServerConfig{
 		ServerName:  s.ServerName,

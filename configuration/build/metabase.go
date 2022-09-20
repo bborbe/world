@@ -24,8 +24,8 @@ func (m *Metabase) Validate(ctx context.Context) error {
 	)
 }
 
-func (m *Metabase) Children() []world.Configuration {
-	return []world.Configuration{
+func (m *Metabase) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (m *Metabase) Children() []world.Configuration {
 				TargetImage: m.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (m *Metabase) Applier() (world.Applier, error) {

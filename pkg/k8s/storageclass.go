@@ -35,8 +35,8 @@ func (d *StorageClassConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *StorageClassConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (d *StorageClassConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return d.Requirements, nil
 }
 
 type StorageClassApplier struct {

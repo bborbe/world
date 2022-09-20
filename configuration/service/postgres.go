@@ -44,11 +44,11 @@ func (p *Postgres) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *Postgres) Children() []world.Configuration {
+func (p *Postgres) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, p.Requirements...)
 	result = append(result, p.postgres()...)
-	return result
+	return result, nil
 }
 
 func (p *Postgres) postgres() []world.Configuration {
@@ -57,7 +57,7 @@ func (p *Postgres) postgres() []world.Configuration {
 		Tag:        p.PostgresVersion,
 	}
 	envFile := fmt.Sprintf("%s.environment", p.DataPath.String())
-	return []world.Configuration{
+	return world.Configurations{
 		&build.Postgres{
 			Image: image,
 		},

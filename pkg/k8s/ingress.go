@@ -86,8 +86,8 @@ func (i *IngresseConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (i *IngresseConfiguration) Children() []world.Configuration {
-	return i.Requirements
+func (i *IngresseConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return i.Requirements, nil
 }
 
 type IngressApplier struct {

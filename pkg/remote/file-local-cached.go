@@ -28,8 +28,8 @@ type FileLocalCached struct {
 	Perm      file.Perm
 }
 
-func (f *FileLocalCached) Children() []world.Configuration {
-	return []world.Configuration{
+func (f *FileLocalCached) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(
 			&local.FileContent{
 				Path:    f.LocalPath,
@@ -50,7 +50,7 @@ func (f *FileLocalCached) Children() []world.Configuration {
 			Group: f.Group,
 			Perm:  f.Perm,
 		},
-	}
+	}, nil
 }
 
 func (f *FileLocalCached) Applier() (world.Applier, error) {

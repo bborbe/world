@@ -24,8 +24,8 @@ func (p *PrometheusAlertmanager) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *PrometheusAlertmanager) Children() []world.Configuration {
-	return []world.Configuration{
+func (p *PrometheusAlertmanager) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (p *PrometheusAlertmanager) Children() []world.Configuration {
 				TargetImage: p.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (p *PrometheusAlertmanager) Applier() (world.Applier, error) {

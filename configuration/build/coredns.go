@@ -24,8 +24,8 @@ func (c *CoreDns) Validate(ctx context.Context) error {
 	)
 }
 
-func (c *CoreDns) Children() []world.Configuration {
-	return []world.Configuration{
+func (c *CoreDns) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (c *CoreDns) Children() []world.Configuration {
 				TargetImage: c.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (c *CoreDns) Applier() (world.Applier, error) {

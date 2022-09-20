@@ -4,9 +4,7 @@
 
 package backup
 
-import "github.com/bborbe/world/configuration/app"
-
-var Co2wz = app.BackupTarget{
+var Co2wz = BackupTarget{
 	User:      "root",
 	Host:      "co2wz.hm.benjamin-borbe.de",
 	Port:      22,

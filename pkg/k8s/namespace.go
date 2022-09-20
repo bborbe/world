@@ -35,8 +35,8 @@ func (d *NamespaceConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *NamespaceConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (d *NamespaceConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return d.Requirements, nil
 }
 
 type NamespaceName string

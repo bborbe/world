@@ -24,8 +24,8 @@ func (g *GitSync) Validate(ctx context.Context) error {
 	)
 }
 
-func (g *GitSync) Children() []world.Configuration {
-	return []world.Configuration{
+func (g *GitSync) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/git-sync.git",
@@ -33,7 +33,7 @@ func (g *GitSync) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(g.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (g *GitSync) Applier() (world.Applier, error) {

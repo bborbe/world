@@ -131,13 +131,13 @@ func (d *DeploymentDeployer) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *DeploymentDeployer) Children() []world.Configuration {
+func (d *DeploymentDeployer) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, d.Requirements...)
 	for _, container := range d.Containers {
 		result = append(result, container.Requirements()...)
 	}
-	return result
+	return result, nil
 }
 
 func (d *DeploymentDeployer) WithRollingUpdate() *DeploymentDeployer {

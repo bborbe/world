@@ -24,8 +24,8 @@ func (h *HelloWorld) Validate(ctx context.Context) error {
 	)
 }
 
-func (h *HelloWorld) Children() []world.Configuration {
-	return []world.Configuration{
+func (h *HelloWorld) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/hello-world.git",
@@ -33,7 +33,7 @@ func (h *HelloWorld) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(h.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (h *HelloWorld) Applier() (world.Applier, error) {

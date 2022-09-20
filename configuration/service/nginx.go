@@ -27,8 +27,8 @@ func (s *Nginx) Validate(ctx context.Context) error {
 	)
 }
 
-func (s *Nginx) Children() []world.Configuration {
-	return []world.Configuration{
+func (s *Nginx) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(&apt.Install{
 			SSH:     s.SSH,
 			Package: "nginx",
@@ -39,7 +39,7 @@ func (s *Nginx) Children() []world.Configuration {
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&apt.Install{
 			SSH:     s.SSH,
-			Package: "python-certbot-nginx",
+			Package: "python3-certbot-nginx",
 		}),
 		&remote.File{
 			SSH:  s.SSH,
@@ -54,7 +54,7 @@ func (s *Nginx) Children() []world.Configuration {
 			SSH:     s.SSH,
 			Command: "systemctl restart nginx",
 		}),
-	}
+	}, nil
 }
 
 func (s *Nginx) Applier() (world.Applier, error) {

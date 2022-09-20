@@ -24,8 +24,8 @@ func (m *Mumble) Validate(ctx context.Context) error {
 	)
 }
 
-func (m *Mumble) Children() []world.Configuration {
-	return []world.Configuration{
+func (m *Mumble) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/mumble.git",
@@ -33,7 +33,7 @@ func (m *Mumble) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(m.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (m *Mumble) Applier() (world.Applier, error) {

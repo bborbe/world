@@ -45,8 +45,8 @@ type Docker struct {
 	BuildDockerServiceContent func(ctx context.Context) (*DockerServiceContent, error)
 }
 
-func (d *Docker) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *Docker) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		&DockerEngine{
 			SSH: d.SSH,
 		},
@@ -61,7 +61,7 @@ func (d *Docker) Children() []world.Configuration {
 				return content.Content(ctx)
 			}),
 		},
-	}
+	}, nil
 }
 
 func (d *Docker) Applier() (world.Applier, error) {
@@ -76,13 +76,17 @@ func (d *Docker) Validate(ctx context.Context) error {
 	)
 }
 
+type Ports []Port
+
 type Port struct {
+	IP         network.IP
 	HostPort   network.Port
 	DockerPort network.Port
+	Protocol   network.Protocol
 }
 
-func (v Port) String() string {
-	return fmt.Sprintf("%v:%v", v.HostPort, v.DockerPort)
+func (p Port) String() string {
+	return fmt.Sprintf("%v:%v", p.HostPort, p.DockerPort)
 }
 
 type Volume struct {
@@ -114,7 +118,7 @@ type DockerServiceContent struct {
 	Image            docker.Image
 	Memory           Memory
 	Name             remote.ServiceName
-	Ports            []Port
+	Ports            Ports
 	Privileged       bool
 	Requires         []remote.ServiceName
 	TimeoutStartSec  string
@@ -167,15 +171,29 @@ func (d *DockerServiceContent) Content(ctx context.Context) ([]byte, error) {
 		fmt.Fprintf(b, "--env-file %s \\\n", file)
 	}
 	for _, port := range d.Ports {
-		dockerPort, err := port.DockerPort.Port(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "get docker port failed")
+		var parts []string
+
+		if port.IP != nil {
+			ip, err := port.IP.IP(ctx)
+			if err != nil {
+				return nil, errors.Wrap(err, "get ip failed")
+			}
+			parts = append(parts, ip.String())
 		}
+
 		hostPort, err := port.HostPort.Port(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "get host port failed")
 		}
-		fmt.Fprintf(b, "-p %d:%d \\\n", hostPort, dockerPort)
+		parts = append(parts, strconv.Itoa(hostPort))
+
+		dockerPort, err := port.DockerPort.Port(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get docker port failed")
+		}
+		parts = append(parts, strconv.Itoa(dockerPort))
+
+		fmt.Fprintf(b, "-p %s/%s \\\n", strings.Join(parts, ":"), protocolToString(port.Protocol))
 	}
 	for _, volume := range d.Volumes {
 		fmt.Fprintf(b, "--volume=%s \\\n", volume.String())
@@ -194,4 +212,13 @@ func (d *DockerServiceContent) Content(ctx context.Context) ([]byte, error) {
 	fmt.Fprintf(b, "[Install]\n")
 	fmt.Fprintf(b, "WantedBy=multi-user.target\n")
 	return b.Bytes(), nil
+}
+
+func protocolToString(protocol network.Protocol) string {
+	switch protocol {
+	case network.UDP:
+		return "udp"
+	default:
+		return "tcp"
+	}
 }

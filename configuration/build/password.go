@@ -24,8 +24,8 @@ func (p *Password) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *Password) Children() []world.Configuration {
-	return []world.Configuration{
+func (p *Password) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "password",
@@ -35,7 +35,7 @@ func (p *Password) Children() []world.Configuration {
 				Image:           p.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (p *Password) Applier() (world.Applier, error) {

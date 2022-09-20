@@ -24,8 +24,8 @@ func (k *KafkaInstalledVersionCollector) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KafkaInstalledVersionCollector) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KafkaInstalledVersionCollector) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-installed-version-collector",
@@ -35,7 +35,7 @@ func (k *KafkaInstalledVersionCollector) Children() []world.Configuration {
 				Image:           k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KafkaInstalledVersionCollector) Applier() (world.Applier, error) {

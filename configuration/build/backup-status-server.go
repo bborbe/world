@@ -24,8 +24,8 @@ func (b *BackupStatusServer) Validate(ctx context.Context) error {
 	)
 }
 
-func (b *BackupStatusServer) Children() []world.Configuration {
-	return []world.Configuration{
+func (b *BackupStatusServer) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "backup-status-server",
@@ -35,7 +35,7 @@ func (b *BackupStatusServer) Children() []world.Configuration {
 				Image:           b.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (b *BackupStatusServer) Applier() (world.Applier, error) {

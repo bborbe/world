@@ -23,8 +23,8 @@ func (n *Now) Validate(ctx context.Context) error {
 		n.Image,
 	)
 }
-func (n *Now) Children() []world.Configuration {
-	return []world.Configuration{
+func (n *Now) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/now.git",
@@ -32,7 +32,7 @@ func (n *Now) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(n.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (n *Now) Applier() (world.Applier, error) {

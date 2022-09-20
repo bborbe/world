@@ -28,8 +28,8 @@ func (c *Confluence) Validate(ctx context.Context) error {
 	)
 }
 
-func (c *Confluence) Children() []world.Configuration {
-	return []world.Configuration{
+func (c *Confluence) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/atlassian-confluence.git",
@@ -40,7 +40,7 @@ func (c *Confluence) Children() []world.Configuration {
 				GitBranch: c.GitBranch,
 			},
 		),
-	}
+	}, nil
 }
 
 func (c *Confluence) Applier() (world.Applier, error) {

@@ -22,8 +22,8 @@ type Service struct {
 	Content content.HasContent
 }
 
-func (s *Service) Children() []world.Configuration {
-	return []world.Configuration{
+func (s *Service) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		&remote.File{
 			SSH:     s.SSH,
 			Path:    file.Path(fmt.Sprintf("/etc/systemd/system/%s.service", s.Name)),
@@ -40,7 +40,7 @@ func (s *Service) Children() []world.Configuration {
 			SSH:  s.SSH,
 			Name: s.Name,
 		}),
-	}
+	}, nil
 }
 
 func (s *Service) Applier() (world.Applier, error) {

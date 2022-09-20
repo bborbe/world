@@ -24,8 +24,8 @@ func (b *BackupCleanupCron) Validate(ctx context.Context) error {
 	)
 }
 
-func (b *BackupCleanupCron) Children() []world.Configuration {
-	return []world.Configuration{
+func (b *BackupCleanupCron) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/backup-cleanup-cron.git",
@@ -33,7 +33,7 @@ func (b *BackupCleanupCron) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(b.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (b *BackupCleanupCron) Applier() (world.Applier, error) {

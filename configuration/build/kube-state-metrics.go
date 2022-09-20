@@ -24,8 +24,8 @@ func (k *KubeStateMetrics) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KubeStateMetrics) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KubeStateMetrics) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (k *KubeStateMetrics) Children() []world.Configuration {
 				TargetImage: k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KubeStateMetrics) Applier() (world.Applier, error) {

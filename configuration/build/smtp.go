@@ -24,8 +24,8 @@ func (s *Smtp) Validate(ctx context.Context) error {
 	)
 }
 
-func (s *Smtp) Children() []world.Configuration {
-	return []world.Configuration{
+func (s *Smtp) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/smtp.git",
@@ -33,7 +33,7 @@ func (s *Smtp) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(s.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (s *Smtp) Applier() (world.Applier, error) {

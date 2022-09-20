@@ -54,8 +54,8 @@ func (s *Sysctl) Validate(ctx context.Context) error {
 	)
 }
 
-func (s *Sysctl) Children() []world.Configuration {
-	return []world.Configuration{
+func (s *Sysctl) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		&remote.File{
 			SSH:  s.SSH,
 			Path: file.Path("/etc/sysctl.d/60-custom.conf"),
@@ -74,7 +74,7 @@ func (s *Sysctl) Children() []world.Configuration {
 			SSH:     s.SSH,
 			Command: "systemctl restart systemd-sysctl",
 		}),
-	}
+	}, nil
 }
 
 func (s *Sysctl) Applier() (world.Applier, error) {

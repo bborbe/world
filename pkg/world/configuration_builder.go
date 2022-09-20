@@ -9,7 +9,7 @@ import (
 )
 
 type ConfiguraionBuilder struct {
-	children []Configuration
+	children Configurations
 	applier  Applier
 }
 
@@ -17,11 +17,11 @@ func NewConfiguraionBuilder() *ConfiguraionBuilder {
 	return &ConfiguraionBuilder{}
 }
 
-func (c *ConfiguraionBuilder) Children() []Configuration {
-	return c.children
+func (c *ConfiguraionBuilder) Children(ctx context.Context) (Configurations, error) {
+	return c.children, nil
 }
 
-func (c *ConfiguraionBuilder) WithChildren(children []Configuration) *ConfiguraionBuilder {
+func (c *ConfiguraionBuilder) WithChildren(children Configurations) *ConfiguraionBuilder {
 	c.children = children
 	return c
 }

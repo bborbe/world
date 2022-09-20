@@ -35,8 +35,8 @@ func (d *DaemonSetConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *DaemonSetConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (d *DaemonSetConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return d.Requirements, nil
 }
 
 type DaemonSetApplier struct {

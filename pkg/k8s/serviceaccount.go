@@ -35,8 +35,8 @@ func (d *ServiceaccountConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *ServiceaccountConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (d *ServiceaccountConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return d.Requirements, nil
 }
 
 type ServiceaccountApplier struct {

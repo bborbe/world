@@ -33,7 +33,11 @@ func build(ctx context.Context, configuration Configuration, path []string) (*Ru
 		return nil, errors.Wrap(err, "get applier failed")
 	}
 	var runners []Runner
-	for _, configuration := range configuration.Children() {
+	configurations, err := configuration.Children(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get children failed")
+	}
+	for _, configuration := range configurations {
 		runner, err := build(ctx, configuration, path)
 		if err != nil {
 			return nil, errors.Wrap(err, "get runner failed")

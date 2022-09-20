@@ -24,8 +24,8 @@ func (t *Monitoring) Validate(ctx context.Context) error {
 	)
 }
 
-func (t *Monitoring) Children() []world.Configuration {
-	return []world.Configuration{
+func (t *Monitoring) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "monitoring",
@@ -35,7 +35,7 @@ func (t *Monitoring) Children() []world.Configuration {
 				Image:           t.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (t *Monitoring) Applier() (world.Applier, error) {

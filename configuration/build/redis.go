@@ -24,8 +24,8 @@ func (r *Redis) Validate(ctx context.Context) error {
 	)
 }
 
-func (r *Redis) Children() []world.Configuration {
-	return []world.Configuration{
+func (r *Redis) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (r *Redis) Children() []world.Configuration {
 				TargetImage: r.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (r *Redis) Applier() (world.Applier, error) {

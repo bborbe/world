@@ -4,9 +4,7 @@
 
 package backup
 
-import "github.com/bborbe/world/configuration/app"
-
-var Nova = app.BackupTarget{
+var Nova = BackupTarget{
 	User:      "root",
 	Host:      "nova.hm.benjamin-borbe.de",
 	IP:        "172.16.90.16",

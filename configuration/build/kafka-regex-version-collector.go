@@ -24,8 +24,8 @@ func (k *KafkaRegexVersionCollector) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KafkaRegexVersionCollector) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KafkaRegexVersionCollector) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-regex-version-collector",
@@ -35,7 +35,7 @@ func (k *KafkaRegexVersionCollector) Children() []world.Configuration {
 				Image:           k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KafkaRegexVersionCollector) Applier() (world.Applier, error) {

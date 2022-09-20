@@ -24,8 +24,8 @@ func (s *Squid) Validate(ctx context.Context) error {
 	)
 }
 
-func (s *Squid) Children() []world.Configuration {
-	return []world.Configuration{
+func (s *Squid) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/squid.git",
@@ -33,7 +33,7 @@ func (s *Squid) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(s.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (s *Squid) Applier() (world.Applier, error) {

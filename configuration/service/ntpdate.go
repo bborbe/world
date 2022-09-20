@@ -6,9 +6,9 @@ package service
 
 import (
 	"context"
-	"github.com/bborbe/world/pkg/content"
 
 	"github.com/bborbe/world/pkg/apt"
+	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/ssh"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
@@ -18,8 +18,8 @@ type NtpDate struct {
 	SSH *ssh.SSH
 }
 
-func (d *NtpDate) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *NtpDate) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(&apt.Install{
 			SSH:     d.SSH,
 			Package: "ntpdate",
@@ -30,7 +30,7 @@ func (d *NtpDate) Children() []world.Configuration {
 			Expression: content.Static("ntpdate -s de.pool.ntp.org > /dev/null"),
 			Schedule:   "15 * * * *",
 		},
-	}
+	}, nil
 }
 
 func (d *NtpDate) Applier() (world.Applier, error) {

@@ -27,12 +27,23 @@ var _ = Describe("Docker", func() {
 			Memory: 1024,
 			Ports: []service.Port{
 				{
-					HostPort:   network.PortStatic(2379),
+					HostPort:   network.PortStatic(1379),
 					DockerPort: network.PortStatic(2379),
+					Protocol:   network.UDP,
 				},
 				{
-					HostPort:   network.PortStatic(2380),
+					HostPort:   network.PortStatic(1380),
 					DockerPort: network.PortStatic(2380),
+					Protocol:   network.TCP,
+				},
+				{
+					HostPort:   network.PortStatic(1381),
+					DockerPort: network.PortStatic(2381),
+				},
+				{
+					IP:         network.IPStatic("172.1.2.3"),
+					HostPort:   network.PortStatic(1382),
+					DockerPort: network.PortStatic(2382),
 				},
 			},
 			Volumes: []service.Volume{
@@ -90,8 +101,10 @@ ExecStart=/usr/bin/docker run \
 --memory-swap=0 \
 --memory-swappiness=0 \
 --memory=1024m \
--p 2379:2379 \
--p 2380:2380 \
+-p 1379:2379/udp \
+-p 1380:2380/tcp \
+-p 1381:2381/tcp \
+-p 172.1.2.3:1382:2382/tcp \
 --volume=/var/lib/etcd:/var/lib/etcd \
 --name etcd \
 quay.io/coreos/etcd:v3.3.1 \

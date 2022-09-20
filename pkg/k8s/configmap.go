@@ -35,8 +35,8 @@ func (d *ConfigMapConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *ConfigMapConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (d *ConfigMapConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return d.Requirements, nil
 }
 
 type ConfigMapApplier struct {

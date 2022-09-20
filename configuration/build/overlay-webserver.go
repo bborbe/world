@@ -24,8 +24,8 @@ func (o *OverlayWebserver) Validate(ctx context.Context) error {
 	)
 }
 
-func (o *OverlayWebserver) Children() []world.Configuration {
-	return []world.Configuration{
+func (o *OverlayWebserver) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "overlay-server",
@@ -35,7 +35,7 @@ func (o *OverlayWebserver) Children() []world.Configuration {
 				Image:           o.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (o *OverlayWebserver) Applier() (world.Applier, error) {

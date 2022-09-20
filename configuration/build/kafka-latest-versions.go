@@ -24,8 +24,8 @@ func (k *KafkaLatestVersions) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KafkaLatestVersions) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KafkaLatestVersions) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-latest-versions",
@@ -35,7 +35,7 @@ func (k *KafkaLatestVersions) Children() []world.Configuration {
 				Image:           k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KafkaLatestVersions) Applier() (world.Applier, error) {

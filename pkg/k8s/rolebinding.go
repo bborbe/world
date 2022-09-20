@@ -35,8 +35,8 @@ func (r *RoleBindingConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (r *RoleBindingConfiguration) Children() []world.Configuration {
-	return r.Requirements
+func (r *RoleBindingConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return r.Requirements, nil
 }
 
 type RoleBindingName string

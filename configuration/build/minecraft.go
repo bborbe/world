@@ -24,8 +24,8 @@ func (m *Minecraft) Validate(ctx context.Context) error {
 	)
 }
 
-func (m *Minecraft) Children() []world.Configuration {
-	return []world.Configuration{
+func (m *Minecraft) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/itzg/docker-minecraft-server",
@@ -33,7 +33,7 @@ func (m *Minecraft) Children() []world.Configuration {
 				Image:     m.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (m *Minecraft) Applier() (world.Applier, error) {

@@ -24,8 +24,8 @@ func (h *HostPathProvisioner) Validate(ctx context.Context) error {
 	)
 }
 
-func (h *HostPathProvisioner) Children() []world.Configuration {
-	return []world.Configuration{
+func (h *HostPathProvisioner) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "hostpath-provisioner",
@@ -35,7 +35,7 @@ func (h *HostPathProvisioner) Children() []world.Configuration {
 				Image:           h.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (h *HostPathProvisioner) Applier() (world.Applier, error) {

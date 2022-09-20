@@ -34,9 +34,9 @@ func (l *LocalClient) Validate(ctx context.Context) error {
 	)
 }
 
-func (l *LocalClient) Children() []world.Configuration {
+func (l *LocalClient) Children(ctx context.Context) (world.Configurations, error) {
 	clientConfig := l.clientConfig()
-	return []world.Configuration{
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(
 			&local.FileContent{
 				Path:    clientConfig.LocalPathConfig(),
@@ -67,7 +67,7 @@ func (l *LocalClient) Children() []world.Configuration {
 				Content: clientConfig.ClientCrt(),
 			},
 		),
-	}
+	}, nil
 }
 
 func (l *LocalClient) Applier() (world.Applier, error) {

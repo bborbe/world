@@ -124,8 +124,8 @@ type Cron struct {
 	User       CronUser
 }
 
-func (d *Cron) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *Cron) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		&remote.File{
 			SSH:     d.SSH,
 			Path:    d.path(),
@@ -134,7 +134,7 @@ func (d *Cron) Children() []world.Configuration {
 			Group:   "root",
 			Perm:    0644,
 		},
-	}
+	}, nil
 }
 
 func (d *Cron) Applier() (world.Applier, error) {

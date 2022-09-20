@@ -27,8 +27,8 @@ type DnsUpdate struct {
 	DnsName    string
 }
 
-func (d *DnsUpdate) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *DnsUpdate) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		&remote.File{
 			SSH:     d.SSH,
 			Path:    file.Path("/usr/local/bin/dns-update.sh"),
@@ -100,7 +100,7 @@ func (d *DnsUpdate) Children() []world.Configuration {
 			Expression: d.cronExpression(),
 			Schedule:   "* * * * *",
 		},
-	}
+	}, nil
 }
 
 func (d *DnsUpdate) cronName() CronName {

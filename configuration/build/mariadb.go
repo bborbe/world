@@ -24,8 +24,8 @@ func (m *Mariadb) Validate(ctx context.Context) error {
 	)
 }
 
-func (m *Mariadb) Children() []world.Configuration {
-	return []world.Configuration{
+func (m *Mariadb) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (m *Mariadb) Children() []world.Configuration {
 				TargetImage: m.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (m *Mariadb) Applier() (world.Applier, error) {

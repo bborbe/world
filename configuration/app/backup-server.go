@@ -26,7 +26,7 @@ func (b *BackupServer) Validate(ctx context.Context) error {
 	)
 }
 
-func (b *BackupServer) Children() []world.Configuration {
+func (b *BackupServer) Children(ctx context.Context) (world.Configurations, error) {
 	image := docker.Image{
 		Repository: "bborbe/backup-rsync-server",
 		Tag:        "1.1.0",
@@ -37,7 +37,7 @@ func (b *BackupServer) Children() []world.Configuration {
 		Name:     "ssh",
 		Protocol: "TCP",
 	}
-	return []world.Configuration{
+	return world.Configurations{
 		&k8s.NamespaceConfiguration{
 			Context: b.Context,
 			Namespace: k8s.Namespace{
@@ -125,7 +125,7 @@ func (b *BackupServer) Children() []world.Configuration {
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 func (b *BackupServer) Applier() (world.Applier, error) {

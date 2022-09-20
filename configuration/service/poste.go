@@ -35,11 +35,11 @@ func (p *Poste) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *Poste) Children() []world.Configuration {
+func (p *Poste) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, p.Requirements...)
 	result = append(result, p.poste()...)
-	return result
+	return result, nil
 }
 
 func (p *Poste) poste() []world.Configuration {
@@ -55,7 +55,7 @@ func (p *Poste) poste() []world.Configuration {
 		Tag:        docker.Tag(fmt.Sprintf("%s-%s", p.PosteVersion, buildVersion)),
 	}
 	envFile := "/home/poste.environment"
-	return []world.Configuration{
+	return world.Configurations{
 		&DisablePostfix{
 			SSH: p.SSH,
 		},
@@ -127,20 +127,24 @@ func (p *Poste) poste() []world.Configuration {
 			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  p.SSH,
-			Port: smtpPort,
+			SSH:      p.SSH,
+			Port:     smtpPort,
+			Protocol: network.TCP,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  p.SSH,
-			Port: smtpsPort,
+			SSH:      p.SSH,
+			Port:     smtpsPort,
+			Protocol: network.TCP,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  p.SSH,
-			Port: smtptlsPort,
+			SSH:      p.SSH,
+			Port:     smtptlsPort,
+			Protocol: network.TCP,
 		}),
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  p.SSH,
-			Port: imapsPort,
+			SSH:      p.SSH,
+			Port:     imapsPort,
+			Protocol: network.TCP,
 		}),
 	}
 }

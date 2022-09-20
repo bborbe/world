@@ -25,11 +25,11 @@ type Ldap struct {
 	Requirements []world.Configuration
 }
 
-func (l *Ldap) Children() []world.Configuration {
+func (l *Ldap) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, l.Requirements...)
 	result = append(result, l.ldap()...)
-	return result
+	return result, nil
 }
 
 func (l *Ldap) ldap() []world.Configuration {
@@ -38,7 +38,7 @@ func (l *Ldap) ldap() []world.Configuration {
 		Tag:        l.Tag,
 	}
 	envFile := "/home/ldap.environment"
-	return []world.Configuration{
+	return world.Configurations{
 		&build.Openldap{
 			Image: image,
 		},

@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bborbe/world/pkg/content"
 	"github.com/bborbe/world/pkg/file"
 	"github.com/bborbe/world/pkg/network"
@@ -19,10 +21,12 @@ import (
 )
 
 type NginxProxy struct {
-	SSH          *ssh.SSH
-	Domain       network.Host
-	Target       string
-	Requirements []world.Configuration
+	SSH              *ssh.SSH
+	Domain           network.Host
+	Target           string
+	Requirements     []world.Configuration
+	WebsocketEnabled bool
+	IP               network.IP
 }
 
 func (s *NginxProxy) Validate(ctx context.Context) error {
@@ -30,28 +34,40 @@ func (s *NginxProxy) Validate(ctx context.Context) error {
 		ctx,
 		s.SSH,
 		s.Domain,
+		s.IP,
 	)
 }
 
-func (s *NginxProxy) Children() []world.Configuration {
+func (s *NginxProxy) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, s.Requirements...)
 	result = append(result, s.proxy()...)
-	return result
+	return result, nil
 }
 
 func (s *NginxProxy) proxy() []world.Configuration {
-	return []world.Configuration{
+	return world.Configurations{
 		&remote.File{
 			SSH:  s.SSH,
 			Path: file.Path(fmt.Sprintf("/etc/nginx/sites-enabled/%s.conf", s.Domain)),
 			Content: content.Func(func(ctx context.Context) ([]byte, error) {
+				ip, err := s.IP.IP(ctx)
+				if err != nil {
+					return nil, errors.Wrap(err, "get ip failed")
+				}
+
 				return template.Render(`
 server {
 	server_name {{ .Domain }};
 	client_max_body_size 100M;
 
 	location / {
+{{- if .WebsocketEnabled }} 
+		proxy_set_header   Upgrade $http_upgrade;
+		proxy_set_header   Connection "upgrade";
+		proxy_redirect     http:// $scheme://;
+{{- end }}
+
 		proxy_set_header X-Forwarded-Host $host:$server_port;
 		proxy_set_header X-Forwarded-Server $host;
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -60,7 +76,7 @@ server {
 		proxy_pass {{ .Target }}/;
 	}
 
-	listen 443 ssl;
+	listen {{ .IP }}:443 ssl;
 	ssl_certificate /etc/letsencrypt/live/{{ .Domain }}/fullchain.pem;
 	ssl_certificate_key /etc/letsencrypt/live/{{ .Domain }}/privkey.pem;
 	include /etc/letsencrypt/options-ssl-nginx.conf;
@@ -68,17 +84,21 @@ server {
 }
 
 server {
-	listen 80;
+	listen {{ .IP }}:80;
 
 	server_name {{ .Domain }};
     return 301 https://$server_name$request_uri;
 }
 `, struct {
-					Domain string
-					Target string
+					Domain           string
+					Target           string
+					WebsocketEnabled bool
+					IP               string
 				}{
-					Domain: s.Domain.String(),
-					Target: s.Target,
+					Domain:           s.Domain.String(),
+					Target:           s.Target,
+					WebsocketEnabled: s.WebsocketEnabled,
+					IP:               ip.String(),
 				})
 			}),
 			User:  "root",

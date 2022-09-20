@@ -24,8 +24,8 @@ func (k *KafkaSample) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KafkaSample) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KafkaSample) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "http_server",
@@ -35,7 +35,7 @@ func (k *KafkaSample) Children() []world.Configuration {
 				Image:           k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KafkaSample) Applier() (world.Applier, error) {

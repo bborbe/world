@@ -45,13 +45,14 @@ func (c *Confluence) Validate(ctx context.Context) error {
 	)
 }
 
-func (c *Confluence) Children() []world.Configuration {
+func (c *Confluence) Children(ctx context.Context) (world.Configurations, error) {
 	var result []world.Configuration
 	result = append(result, c.Requirements...)
 	result = append(result, &Postgres{
-		SSH:                  c.SSH,
-		Name:                 "confluence-postgres",
-		PostgresVersion:      "10.13",
+		SSH:  c.SSH,
+		Name: "confluence-postgres",
+		// https://confluence.atlassian.com/conf715/supported-platforms-1096098750.html
+		PostgresVersion:      "14.3",
 		PostgresInitDbArgs:   "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8 -T template0",
 		PostgresDatabaseName: "confluence",
 		PostgresUsername:     deployer.SecretValueStatic("confluence"),
@@ -60,7 +61,7 @@ func (c *Confluence) Children() []world.Configuration {
 		DataPath:             "/home/confluence-postgres",
 	})
 	result = append(result, c.confluence()...)
-	return result
+	return result, nil
 }
 
 func (c *Confluence) confluence() []world.Configuration {
@@ -72,7 +73,7 @@ func (c *Confluence) confluence() []world.Configuration {
 	path := "/home/confluence-data"
 	envFile := fmt.Sprintf("%s.environment", path)
 	memory := Memory(2048)
-	return []world.Configuration{
+	return world.Configurations{
 		&build.Confluence{
 			VendorVersion: c.Version,
 			GitBranch:     buildVersion,
@@ -130,8 +131,9 @@ func (c *Confluence) confluence() []world.Configuration {
 			},
 		},
 		world.NewConfiguraionBuilder().WithApplier(&remote.IptablesAllowInput{
-			SSH:  c.SSH,
-			Port: c.AppPort,
+			SSH:      c.SSH,
+			Port:     c.AppPort,
+			Protocol: network.TCP,
 		}),
 	}
 }

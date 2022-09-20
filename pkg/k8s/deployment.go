@@ -36,8 +36,8 @@ func (d *DeploymentConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *DeploymentConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (d *DeploymentConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return d.Requirements, nil
 }
 
 type DeploymentApplier struct {

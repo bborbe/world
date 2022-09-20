@@ -35,8 +35,8 @@ func (c *ClusterRoleConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (c *ClusterRoleConfiguration) Children() []world.Configuration {
-	return c.Requirements
+func (c *ClusterRoleConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return c.Requirements, nil
 }
 
 type ClusterRoleName string

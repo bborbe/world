@@ -49,8 +49,8 @@ func (s *ServiceDeployer) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (s *ServiceDeployer) Children() []world.Configuration {
-	return s.Requirements
+func (s *ServiceDeployer) Children(ctx context.Context) (world.Configurations, error) {
+	return s.Requirements, nil
 }
 
 func (s *ServiceDeployer) service() k8s.Service {

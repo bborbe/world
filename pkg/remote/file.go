@@ -25,8 +25,8 @@ type File struct {
 	Perm    file.Perm
 }
 
-func (f *File) Children() []world.Configuration {
-	return []world.Configuration{
+func (f *File) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(&FileContent{
 			SSH:     f.SSH,
 			Path:    f.Path,
@@ -43,7 +43,7 @@ func (f *File) Children() []world.Configuration {
 			Path: f.Path,
 			Perm: f.Perm,
 		}),
-	}
+	}, nil
 }
 
 func (f *File) Applier() (world.Applier, error) {

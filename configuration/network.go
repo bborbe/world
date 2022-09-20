@@ -24,11 +24,6 @@ var HetznerVPN = Network{
 	IPNet: network.IPNetStatic("172.16.90.1/24"),
 }
 
-var NetcupVPN = Network{
-	Name:  "netcup-vpn",
-	IPNet: network.IPNetStatic("172.16.80.1/24"),
-}
-
 var HM = Network{
 	Name:  "hm",
 	IPNet: network.IPNetStatic("192.168.178.0/24"),
@@ -43,11 +38,5 @@ type VPNServer struct {
 var HetznerVPNServer = VPNServer{
 	ServerName:    "hetzner",
 	ServerAddress: "hetzner-1.benjamin-borbe.de",
-	Port:          network.PortStatic(563),
-}
-
-var NetcupVPNServer = VPNServer{
-	ServerName:    "netcup",
-	ServerAddress: "v22016124049440903.goodsrv.de",
 	Port:          network.PortStatic(563),
 }

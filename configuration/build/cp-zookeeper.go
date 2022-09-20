@@ -24,8 +24,8 @@ func (c *CpZookeeper) Validate(ctx context.Context) error {
 	)
 }
 
-func (c *CpZookeeper) Children() []world.Configuration {
-	return []world.Configuration{
+func (c *CpZookeeper) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (c *CpZookeeper) Children() []world.Configuration {
 				TargetImage: c.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (c *CpZookeeper) Applier() (world.Applier, error) {

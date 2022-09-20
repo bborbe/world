@@ -24,8 +24,8 @@ func (d *DebugServer) Validate(ctx context.Context) error {
 	)
 }
 
-func (d *DebugServer) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *DebugServer) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "debug-server",
@@ -35,7 +35,7 @@ func (d *DebugServer) Children() []world.Configuration {
 				Image:           d.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (d *DebugServer) Applier() (world.Applier, error) {

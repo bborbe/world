@@ -6,9 +6,11 @@ package world
 
 import "context"
 
-//go:generate counterfeiter -o mocks/configuration.go --fake-name Configuration . Configuration
+type Configurations []Configuration
+
+//go:generate go run -mod=vendor github.com/maxbrunsfeld/counterfeiter/v6 -o ../../mocks/configuration.go --fake-name Configuration . Configuration
 type Configuration interface {
-	Children() []Configuration
+	Children(ctx context.Context) (Configurations, error)
 	Applier() (Applier, error)
 	Validate(ctx context.Context) error
 }

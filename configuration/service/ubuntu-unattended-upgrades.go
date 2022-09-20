@@ -17,8 +17,8 @@ type UbuntuUnattendedUpgrades struct {
 	SSH *ssh.SSH
 }
 
-func (f *UbuntuUnattendedUpgrades) Children() []world.Configuration {
-	return []world.Configuration{
+func (f *UbuntuUnattendedUpgrades) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(&apt.Update{
 			SSH: f.SSH,
 		}),
@@ -32,7 +32,7 @@ func (f *UbuntuUnattendedUpgrades) Children() []world.Configuration {
 		world.NewConfiguraionBuilder().WithApplier(&apt.Clean{
 			SSH: f.SSH,
 		}),
-	}
+	}, nil
 }
 
 func (f *UbuntuUnattendedUpgrades) Applier() (world.Applier, error) {

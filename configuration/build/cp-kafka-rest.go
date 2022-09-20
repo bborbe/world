@@ -24,8 +24,8 @@ func (c *CpKafkaRest) Validate(ctx context.Context) error {
 	)
 }
 
-func (c *CpKafkaRest) Children() []world.Configuration {
-	return []world.Configuration{
+func (c *CpKafkaRest) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (c *CpKafkaRest) Children() []world.Configuration {
 				TargetImage: c.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (c *CpKafkaRest) Applier() (world.Applier, error) {

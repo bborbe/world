@@ -6,7 +6,7 @@ package world
 
 import "context"
 
-//go:generate counterfeiter -o mocks/applier.go --fake-name Applier . Applier
+//go:generate go run -mod=vendor github.com/maxbrunsfeld/counterfeiter/v6 -o mocks/applier.go --fake-name Applier . Applier
 type Applier interface {
 	Satisfied(ctx context.Context) (bool, error)
 	Apply(ctx context.Context) error

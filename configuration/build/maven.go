@@ -24,8 +24,8 @@ func (m *Maven) Validate(ctx context.Context) error {
 	)
 }
 
-func (m *Maven) Children() []world.Configuration {
-	return []world.Configuration{
+func (m *Maven) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "maven",
@@ -35,7 +35,7 @@ func (m *Maven) Children() []world.Configuration {
 				Image:           m.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (m *Maven) Applier() (world.Applier, error) {

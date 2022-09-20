@@ -4,9 +4,7 @@
 
 package backup
 
-import "github.com/bborbe/world/configuration/app"
-
-var Fire = app.BackupTarget{
+var Fire = BackupTarget{
 	User:      "root",
 	Host:      "fire.hm.benjamin-borbe.de",
 	Port:      22,

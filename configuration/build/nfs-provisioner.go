@@ -24,8 +24,8 @@ func (n *NfsProvisioner) Validate(ctx context.Context) error {
 	)
 }
 
-func (n *NfsProvisioner) Children() []world.Configuration {
-	return []world.Configuration{
+func (n *NfsProvisioner) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (n *NfsProvisioner) Children() []world.Configuration {
 				TargetImage: n.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (n *NfsProvisioner) Applier() (world.Applier, error) {

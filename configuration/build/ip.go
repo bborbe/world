@@ -24,8 +24,8 @@ func (i *Ip) Validate(ctx context.Context) error {
 	)
 }
 
-func (i *Ip) Children() []world.Configuration {
-	return []world.Configuration{
+func (i *Ip) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "ip",
@@ -35,7 +35,7 @@ func (i *Ip) Children() []world.Configuration {
 				Image:           i.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (i *Ip) Applier() (world.Applier, error) {

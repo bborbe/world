@@ -24,8 +24,8 @@ func (n *NginxAutoindex) Validate(ctx context.Context) error {
 	)
 }
 
-func (n *NginxAutoindex) Children() []world.Configuration {
-	return []world.Configuration{
+func (n *NginxAutoindex) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (n *NginxAutoindex) Children() []world.Configuration {
 				TargetImage: n.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (n *NginxAutoindex) Applier() (world.Applier, error) {

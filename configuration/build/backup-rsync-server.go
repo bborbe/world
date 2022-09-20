@@ -24,8 +24,8 @@ func (b *BackupRsyncServer) Validate(ctx context.Context) error {
 	)
 }
 
-func (b *BackupRsyncServer) Children() []world.Configuration {
-	return []world.Configuration{
+func (b *BackupRsyncServer) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/backup-rsync-server.git",
@@ -33,7 +33,7 @@ func (b *BackupRsyncServer) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(b.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (b *BackupRsyncServer) Applier() (world.Applier, error) {

@@ -4,9 +4,7 @@
 
 package backup
 
-import "github.com/bborbe/world/configuration/app"
-
-var Sun = app.BackupTarget{
+var Sun = BackupTarget{
 	User:      "root",
 	Host:      "sun.pn.benjamin-borbe.de",
 	Port:      22,

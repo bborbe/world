@@ -17,8 +17,8 @@ type DisablePostfix struct {
 	SSH *ssh.SSH
 }
 
-func (d *DisablePostfix) Children() []world.Configuration {
-	return []world.Configuration{}
+func (d *DisablePostfix) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{}, nil
 }
 
 func (d *DisablePostfix) Applier() (world.Applier, error) {

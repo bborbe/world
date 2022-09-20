@@ -24,8 +24,8 @@ func (p *PrometheusNodeExporter) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *PrometheusNodeExporter) Children() []world.Configuration {
-	return []world.Configuration{
+func (p *PrometheusNodeExporter) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (p *PrometheusNodeExporter) Children() []world.Configuration {
 				TargetImage: p.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (p *PrometheusNodeExporter) Applier() (world.Applier, error) {

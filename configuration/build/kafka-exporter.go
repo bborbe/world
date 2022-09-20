@@ -24,8 +24,8 @@ func (k *KafkaExporter) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KafkaExporter) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KafkaExporter) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-exporter",
@@ -35,7 +35,7 @@ func (k *KafkaExporter) Children() []world.Configuration {
 				Image:           k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KafkaExporter) Applier() (world.Applier, error) {

@@ -4,9 +4,7 @@
 
 package backup
 
-import "github.com/bborbe/world/configuration/app"
-
-var Rasp = app.BackupTarget{
+var Rasp = BackupTarget{
 	User:      "root",
 	Host:      "rasp.hm.benjamin-borbe.de",
 	Port:      22,

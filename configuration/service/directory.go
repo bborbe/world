@@ -24,8 +24,8 @@ type Directory struct {
 	Perm  file.Perm
 }
 
-func (d *Directory) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *Directory) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(&remote.Directory{
 			SSH:  d.SSH,
 			Path: d.Path,
@@ -41,7 +41,7 @@ func (d *Directory) Children() []world.Configuration {
 			Path: d.Path,
 			Perm: d.Perm,
 		}),
-	}
+	}, nil
 }
 
 func (d *Directory) Applier() (world.Applier, error) {

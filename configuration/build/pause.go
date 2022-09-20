@@ -24,8 +24,8 @@ func (p *Pause) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *Pause) Children() []world.Configuration {
-	return []world.Configuration{
+func (p *Pause) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (p *Pause) Children() []world.Configuration {
 				TargetImage: p.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (p *Pause) Applier() (world.Applier, error) {

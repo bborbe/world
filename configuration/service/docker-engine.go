@@ -18,8 +18,8 @@ type DockerEngine struct {
 	SSH *ssh.SSH
 }
 
-func (d *DockerEngine) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *DockerEngine) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(&remote.Command{
 			SSH:     d.SSH,
 			Command: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -",
@@ -40,7 +40,7 @@ func (d *DockerEngine) Children() []world.Configuration {
 			SSH:     d.SSH,
 			Command: `apt-get --quiet --yes --no-install-recommends install docker-ce docker-ce-cli containerd.io`,
 		}),
-	}
+	}, nil
 }
 
 func (d *DockerEngine) Applier() (world.Applier, error) {

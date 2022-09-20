@@ -45,8 +45,8 @@ func (h Host) Validate(ctx context.Context) error {
 
 type PublicKeyPath string
 
-func (h PublicKeyPath) Validate(ctx context.Context) error {
-	if h == "" {
+func (p PublicKeyPath) Validate(ctx context.Context) error {
+	if p == "" {
 		return errors.New("PublicKeyPath missing")
 	}
 	return nil
@@ -58,8 +58,8 @@ func (p PublicKeyPath) String() string {
 
 type PrivateKeyPath string
 
-func (h PrivateKeyPath) Validate(ctx context.Context) error {
-	if h == "" {
+func (p PrivateKeyPath) Validate(ctx context.Context) error {
+	if p == "" {
 		return errors.New("PrivateKeyPath missing")
 	}
 	return nil

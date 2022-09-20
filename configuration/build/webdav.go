@@ -24,8 +24,8 @@ func (w *Webdav) Validate(ctx context.Context) error {
 		w.Image,
 	)
 }
-func (w *Webdav) Children() []world.Configuration {
-	return []world.Configuration{
+func (w *Webdav) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/webdav.git",
@@ -33,7 +33,7 @@ func (w *Webdav) Children() []world.Configuration {
 				GitBranch: w.GitBranch,
 			},
 		),
-	}
+	}, nil
 }
 
 func (w *Webdav) Applier() (world.Applier, error) {

@@ -24,8 +24,8 @@ func (k *KafkaDockerhubVersionCollector) Validate(ctx context.Context) error {
 	)
 }
 
-func (k *KafkaDockerhubVersionCollector) Children() []world.Configuration {
-	return []world.Configuration{
+func (k *KafkaDockerhubVersionCollector) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "kafka-dockerhub-version-collector",
@@ -35,7 +35,7 @@ func (k *KafkaDockerhubVersionCollector) Children() []world.Configuration {
 				Image:           k.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (k *KafkaDockerhubVersionCollector) Applier() (world.Applier, error) {

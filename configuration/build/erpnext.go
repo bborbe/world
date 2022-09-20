@@ -24,8 +24,8 @@ func (e *Erpnext) Validate(ctx context.Context) error {
 	)
 }
 
-func (e *Erpnext) Children() []world.Configuration {
-	return []world.Configuration{
+func (e *Erpnext) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/erpnext.git",
@@ -33,7 +33,7 @@ func (e *Erpnext) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(e.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (e *Erpnext) Applier() (world.Applier, error) {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -27,6 +28,9 @@ type LoadBalancer struct {
 	Protection       LoadBalancerProtection
 	Labels           map[string]string
 	Created          time.Time
+	IncludedTraffic  uint64
+	OutgoingTraffic  uint64
+	IngoingTraffic   uint64
 }
 
 // LoadBalancerPublicNet represents a Load Balancer's public network.
@@ -38,12 +42,14 @@ type LoadBalancerPublicNet struct {
 
 // LoadBalancerPublicNetIPv4 represents a Load Balancer's public IPv4 address.
 type LoadBalancerPublicNetIPv4 struct {
-	IP net.IP
+	IP     net.IP
+	DNSPtr string
 }
 
 // LoadBalancerPublicNetIPv6 represents a Load Balancer's public IPv6 address.
 type LoadBalancerPublicNetIPv6 struct {
-	IP net.IP
+	IP     net.IP
+	DNSPtr string
 }
 
 // LoadBalancerPrivateNet represents a Load Balancer's private network.
@@ -114,8 +120,16 @@ type LoadBalancerAlgorithm struct {
 type LoadBalancerTargetType string
 
 const (
-	// LoadBalancerTargetTypeServer is a target type which points to a specific server.
+	// LoadBalancerTargetTypeServer is a target type which points to a specific
+	// server.
 	LoadBalancerTargetTypeServer LoadBalancerTargetType = "server"
+
+	// LoadBalancerTargetTypeLabelSelector is a target type which selects the
+	// servers a Load Balancer points to using labels assigned to the servers.
+	LoadBalancerTargetTypeLabelSelector LoadBalancerTargetType = "label_selector"
+
+	// LoadBalancerTargetTypeIP is a target type which points to an IP.
+	LoadBalancerTargetTypeIP LoadBalancerTargetType = "ip"
 )
 
 // LoadBalancerServiceProtocol specifies the protocol of a Load Balancer service.
@@ -132,17 +146,32 @@ const (
 
 // LoadBalancerTarget represents a Load Balancer target.
 type LoadBalancerTarget struct {
-	Type         LoadBalancerTargetType
-	Server       *LoadBalancerTargetServer
-	HealthStatus []LoadBalancerTargetHealthStatus
-	Targets      []LoadBalancerTarget
-	UsePrivateIP bool
+	Type          LoadBalancerTargetType
+	Server        *LoadBalancerTargetServer
+	LabelSelector *LoadBalancerTargetLabelSelector
+	IP            *LoadBalancerTargetIP
+	HealthStatus  []LoadBalancerTargetHealthStatus
+	Targets       []LoadBalancerTarget
+	UsePrivateIP  bool
 }
 
 // LoadBalancerTargetServer configures a Load Balancer target
-// pointing to a specific server.
+// pointing at a specific server.
 type LoadBalancerTargetServer struct {
 	Server *Server
+}
+
+// LoadBalancerTargetLabelSelector configures a Load Balancer target pointing
+// at the servers matching the selector. This includes the target pointing at
+// nothing, if no servers match the Selector.
+type LoadBalancerTargetLabelSelector struct {
+	Selector string
+}
+
+// LoadBalancerTargetIP configures a Load Balancer target pointing to a Hetzner
+// Online IP address.
+type LoadBalancerTargetIP struct {
+	IP string
 }
 
 // LoadBalancerTargetHealthStatusStatus describes a target's health status.
@@ -166,6 +195,44 @@ type LoadBalancerTargetHealthStatus struct {
 // LoadBalancerProtection represents the protection level of a Load Balancer.
 type LoadBalancerProtection struct {
 	Delete bool
+}
+
+// changeDNSPtr changes or resets the reverse DNS pointer for a IP address.
+// Pass a nil ptr to reset the reverse DNS pointer to its default value.
+func (lb *LoadBalancer) changeDNSPtr(ctx context.Context, client *Client, ip net.IP, ptr *string) (*Action, *Response, error) {
+	reqBody := schema.LoadBalancerActionChangeDNSPtrRequest{
+		IP:     ip.String(),
+		DNSPtr: ptr,
+	}
+	reqBodyData, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	path := fmt.Sprintf("/load_balancers/%d/actions/change_dns_ptr", lb.ID)
+	req, err := client.NewRequest(ctx, "POST", path, bytes.NewReader(reqBodyData))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	respBody := schema.LoadBalancerActionChangeDNSPtrResponse{}
+	resp, err := client.Do(req, &respBody)
+	if err != nil {
+		return nil, resp, err
+	}
+	return ActionFromSchema(respBody.Action), resp, nil
+}
+
+// GetDNSPtrForIP searches for the dns assigned to the given IP address.
+// It returns an error if there is no dns set for the given IP address.
+func (lb *LoadBalancer) GetDNSPtrForIP(ip net.IP) (string, error) {
+	if net.IP.Equal(lb.PublicNet.IPv4.IP, ip) {
+		return lb.PublicNet.IPv4.DNSPtr, nil
+	} else if net.IP.Equal(lb.PublicNet.IPv6.IP, ip) {
+		return lb.PublicNet.IPv6.DNSPtr, nil
+	}
+
+	return "", DNSNotFoundError{ip}
 }
 
 // LoadBalancerClient is a client for the Load Balancers API.
@@ -256,7 +323,7 @@ func (c *LoadBalancerClient) All(ctx context.Context) ([]*LoadBalancer, error) {
 	opts := LoadBalancerListOpts{}
 	opts.PerPage = 50
 
-	_, err := c.client.all(func(page int) (*Response, error) {
+	err := c.client.all(func(page int) (*Response, error) {
 		opts.Page = page
 		LoadBalancer, resp, err := c.List(ctx, opts)
 		if err != nil {
@@ -276,7 +343,7 @@ func (c *LoadBalancerClient) All(ctx context.Context) ([]*LoadBalancer, error) {
 func (c *LoadBalancerClient) AllWithOpts(ctx context.Context, opts LoadBalancerListOpts) ([]*LoadBalancer, error) {
 	var allLoadBalancers []*LoadBalancer
 
-	_, err := c.client.all(func(page int) (*Response, error) {
+	err := c.client.all(func(page int) (*Response, error) {
 		opts.Page = page
 		LoadBalancers, resp, err := c.List(ctx, opts)
 		if err != nil {
@@ -343,15 +410,29 @@ type LoadBalancerCreateOpts struct {
 // LoadBalancerCreateOptsTarget holds options for specifying a target
 // when creating a new Load Balancer.
 type LoadBalancerCreateOptsTarget struct {
-	Type         LoadBalancerTargetType
-	Server       LoadBalancerCreateOptsTargetServer
-	UsePrivateIP *bool
+	Type          LoadBalancerTargetType
+	Server        LoadBalancerCreateOptsTargetServer
+	LabelSelector LoadBalancerCreateOptsTargetLabelSelector
+	IP            LoadBalancerCreateOptsTargetIP
+	UsePrivateIP  *bool
 }
 
 // LoadBalancerCreateOptsTargetServer holds options for specifying a server target
 // when creating a new Load Balancer.
 type LoadBalancerCreateOptsTargetServer struct {
 	Server *Server
+}
+
+// LoadBalancerCreateOptsTargetLabelSelector holds options for specifying a label selector target
+// when creating a new Load Balancer.
+type LoadBalancerCreateOptsTargetLabelSelector struct {
+	Selector string
+}
+
+// LoadBalancerCreateOptsTargetIP holds options for specifying an IP target
+// when creating a new Load Balancer.
+type LoadBalancerCreateOptsTargetIP struct {
+	IP string
 }
 
 // LoadBalancerCreateOptsService holds options for specifying a service
@@ -500,6 +581,62 @@ func (c *LoadBalancerClient) RemoveServerTarget(ctx context.Context, loadBalance
 		Type: string(LoadBalancerTargetTypeServer),
 		Server: &schema.LoadBalancerActionRemoveTargetRequestServer{
 			ID: server.ID,
+		},
+	}
+	return c.removeTarget(ctx, loadBalancer, reqBody)
+}
+
+// LoadBalancerAddLabelSelectorTargetOpts specifies options for adding a label selector target
+// to a Load Balancer.
+type LoadBalancerAddLabelSelectorTargetOpts struct {
+	Selector     string
+	UsePrivateIP *bool
+}
+
+// AddLabelSelectorTarget adds a label selector target to a Load Balancer.
+func (c *LoadBalancerClient) AddLabelSelectorTarget(ctx context.Context, loadBalancer *LoadBalancer, opts LoadBalancerAddLabelSelectorTargetOpts) (*Action, *Response, error) {
+	reqBody := schema.LoadBalancerActionAddTargetRequest{
+		Type: string(LoadBalancerTargetTypeLabelSelector),
+		LabelSelector: &schema.LoadBalancerActionAddTargetRequestLabelSelector{
+			Selector: opts.Selector,
+		},
+		UsePrivateIP: opts.UsePrivateIP,
+	}
+	return c.addTarget(ctx, loadBalancer, reqBody)
+}
+
+// RemoveLabelSelectorTarget removes a label selector target from a Load Balancer.
+func (c *LoadBalancerClient) RemoveLabelSelectorTarget(ctx context.Context, loadBalancer *LoadBalancer, labelSelector string) (*Action, *Response, error) {
+	reqBody := schema.LoadBalancerActionRemoveTargetRequest{
+		Type: string(LoadBalancerTargetTypeLabelSelector),
+		LabelSelector: &schema.LoadBalancerActionRemoveTargetRequestLabelSelector{
+			Selector: labelSelector,
+		},
+	}
+	return c.removeTarget(ctx, loadBalancer, reqBody)
+}
+
+// LoadBalancerAddIPTargetOpts specifies options for adding an IP target to a
+// Load Balancer.
+type LoadBalancerAddIPTargetOpts struct {
+	IP net.IP
+}
+
+// AddIPTarget adds an IP target to a Load Balancer.
+func (c *LoadBalancerClient) AddIPTarget(ctx context.Context, loadBalancer *LoadBalancer, opts LoadBalancerAddIPTargetOpts) (*Action, *Response, error) {
+	reqBody := schema.LoadBalancerActionAddTargetRequest{
+		Type: string(LoadBalancerTargetTypeIP),
+		IP:   &schema.LoadBalancerActionAddTargetRequestIP{IP: opts.IP.String()},
+	}
+	return c.addTarget(ctx, loadBalancer, reqBody)
+}
+
+// RemoveIPTarget removes an IP target from a Load Balancer.
+func (c *LoadBalancerClient) RemoveIPTarget(ctx context.Context, loadBalancer *LoadBalancer, ip net.IP) (*Action, *Response, error) {
+	reqBody := schema.LoadBalancerActionRemoveTargetRequest{
+		Type: string(LoadBalancerTargetTypeIP),
+		IP: &schema.LoadBalancerActionRemoveTargetRequestIP{
+			IP: ip.String(),
 		},
 	}
 	return c.removeTarget(ctx, loadBalancer, reqBody)
@@ -802,4 +939,138 @@ func (c *LoadBalancerClient) DisablePublicInterface(ctx context.Context, loadBal
 		return nil, resp, err
 	}
 	return ActionFromSchema(respBody.Action), resp, err
+}
+
+// LoadBalancerChangeTypeOpts specifies options for changing a Load Balancer's type.
+type LoadBalancerChangeTypeOpts struct {
+	LoadBalancerType *LoadBalancerType // new Load Balancer type
+}
+
+// ChangeType changes a Load Balancer's type.
+func (c *LoadBalancerClient) ChangeType(ctx context.Context, loadBalancer *LoadBalancer, opts LoadBalancerChangeTypeOpts) (*Action, *Response, error) {
+	reqBody := schema.LoadBalancerActionChangeTypeRequest{}
+	if opts.LoadBalancerType.ID != 0 {
+		reqBody.LoadBalancerType = opts.LoadBalancerType.ID
+	} else {
+		reqBody.LoadBalancerType = opts.LoadBalancerType.Name
+	}
+	reqBodyData, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	path := fmt.Sprintf("/load_balancers/%d/actions/change_type", loadBalancer.ID)
+	req, err := c.client.NewRequest(ctx, "POST", path, bytes.NewReader(reqBodyData))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	respBody := schema.LoadBalancerActionChangeTypeResponse{}
+	resp, err := c.client.Do(req, &respBody)
+	if err != nil {
+		return nil, resp, err
+	}
+	return ActionFromSchema(respBody.Action), resp, nil
+}
+
+// LoadBalancerMetricType is the type of available metrics for Load Balancers.
+type LoadBalancerMetricType string
+
+// Available types of Load Balancer metrics. See Hetzner Cloud API
+// documentation for details.
+const (
+	LoadBalancerMetricOpenConnections      LoadBalancerMetricType = "open_connections"
+	LoadBalancerMetricConnectionsPerSecond LoadBalancerMetricType = "connections_per_second"
+	LoadBalancerMetricRequestsPerSecond    LoadBalancerMetricType = "requests_per_second"
+	LoadBalancerMetricBandwidth            LoadBalancerMetricType = "bandwidth"
+)
+
+// LoadBalancerGetMetricsOpts configures the call to get metrics for a Load
+// Balancer.
+type LoadBalancerGetMetricsOpts struct {
+	Types []LoadBalancerMetricType
+	Start time.Time
+	End   time.Time
+	Step  int
+}
+
+func (o *LoadBalancerGetMetricsOpts) addQueryParams(req *http.Request) error {
+	query := req.URL.Query()
+
+	if len(o.Types) == 0 {
+		return fmt.Errorf("no metric types specified")
+	}
+	for _, typ := range o.Types {
+		query.Add("type", string(typ))
+	}
+
+	if o.Start.IsZero() {
+		return fmt.Errorf("no start time specified")
+	}
+	query.Add("start", o.Start.Format(time.RFC3339))
+
+	if o.End.IsZero() {
+		return fmt.Errorf("no end time specified")
+	}
+	query.Add("end", o.End.Format(time.RFC3339))
+
+	if o.Step > 0 {
+		query.Add("step", strconv.Itoa(o.Step))
+	}
+	req.URL.RawQuery = query.Encode()
+
+	return nil
+}
+
+// LoadBalancerMetrics contains the metrics requested for a Load Balancer.
+type LoadBalancerMetrics struct {
+	Start      time.Time
+	End        time.Time
+	Step       float64
+	TimeSeries map[string][]LoadBalancerMetricsValue
+}
+
+// LoadBalancerMetricsValue represents a single value in a time series of metrics.
+type LoadBalancerMetricsValue struct {
+	Timestamp float64
+	Value     string
+}
+
+// GetMetrics obtains metrics for a Load Balancer.
+func (c *LoadBalancerClient) GetMetrics(
+	ctx context.Context, lb *LoadBalancer, opts LoadBalancerGetMetricsOpts,
+) (*LoadBalancerMetrics, *Response, error) {
+	var respBody schema.LoadBalancerGetMetricsResponse
+
+	if lb == nil {
+		return nil, nil, fmt.Errorf("illegal argument: load balancer is nil")
+	}
+
+	path := fmt.Sprintf("/load_balancers/%d/metrics", lb.ID)
+	req, err := c.client.NewRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("new request: %v", err)
+	}
+	if err := opts.addQueryParams(req); err != nil {
+		return nil, nil, fmt.Errorf("add query params: %v", err)
+	}
+	resp, err := c.client.Do(req, &respBody)
+	if err != nil {
+		return nil, nil, fmt.Errorf("get metrics: %v", err)
+	}
+	ms, err := loadBalancerMetricsFromSchema(&respBody)
+	if err != nil {
+		return nil, nil, fmt.Errorf("convert response body: %v", err)
+	}
+	return ms, resp, nil
+}
+
+// ChangeDNSPtr changes or resets the reverse DNS pointer for a Load Balancer.
+// Pass a nil ptr to reset the reverse DNS pointer to its default value.
+func (c *LoadBalancerClient) ChangeDNSPtr(ctx context.Context, lb *LoadBalancer, ip string, ptr *string) (*Action, *Response, error) {
+	netIP := net.ParseIP(ip)
+	if netIP == nil {
+		return nil, nil, InvalidIPError{ip}
+	}
+	return lb.changeDNSPtr(ctx, c.client, net.ParseIP(ip), ptr)
 }

@@ -24,8 +24,8 @@ func (g *Grafana) Validate(ctx context.Context) error {
 	)
 }
 
-func (g *Grafana) Children() []world.Configuration {
-	return []world.Configuration{
+func (g *Grafana) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (g *Grafana) Children() []world.Configuration {
 				TargetImage: g.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (g *Grafana) Applier() (world.Applier, error) {

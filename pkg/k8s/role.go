@@ -35,8 +35,8 @@ func (r *RoleConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (r *RoleConfiguration) Children() []world.Configuration {
-	return r.Requirements
+func (r *RoleConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return r.Requirements, nil
 }
 
 type RoleName string

@@ -40,9 +40,9 @@ func (r *RemoteClient) Validate(ctx context.Context) error {
 	)
 }
 
-func (r *RemoteClient) Children() []world.Configuration {
+func (r *RemoteClient) Children(ctx context.Context) (world.Configurations, error) {
 	clientConfig := r.clientConfig()
-	return []world.Configuration{
+	return world.Configurations{
 		&service.Directory{
 			SSH:   r.SSH,
 			Path:  file.Path("/etc/openvpn"),
@@ -125,7 +125,7 @@ func (r *RemoteClient) Children() []world.Configuration {
 			SSH:  r.SSH,
 			Name: "openvpn@client",
 		}),
-	}
+	}, nil
 }
 
 func (r *RemoteClient) Applier() (world.Applier, error) {

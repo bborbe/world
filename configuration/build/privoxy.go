@@ -24,8 +24,8 @@ func (p *Privoxy) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *Privoxy) Children() []world.Configuration {
-	return []world.Configuration{
+func (p *Privoxy) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/privoxy.git",
@@ -33,7 +33,7 @@ func (p *Privoxy) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(p.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (p *Privoxy) Applier() (world.Applier, error) {

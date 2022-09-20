@@ -17,8 +17,8 @@ type PostgresBackup struct {
 	Image docker.Image
 }
 
-func (p *PostgresBackup) Children() []world.Configuration {
-	return []world.Configuration{
+func (p *PostgresBackup) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/postgres-backup.git",
@@ -26,7 +26,7 @@ func (p *PostgresBackup) Children() []world.Configuration {
 				GitBranch: docker.GitBranch(p.Image.Tag),
 			},
 		),
-	}
+	}, nil
 }
 
 func (p *PostgresBackup) Applier() (world.Applier, error) {

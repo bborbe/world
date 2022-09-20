@@ -35,8 +35,8 @@ func (d *ServiceConfiguration) Applier() (world.Applier, error) {
 	}, nil
 }
 
-func (d *ServiceConfiguration) Children() []world.Configuration {
-	return d.Requirements
+func (d *ServiceConfiguration) Children(ctx context.Context) (world.Configurations, error) {
+	return d.Requirements, nil
 }
 
 type ServiceApplier struct {

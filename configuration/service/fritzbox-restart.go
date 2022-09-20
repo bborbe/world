@@ -6,13 +6,14 @@ package service
 
 import (
 	"context"
-	"github.com/bborbe/world/pkg/content"
-	"github.com/bborbe/world/pkg/deployer"
-	"github.com/bborbe/world/pkg/template"
+
 	"github.com/pkg/errors"
 
 	"github.com/bborbe/world/pkg/apt"
+	"github.com/bborbe/world/pkg/content"
+	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/ssh"
+	"github.com/bborbe/world/pkg/template"
 	"github.com/bborbe/world/pkg/validation"
 	"github.com/bborbe/world/pkg/world"
 )
@@ -23,8 +24,8 @@ type FritzBoxRestart struct {
 	FritzBoxPassword deployer.SecretValue
 }
 
-func (d *FritzBoxRestart) Children() []world.Configuration {
-	return []world.Configuration{
+func (d *FritzBoxRestart) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(&apt.Install{
 			SSH:     d.SSH,
 			Package: "curl",
@@ -35,7 +36,7 @@ func (d *FritzBoxRestart) Children() []world.Configuration {
 			Expression: d.cronExpression(),
 			Schedule:   "0 3 * * *",
 		},
-	}
+	}, nil
 }
 
 func (d *FritzBoxRestart) cronExpression() content.HasContent {

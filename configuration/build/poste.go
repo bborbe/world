@@ -28,8 +28,8 @@ func (p *Poste) Validate(ctx context.Context) error {
 	)
 }
 
-func (p *Poste) Children() []world.Configuration {
-	return []world.Configuration{
+func (p *Poste) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo: "https://github.com/bborbe/poste.io.git",
@@ -40,7 +40,7 @@ func (p *Poste) Children() []world.Configuration {
 				GitBranch: p.GitBranch,
 			},
 		),
-	}
+	}, nil
 }
 
 func (p *Poste) Applier() (world.Applier, error) {

@@ -24,8 +24,8 @@ func (m *MqttKafkaConnector) Validate(ctx context.Context) error {
 	)
 }
 
-func (m *MqttKafkaConnector) Children() []world.Configuration {
-	return []world.Configuration{
+func (m *MqttKafkaConnector) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.GolangBuilder{
 				Name:            "mqtt-kafka-connector",
@@ -35,7 +35,7 @@ func (m *MqttKafkaConnector) Children() []world.Configuration {
 				Image:           m.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (m *MqttKafkaConnector) Applier() (world.Applier, error) {

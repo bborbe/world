@@ -12,8 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
-
+	"github.com/bborbe/world/configuration/backup"
 	"github.com/bborbe/world/configuration/build"
 	"github.com/bborbe/world/pkg/deployer"
 	"github.com/bborbe/world/pkg/docker"
@@ -62,38 +61,13 @@ func (b BackupConfigJson) Validate(ctx context.Context) error {
 	return json.NewEncoder(&bytes.Buffer{}).Encode(b)
 }
 
-type BackupTargets []BackupTarget
+type BackupTargets []backup.BackupTarget
 
 func (b BackupTargets) Validate(ctx context.Context) error {
 	for _, target := range b {
 		if err := target.Validate(ctx); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-type BackupTarget struct {
-	User      string
-	Host      string
-	IP        string
-	Port      int
-	Excludes  []string
-	Directory string
-}
-
-func (b BackupTarget) Validate(ctx context.Context) error {
-	if b.Directory == "" {
-		return errors.New("Directory missing")
-	}
-	if b.User == "" {
-		return errors.New("User missing")
-	}
-	if b.Host == "" {
-		return errors.New("Host missing")
-	}
-	if b.Port <= 0 || b.Port >= 65535 {
-		return errors.Errorf("invalid port %d", b.Port)
 	}
 	return nil
 }
@@ -115,7 +89,7 @@ func (b *BackupClient) Validate(ctx context.Context) error {
 	)
 }
 
-func (b *BackupClient) Children() []world.Configuration {
+func (b *BackupClient) Children(ctx context.Context) (world.Configurations, error) {
 	result := []world.Configuration{
 		&k8s.NamespaceConfiguration{
 			Context: b.Context,
@@ -133,7 +107,7 @@ func (b *BackupClient) Children() []world.Configuration {
 	result = append(result, b.cleanup()...)
 	result = append(result, b.statusServer()...)
 	result = append(result, b.statusClient()...)
-	return result
+	return result, nil
 }
 
 func (b *BackupClient) rsync() []world.Configuration {
@@ -153,7 +127,7 @@ func (b *BackupClient) rsync() []world.Configuration {
 		}
 		configValues[fmt.Sprintf("%s.exclude", target.Host)] = deployer.ConfigValueStatic(buf.String())
 	}
-	return []world.Configuration{
+	return world.Configurations{
 		world.NewConfiguraionBuilder().WithApplier(
 			&deployer.ConfigMapApplier{
 				Context:      b.Context,
@@ -283,7 +257,7 @@ func (b *BackupClient) cleanup() []world.Configuration {
 		Repository: "bborbe/backup-rsync-cleanup",
 		Tag:        "2.0.0",
 	}
-	return []world.Configuration{
+	return world.Configurations{
 		&deployer.DeploymentDeployer{
 			Context:   b.Context,
 			Namespace: "backup",
@@ -361,7 +335,7 @@ func (b *BackupClient) statusServer() []world.Configuration {
 		Repository: "bborbe/backup-status-server",
 		Tag:        "2.0.0",
 	}
-	return []world.Configuration{
+	return world.Configurations{
 		&deployer.DeploymentDeployer{
 			Context:   b.Context,
 			Namespace: "backup",
@@ -459,7 +433,7 @@ func (b *BackupClient) statusClient() []world.Configuration {
 		Repository: "bborbe/backup-status-client",
 		Tag:        "2.0.0",
 	}
-	return []world.Configuration{
+	return world.Configurations{
 		&deployer.DeploymentDeployer{
 			Context:   b.Context,
 			Namespace: "backup",

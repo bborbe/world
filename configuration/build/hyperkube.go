@@ -24,8 +24,8 @@ func (h *Hyperkube) Validate(ctx context.Context) error {
 	)
 }
 
-func (h *Hyperkube) Children() []world.Configuration {
-	return []world.Configuration{
+func (h *Hyperkube) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.CloneBuilder{
 				SourceImage: docker.Image{
@@ -35,7 +35,7 @@ func (h *Hyperkube) Children() []world.Configuration {
 				TargetImage: h.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (h *Hyperkube) Applier() (world.Applier, error) {

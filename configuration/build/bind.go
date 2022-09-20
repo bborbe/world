@@ -25,8 +25,8 @@ func (b *Bind) Validate(ctx context.Context) error {
 	)
 }
 
-func (b *Bind) Children() []world.Configuration {
-	return []world.Configuration{
+func (b *Bind) Children(ctx context.Context) (world.Configurations, error) {
+	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
 				GitRepo:   "https://github.com/bborbe/bind.git",
@@ -34,7 +34,7 @@ func (b *Bind) Children() []world.Configuration {
 				Image:     b.Image,
 			},
 		),
-	}
+	}, nil
 }
 
 func (b *Bind) Applier() (world.Applier, error) {
