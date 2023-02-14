@@ -160,14 +160,14 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			SSH:          ssh,
 			IP:           ip,
 			Domain:       WebdavHostname,
-			Target:       fmt.Sprintf("http://%s:8004", Sun.VpnIP),
+			Target:       "http://127.0.0.1:8004",
 			Requirements: buildDNSRequirements(ip, WebdavHostname),
 		},
 		"screego-proxy": &service.NginxProxy{
 			SSH:              ssh,
 			IP:               ip,
 			Domain:           ScreegoHostname,
-			Target:           fmt.Sprintf("http://127.0.01:5050"),
+			Target:           "http://127.0.0.1:5050",
 			Requirements:     buildDNSRequirements(ip, ScreegoHostname),
 			WebsocketEnabled: true,
 		},
@@ -187,6 +187,11 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			SSH:          ssh,
 			PosteVersion: "2.3.8", // https://hub.docker.com/r/analogic/poste.io/tags
 			Port:         network.PortStatic(8001),
+		},
+		"webdav": &service.Webdav{
+			SSH:            ssh,
+			Port:           network.PortStatic(8004),
+			WebdavPassword: w.TeamvaultSecrets.Password("VOzvAO"),
 		},
 	}
 }
@@ -364,21 +369,6 @@ func (w *World) sun() map[AppName]world.Configuration {
 			SecretKey:        w.TeamvaultSecrets.Password("NqA68w"),
 			FernetKey:        w.TeamvaultSecrets.Password("5wYZ2O"),
 			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
-		},
-		"confluence": &service.Confluence{
-			SSH:              ssh,
-			AppPort:          network.PortStatic(8002),
-			DBPort:           network.PortStatic(8003),
-			Domain:           ConfluenceHostname,
-			Version:          "7.19.1",
-			DatabasePassword: w.TeamvaultSecrets.Password("3OlaLn"),
-			SmtpUsername:     w.TeamvaultSecrets.Username("nOeNjL"),
-			SmtpPassword:     w.TeamvaultSecrets.Password("nOeNjL"),
-		},
-		"webdav": &service.Webdav{
-			SSH:            ssh,
-			Port:           network.PortStatic(8004),
-			WebdavPassword: w.TeamvaultSecrets.Password("VOzvAO"),
 		},
 		"timemachine": &service.TimeMachine{
 			SSH: ssh,

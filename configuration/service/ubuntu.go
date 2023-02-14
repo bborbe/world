@@ -18,12 +18,6 @@ type Ubuntu struct {
 
 func (u *Ubuntu) Children(ctx context.Context) (world.Configurations, error) {
 	return world.Configurations{
-		&Smartd{
-			SSH: u.SSH,
-		},
-		&UbuntuUnattendedUpgrades{
-			SSH: u.SSH,
-		},
 		&HdParam{
 			SSH: u.SSH,
 		},
