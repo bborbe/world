@@ -10,9 +10,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/go-yaml/yaml"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type Deployer struct {

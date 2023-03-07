@@ -52,9 +52,6 @@ github.com/fsnotify/fsnotify
 # github.com/getsentry/raven-go v0.2.0
 ## explicit
 github.com/getsentry/raven-go
-# github.com/go-yaml/yaml v2.1.0+incompatible
-## explicit
-github.com/go-yaml/yaml
 # github.com/golang/glog v1.0.0
 ## explicit; go 1.11
 github.com/golang/glog

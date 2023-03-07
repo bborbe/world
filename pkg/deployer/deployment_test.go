@@ -7,11 +7,11 @@ package deployer
 import (
 	"bytes"
 
-	"github.com/go-yaml/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/gbytes"
+	"gopkg.in/yaml.v2"
 
 	"github.com/bborbe/world/pkg/docker"
 	"github.com/bborbe/world/pkg/k8s"

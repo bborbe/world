@@ -14,7 +14,6 @@ require (
 	github.com/bborbe/http v0.0.0-20180829202151-efee63a8d109
 	github.com/bborbe/run v0.0.0-20230102100858-87a20810daf0
 	github.com/bborbe/teamvault-utils v0.0.0-20221018104257-597e2dc51c2a
-	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang/glog v1.0.0
 	github.com/google/addlicense v1.1.1
 	github.com/hetznercloud/hcloud-go v1.40.0
