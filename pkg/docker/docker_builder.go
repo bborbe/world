@@ -7,7 +7,6 @@ package docker
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -28,7 +27,7 @@ func (b *Builder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("build docker image %s ...", b.Image.String())
 
 	glog.V(4).Infof("find build dir ...")
-	dir, err := ioutil.TempDir("", "build")
+	dir, err := os.MkdirTemp("", "build")
 	if err != nil {
 		return errors.Wrap(err, "find tempdir failed")
 	}
@@ -50,7 +49,7 @@ func (b *Builder) Apply(ctx context.Context) error {
 	{
 		var args []string
 		args = append(args, "build")
-		args = append(args, "--no-cache", "--rm=true")
+		args = append(args, "--no-cache", "--rm=true", "--platform=linux/amd64")
 		for k, v := range b.BuildArgs {
 			args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, v))
 		}

@@ -25,7 +25,7 @@ func (c *CloneBuilder) Apply(ctx context.Context) error {
 	glog.V(1).Infof("docker clone %s ...", c.TargetImage.String())
 
 	glog.V(4).Infof("docker pull %s ...", c.SourceImage.String())
-	cmd := createCommand(ctx, "docker", "pull", c.SourceImage.String())
+	cmd := createCommand(ctx, "docker", "pull", "--platform=linux/amd64", c.SourceImage.String())
 	if glog.V(4) {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
