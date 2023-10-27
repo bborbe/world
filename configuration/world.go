@@ -185,7 +185,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		},
 		"poste": &service.Poste{
 			SSH:          ssh,
-			PosteVersion: "2.3.13", // https://hub.docker.com/r/analogic/poste.io/tags
+			PosteVersion: "2.3.14", // https://hub.docker.com/r/analogic/poste.io/tags
 			Port:         network.PortStatic(8001),
 		},
 		"webdav": &service.Webdav{
