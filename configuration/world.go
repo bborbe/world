@@ -60,10 +60,10 @@ func (w *World) Validate(ctx context.Context) error {
 
 func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration {
 	return map[ClusterName]map[AppName]world.Configuration{
-		"sun":       w.sun(),
-		"fire":      w.fire(),
-		"hell":      w.hell(),
-		"hetzner-1": w.hetzner1(),
+		"fire":            w.fire(),
+		"fire-k3s-master": w.fireK3sMaster(),
+		"hell":            w.hell(),
+		"hetzner-1":       w.hetzner1(),
 		// rasp
 		"rasp3": w.rasp3(),
 		"rasp4": w.rasp4(),
@@ -92,10 +92,10 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
 	}
 	openvpnClients := []Server{
-		Sun,
 		Rasp3,
 		Rasp4,
 		Fire,
+		FireK3sMaster,
 		Co2hz,
 		Co2wz,
 		Nova,
@@ -106,10 +106,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		"server": &server.Hetzner{
 			SSH: ssh,
 			IP:  ip,
-		},
-		"mumble": &service.Mumble{
-			SSH:     ssh,
-			Version: "1.2.0",
 		},
 		"screego": &service.Screego{
 			SSH:     ssh,
@@ -148,13 +144,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			Domain:       TeamvaultHostname,
 			Target:       fmt.Sprintf("http://%s:8000", Sun.VpnIP),
 			Requirements: buildDNSRequirements(ip, TeamvaultHostname),
-		},
-		"confluence-proxy": &service.NginxProxy{
-			SSH:          ssh,
-			IP:           ip,
-			Domain:       ConfluenceHostname,
-			Target:       fmt.Sprintf("http://%s:8002", Sun.VpnIP),
-			Requirements: buildDNSRequirements(ip, ConfluenceHostname),
 		},
 		"webdav-proxy": &service.NginxProxy{
 			SSH:          ssh,
@@ -250,27 +239,34 @@ func (w *World) fire() map[AppName]world.Configuration {
 			ServerName:    HetznerVPNServer.ServerName,
 			ServerAddress: HetznerVPNServer.ServerAddress,
 			ServerPort:    HetznerVPNServer.Port,
-			Routes: BuildRoutes(
-				Sun,
-			),
-			Device: openvpn.Tun,
+			Routes:        BuildRoutes(),
+			Device:        openvpn.Tun,
 		},
-		"timemachine": &service.TimeMachine{
+	}
+}
+
+func (w *World) fireK3sMaster() map[AppName]world.Configuration {
+	fireK3sMaster := FireK3sMaster
+	ssh := &ssh.SSH{
+		Host: ssh.Host{
+			IP:   fireK3sMaster.IP,
+			Port: 22,
+		},
+		User:           "bborbe",
+		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
+	}
+	return map[AppName]world.Configuration{
+		"ntpdate": &service.NtpDate{
 			SSH: ssh,
-			Configs: service.TimeMachineConfigs{
-				{
-					Username: "nova",
-					Path:     "/timemachine/nova.hm.benjamin-borbe.de",
-					Password: w.TeamvaultSecrets.File("BwjGOV"),
-					Size:     750000,
-				},
-				{
-					Username: "star",
-					Path:     "/timemachine/star.hm.benjamin-borbe.de",
-					Password: w.TeamvaultSecrets.File("BOrkLo"),
-					Size:     500000,
-				},
-			},
+		},
+		"openvpn-client": &openvpn.RemoteClient{
+			SSH:           ssh,
+			ClientName:    openvpn.ClientName(fireK3sMaster.Name),
+			ServerName:    HetznerVPNServer.ServerName,
+			ServerAddress: HetznerVPNServer.ServerAddress,
+			ServerPort:    HetznerVPNServer.Port,
+			Routes:        BuildRoutes(),
+			Device:        openvpn.Tun,
 		},
 	}
 }
@@ -291,16 +287,6 @@ func (w *World) hell() map[AppName]world.Configuration {
 			SSH: ssh,
 			IP:  ip,
 		},
-		"netplan": &service.NetPlan{
-			SSH:     ssh,
-			IP:      ip,
-			IPMask:  hell.IPMask,
-			Gateway: hell.Gateway,
-			Device:  "enp3s0",
-		},
-		"sudoers": &service.Sudoers{
-			SSH: ssh,
-		},
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
 			ClientName:    openvpn.ClientName(hell.Name),
@@ -311,75 +297,6 @@ func (w *World) hell() map[AppName]world.Configuration {
 				Hell,
 			),
 			Device: openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) sun() map[AppName]world.Configuration {
-	sun := Sun
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   sun.IP,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
-	}
-	return map[AppName]world.Configuration{
-		"dns-update-pn.benjamin-borbe.de": &service.DnsUpdate{
-			SSH:        ssh,
-			DnsKey:     w.TeamvaultSecrets.File("9L64w3"),
-			DnsPrivate: w.TeamvaultSecrets.File("aL50O8"),
-			DnsName:    "pn",
-			DnsZone:    "benjamin-borbe.de",
-		},
-		"ntpdate": &service.NtpDate{
-			SSH: ssh,
-		},
-		"openvpn-client": &openvpn.RemoteClient{
-			SSH:           ssh,
-			ClientName:    openvpn.ClientName(sun.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes: BuildRoutes(
-				Co2hz,
-				Co2wz,
-				Rasp3,
-				Rasp4,
-				Fire,
-				Hell,
-			),
-			Device: openvpn.Tun,
-		},
-		"ldap": &service.Ldap{
-			SSH:          ssh,
-			Tag:          "1.3.0",
-			LdapPassword: w.TeamvaultSecrets.Password("MOPMLG"),
-		},
-		"teamvault": &service.Teamvault{
-			SSH:              ssh,
-			AppPort:          network.PortStatic(8000),
-			DBPort:           network.PortStatic(8001),
-			Domain:           "teamvault.benjamin-borbe.de",
-			DatabasePassword: w.TeamvaultSecrets.Password("VO0W5w"),
-			SmtpUsername:     w.TeamvaultSecrets.Username("3OlNaq"),
-			SmtpPassword:     w.TeamvaultSecrets.Password("3OlNaq"),
-			LdapPassword:     w.TeamvaultSecrets.Password("MOPMLG"),
-			SecretKey:        w.TeamvaultSecrets.Password("NqA68w"),
-			FernetKey:        w.TeamvaultSecrets.Password("5wYZ2O"),
-			Salt:             w.TeamvaultSecrets.Password("Rwg74w"),
-		},
-		"timemachine": &service.TimeMachine{
-			SSH: ssh,
-			Configs: service.TimeMachineConfigs{
-				{
-					Username: "borbe",
-					Path:     "/timemachine/borbe.pn.benjamin-borbe.de",
-					Password: w.TeamvaultSecrets.File("mwxBLK"),
-					Size:     400000,
-				},
-			},
 		},
 	}
 }
