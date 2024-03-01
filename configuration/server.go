@@ -101,3 +101,11 @@ var Star = Server{
 	Gateway: network.IPStatic("192.168.178.1"),
 	VpnIP:   network.IPStatic("172.16.90.32"),
 }
+
+var FireK3sMaster = Server{
+	Name:    "fire-k3s-master",
+	IP:      network.IPStatic("192.168.178.20"),
+	IPMask:  network.MaskStatic(24),
+	Gateway: network.IPStatic("192.168.178.1"),
+	VpnIP:   network.IPStatic("172.16.90.3"),
+}
