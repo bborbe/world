@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bborbe/http/client_builder"
+	libhttp "github.com/bborbe/http"
 	"github.com/bborbe/teamvault-utils"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -221,7 +221,7 @@ func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error
 				TeamvaultConnector: teamvault.NewCache(
 					teamvault.NewDiskFallbackConnector(
 						teamvault.NewRemoteConnector(
-							client_builder.New().WithTimeout(5*time.Second).Build().Do,
+							libhttp.NewClientBuilder().WithTimeout(5*time.Second).Build(),
 							teamvaultConfig.Url,
 							teamvaultConfig.User,
 							teamvaultConfig.Password,

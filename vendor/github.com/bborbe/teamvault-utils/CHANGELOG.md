@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## 4.3.0
+
+- go mod update
+- inline lib http helper
+- refactor
+
+## 4.2.0
+
+- add cache option for secrets
+
+## 4.1.1
+
+- update all deps
+
 ## 4.1.0
 
 - update all deps
