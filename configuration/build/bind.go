@@ -29,7 +29,7 @@ func (b *Bind) Children(ctx context.Context) (world.Configurations, error) {
 	return world.Configurations{
 		build.Configuration(
 			&docker.Builder{
-				GitRepo:   "https://github.com/bborbe/bind.git",
+				GitRepo:   "https://github.com/bborbe/docker-bind.git",
 				GitBranch: b.GitBranch,
 				Image:     b.Image,
 			},

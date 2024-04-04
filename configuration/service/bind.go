@@ -23,7 +23,7 @@ type Bind struct {
 }
 
 func (e *Bind) Children(ctx context.Context) (world.Configurations, error) {
-	version := "1.2.0"
+	version := "1.3.0"
 	image := docker.Image{
 		Repository: "bborbe/bind",
 		Tag:        docker.TagWithTime(version, time.Now()),
