@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bborbe/world/configuration/server"
 	"github.com/bborbe/world/configuration/service"
 	"github.com/bborbe/world/pkg/dns"
 	"github.com/bborbe/world/pkg/hetzner"
@@ -60,18 +59,17 @@ func (w *World) Validate(ctx context.Context) error {
 
 func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration {
 	return map[ClusterName]map[AppName]world.Configuration{
-		"fire":            w.fire(),
-		"fire-k3s-master": w.fireK3sMaster(),
-		"hell":            w.hell(),
-		"hetzner-1":       w.hetzner1(),
-		// rasp
-		"rasp3": w.rasp3(),
-		"rasp4": w.rasp4(),
-		"co2hz": w.co2hz(),
-		"co2wz": w.co2wz(),
-		// mac
-		"nova": w.nova(),
-		"star": w.star(),
+		"hetzner-1": w.hetzner1(),
+		"rasp4":     w.rasp4(),
+		// vpn client nodes
+		"fire":            w.vpnClientNode(Fire),
+		"fire-k3s-master": w.vpnClientNode(FireK3sMaster),
+		"fire-k3s-prod":   w.vpnClientNode(FireK3sProd),
+		"fire-k3s-dev":    w.vpnClientNode(FireK3sDev),
+		"hell":            w.vpnClientNode(Hell),
+		"rasp3":           w.vpnClientNode(Rasp3),
+		"co2hz":           w.vpnClientNode(Co2hz),
+		"co2wz":           w.vpnClientNode(Co2wz),
 	}
 }
 
@@ -96,6 +94,8 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		Rasp4,
 		Fire,
 		FireK3sMaster,
+		FireK3sProd,
+		FireK3sDev,
 		Co2hz,
 		Co2wz,
 		Nova,
@@ -103,10 +103,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		Hell,
 	}
 	return map[AppName]world.Configuration{
-		"server": &server.Hetzner{
-			SSH: ssh,
-			IP:  ip,
-		},
 		"screego": &service.Screego{
 			SSH:     ssh,
 			IP:      ip,
@@ -185,45 +181,10 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 	}
 }
 
-func (w *World) nova() map[AppName]world.Configuration {
-	nova := Nova
-	return map[AppName]world.Configuration{
-		"server": &server.Nova{
-			IP: nova.IP,
-		},
-		"openvpn-client": &openvpn.LocalClient{
-			ClientName:    openvpn.ClientName(nova.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes:        BuildRoutes(),
-			Device:        openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) star() map[AppName]world.Configuration {
-	star := Star
-	return map[AppName]world.Configuration{
-		"server": &server.Star{
-			IP: star.IP,
-		},
-		"openvpn-client": &openvpn.LocalClient{
-			ClientName:    openvpn.ClientName(star.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes:        BuildRoutes(),
-			Device:        openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) fire() map[AppName]world.Configuration {
-	fire := Fire
+func (w *World) vpnClientNode(server Server) map[AppName]world.Configuration {
 	ssh := &ssh.SSH{
 		Host: ssh.Host{
-			IP:   fire.IP,
+			IP:   server.IP,
 			Port: 22,
 		},
 		User:           "bborbe",
@@ -235,93 +196,7 @@ func (w *World) fire() map[AppName]world.Configuration {
 		},
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
-			ClientName:    openvpn.ClientName(fire.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes:        BuildRoutes(),
-			Device:        openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) fireK3sMaster() map[AppName]world.Configuration {
-	fireK3sMaster := FireK3sMaster
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   fireK3sMaster.IP,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
-	}
-	return map[AppName]world.Configuration{
-		"ntpdate": &service.NtpDate{
-			SSH: ssh,
-		},
-		"openvpn-client": &openvpn.RemoteClient{
-			SSH:           ssh,
-			ClientName:    openvpn.ClientName(fireK3sMaster.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes:        BuildRoutes(),
-			Device:        openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) hell() map[AppName]world.Configuration {
-	hell := Hell
-	ip := hell.IP
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   ip,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
-	}
-	return map[AppName]world.Configuration{
-		"server": &server.Hell{
-			SSH: ssh,
-			IP:  ip,
-		},
-		"openvpn-client": &openvpn.RemoteClient{
-			SSH:           ssh,
-			ClientName:    openvpn.ClientName(hell.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes: BuildRoutes(
-				Hell,
-			),
-			Device: openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) rasp3() map[AppName]world.Configuration {
-	rasp3 := Rasp3
-	ip := rasp3.IP
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   ip,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
-	}
-	return map[AppName]world.Configuration{
-		"server": &server.Rasp3{
-			IP: ip,
-		},
-		"ntpdate": &service.NtpDate{
-			SSH: ssh,
-		},
-		"openvpn-client": &openvpn.RemoteClient{
-			SSH:           ssh,
-			ClientName:    openvpn.ClientName(rasp3.Name),
+			ClientName:    openvpn.ClientName(server.Name),
 			ServerName:    HetznerVPNServer.ServerName,
 			ServerAddress: HetznerVPNServer.ServerAddress,
 			ServerPort:    HetznerVPNServer.Port,
@@ -343,9 +218,6 @@ func (w *World) rasp4() map[AppName]world.Configuration {
 		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
 	}
 	return map[AppName]world.Configuration{
-		"server": &server.Rasp4{
-			IP: ip,
-		},
 		"fritzbox-restart": &service.FritzBoxRestart{
 			SSH:              ssh,
 			FritzBoxUser:     w.TeamvaultSecrets.Username("7qGGQq"),
@@ -371,66 +243,6 @@ func (w *World) rasp4() map[AppName]world.Configuration {
 		"openvpn-client": &openvpn.RemoteClient{
 			SSH:           ssh,
 			ClientName:    openvpn.ClientName(rasp4.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes:        BuildRoutes(),
-			Device:        openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) co2hz() map[AppName]world.Configuration {
-	co2hz := Co2hz
-	ip := co2hz.IP
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   ip,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
-	}
-	return map[AppName]world.Configuration{
-		"server": &server.Co2hz{
-			IP: ip,
-		},
-		"ntpdate": &service.NtpDate{
-			SSH: ssh,
-		},
-		"openvpn-client": &openvpn.RemoteClient{
-			SSH:           ssh,
-			ClientName:    openvpn.ClientName(co2hz.Name),
-			ServerName:    HetznerVPNServer.ServerName,
-			ServerAddress: HetznerVPNServer.ServerAddress,
-			ServerPort:    HetznerVPNServer.Port,
-			Routes:        BuildRoutes(),
-			Device:        openvpn.Tun,
-		},
-	}
-}
-
-func (w *World) co2wz() map[AppName]world.Configuration {
-	co2wz := Co2wz
-	ip := co2wz.IP
-	ssh := &ssh.SSH{
-		Host: ssh.Host{
-			IP:   ip,
-			Port: 22,
-		},
-		User:           "bborbe",
-		PrivateKeyPath: "/Users/bborbe/.ssh/id_ed25519_personal",
-	}
-	return map[AppName]world.Configuration{
-		"server": &server.Co2hz{
-			IP: ip,
-		},
-		"ntpdate": &service.NtpDate{
-			SSH: ssh,
-		},
-		"openvpn-client": &openvpn.RemoteClient{
-			SSH:           ssh,
-			ClientName:    openvpn.ClientName(co2wz.Name),
 			ServerName:    HetznerVPNServer.ServerName,
 			ServerAddress: HetznerVPNServer.ServerAddress,
 			ServerPort:    HetznerVPNServer.Port,

@@ -109,3 +109,19 @@ var FireK3sMaster = Server{
 	Gateway: network.IPStatic("192.168.178.1"),
 	VpnIP:   network.IPStatic("172.16.90.3"),
 }
+
+var FireK3sProd = Server{
+	Name:    "fire-k3s-prod",
+	IP:      network.IPStatic("192.168.178.21"),
+	IPMask:  network.MaskStatic(24),
+	Gateway: network.IPStatic("192.168.178.1"),
+	VpnIP:   network.IPStatic("172.16.90.4"),
+}
+
+var FireK3sDev = Server{
+	Name:    "fire-k3s-dev",
+	IP:      network.IPStatic("192.168.178.22"),
+	IPMask:  network.MaskStatic(24),
+	Gateway: network.IPStatic("192.168.178.1"),
+	VpnIP:   network.IPStatic("172.16.90.5"),
+}
