@@ -62,6 +62,7 @@ func (w *World) configurations() map[ClusterName]map[AppName]world.Configuration
 		"hetzner-1": w.hetzner1(),
 		"rasp4":     w.rasp4(),
 		// vpn client nodes
+		"nuke":            w.vpnClientNode(Nuke),
 		"fire":            w.vpnClientNode(Fire),
 		"fire-k3s-master": w.vpnClientNode(FireK3sMaster),
 		"fire-k3s-prod":   w.vpnClientNode(FireK3sProd),
@@ -93,6 +94,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		Rasp3,
 		Rasp4,
 		Fire,
+		Nuke,
 		FireK3sMaster,
 		FireK3sProd,
 		FireK3sDev,
@@ -141,13 +143,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			Target:       fmt.Sprintf("http://%s:8000", Sun.VpnIP),
 			Requirements: buildDNSRequirements(ip, TeamvaultHostname),
 		},
-		"webdav-proxy": &service.NginxProxy{
-			SSH:          ssh,
-			IP:           ip,
-			Domain:       WebdavHostname,
-			Target:       "http://127.0.0.1:8004",
-			Requirements: buildDNSRequirements(ip, WebdavHostname),
-		},
 		"screego-proxy": &service.NginxProxy{
 			SSH:              ssh,
 			IP:               ip,
@@ -172,11 +167,6 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			SSH:          ssh,
 			PosteVersion: "2.3.21", // https://hub.docker.com/r/analogic/poste.io/tags
 			Port:         network.PortStatic(8001),
-		},
-		"webdav": &service.Webdav{
-			SSH:            ssh,
-			Port:           network.PortStatic(8004),
-			WebdavPassword: w.TeamvaultSecrets.Password("VOzvAO"),
 		},
 	}
 }

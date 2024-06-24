@@ -11,6 +11,5 @@ const (
 	ConfluenceHostname = network.Host("confluence.benjamin-borbe.de")
 	MailHostname       = network.Host("mail.benjamin-borbe.de")
 	IPHostname         = network.Host("ip.benjamin-borbe.de")
-	WebdavHostname     = network.Host("webdav.benjamin-borbe.de")
 	ScreegoHostname    = network.Host("screen.benjamin-borbe.de")
 )
