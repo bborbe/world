@@ -16,11 +16,14 @@ github.com/actgardner/gogen-avro/v9/resolver
 github.com/actgardner/gogen-avro/v9/schema
 github.com/actgardner/gogen-avro/v9/schema/canonical
 github.com/actgardner/gogen-avro/v9/util
-# github.com/bborbe/errors v1.2.0
-## explicit; go 1.20
+# github.com/bborbe/collection v1.6.0
+## explicit; go 1.22.5
+github.com/bborbe/collection
+# github.com/bborbe/errors v1.3.0
+## explicit; go 1.22.4
 github.com/bborbe/errors
-# github.com/bborbe/http v1.1.0
-## explicit; go 1.21.8
+# github.com/bborbe/http v1.4.0
+## explicit; go 1.22.5
 github.com/bborbe/http
 # github.com/bborbe/io v0.0.0-20180829202151-54b762caaee8
 ## explicit
@@ -28,18 +31,27 @@ github.com/bborbe/io/util
 # github.com/bborbe/log v1.0.0
 ## explicit; go 1.21.8
 github.com/bborbe/log
-# github.com/bborbe/run v1.5.2
+# github.com/bborbe/math v1.1.0
+## explicit; go 1.22.5
+github.com/bborbe/math
+# github.com/bborbe/parse v1.3.1
+## explicit; go 1.23.0
+github.com/bborbe/parse
+# github.com/bborbe/run v1.5.3
 ## explicit; go 1.22.2
 github.com/bborbe/run
-# github.com/bborbe/teamvault-utils v0.0.0-20240423133431-daa26724bd34
-## explicit; go 1.22.1
+# github.com/bborbe/sentry v1.7.0
+## explicit; go 1.22.3
+github.com/bborbe/sentry
+# github.com/bborbe/teamvault-utils v0.0.0-20240727194429-31104c726adc
+## explicit; go 1.22.5
 github.com/bborbe/teamvault-utils
 github.com/bborbe/teamvault-utils/mocks
-# github.com/bborbe/time v1.2.0
-## explicit; go 1.22.1
+# github.com/bborbe/time v1.4.2
+## explicit; go 1.23.0
 github.com/bborbe/time
-# github.com/bborbe/validation v1.0.0
-## explicit; go 1.21.8
+# github.com/bborbe/validation v1.1.0
+## explicit; go 1.22.5
 github.com/bborbe/validation
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
@@ -62,7 +74,15 @@ github.com/fsnotify/fsnotify
 # github.com/getsentry/raven-go v0.2.0
 ## explicit
 github.com/getsentry/raven-go
-# github.com/golang/glog v1.2.1
+# github.com/getsentry/sentry-go v0.28.1
+## explicit; go 1.18
+github.com/getsentry/sentry-go
+github.com/getsentry/sentry-go/internal/debug
+github.com/getsentry/sentry-go/internal/otel/baggage
+github.com/getsentry/sentry-go/internal/otel/baggage/internal/baggage
+github.com/getsentry/sentry-go/internal/ratelimit
+github.com/getsentry/sentry-go/internal/traceparser
+# github.com/golang/glog v1.2.2
 ## explicit; go 1.19
 github.com/golang/glog
 github.com/golang/glog/internal/logsink
@@ -77,12 +97,12 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/pprof v0.0.0-20240509144519-723abb6459b7
-## explicit; go 1.19
+# github.com/google/pprof v0.0.0-20240829160300-da1f7e9f2b25
+## explicit; go 1.22
 # github.com/gorilla/mux v1.8.1
 ## explicit; go 1.20
 github.com/gorilla/mux
-# github.com/hetznercloud/hcloud-go v1.55.0
+# github.com/hetznercloud/hcloud-go v1.59.1
 ## explicit; go 1.21
 github.com/hetznercloud/hcloud-go/hcloud
 github.com/hetznercloud/hcloud-go/hcloud/internal/instrumentation
@@ -100,12 +120,24 @@ github.com/incu6us/goimports-reviser/reviser
 ## explicit; go 1.18
 github.com/kisielk/errcheck
 github.com/kisielk/errcheck/errcheck
+# github.com/klauspost/compress v1.17.9
+## explicit; go 1.20
+github.com/klauspost/compress
+github.com/klauspost/compress/fse
+github.com/klauspost/compress/huff0
+github.com/klauspost/compress/internal/cpuinfo
+github.com/klauspost/compress/internal/snapref
+github.com/klauspost/compress/zstd
+github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/maxbrunsfeld/counterfeiter/v6 v6.8.1
 ## explicit; go 1.20
 github.com/maxbrunsfeld/counterfeiter/v6
 github.com/maxbrunsfeld/counterfeiter/v6/arguments
 github.com/maxbrunsfeld/counterfeiter/v6/command
 github.com/maxbrunsfeld/counterfeiter/v6/generator
+# github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
+## explicit
+github.com/munnerz/goautoneg
 # github.com/nxadm/tail v1.4.11
 ## explicit; go 1.13
 github.com/nxadm/tail
@@ -135,10 +167,10 @@ github.com/onsi/ginkgo/reporters/stenographer
 github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 github.com/onsi/ginkgo/types
-# github.com/onsi/ginkgo/v2 v2.17.3
-## explicit; go 1.20
-# github.com/onsi/gomega v1.33.1
-## explicit; go 1.20
+# github.com/onsi/ginkgo/v2 v2.20.2
+## explicit; go 1.22
+# github.com/onsi/gomega v1.34.2
+## explicit; go 1.22
 github.com/onsi/gomega
 github.com/onsi/gomega/format
 github.com/onsi/gomega/gbytes
@@ -154,37 +186,37 @@ github.com/onsi/gomega/types
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/prometheus/client_golang v1.19.1
+# github.com/prometheus/client_golang v1.20.2
 ## explicit; go 1.20
+github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil
+github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil/header
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
 # github.com/prometheus/client_model v0.6.1
 ## explicit; go 1.19
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.53.0
+# github.com/prometheus/common v0.57.0
 ## explicit; go 1.20
 github.com/prometheus/common/expfmt
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.14.0
-## explicit; go 1.21
+# github.com/prometheus/procfs v0.15.1
+## explicit; go 1.20
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/spf13/cobra v1.8.0
+# github.com/spf13/cobra v1.8.1
 ## explicit; go 1.15
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# golang.org/x/crypto v0.23.0
-## explicit; go 1.18
+# golang.org/x/crypto v0.26.0
+## explicit; go 1.20
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/chacha20
 golang.org/x/crypto/curve25519
-golang.org/x/crypto/curve25519/internal/field
 golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
 golang.org/x/crypto/ssh
@@ -193,27 +225,39 @@ golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 ## explicit; go 1.11
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/mod v0.17.0
+# golang.org/x/mod v0.20.0
 ## explicit; go 1.18
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.25.0
+# golang.org/x/net v0.28.0
 ## explicit; go 1.18
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
 golang.org/x/net/http/httpguts
 golang.org/x/net/idna
-# golang.org/x/sync v0.7.0
+# golang.org/x/sync v0.8.0
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.20.0
+# golang.org/x/sys v0.24.0
 ## explicit; go 1.18
 golang.org/x/sys/cpu
+golang.org/x/sys/execabs
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.15.0
+# golang.org/x/telemetry v0.0.0-20240830212034-a0ccdf0ac735
+## explicit; go 1.20
+golang.org/x/telemetry
+golang.org/x/telemetry/counter
+golang.org/x/telemetry/internal/config
+golang.org/x/telemetry/internal/configstore
+golang.org/x/telemetry/internal/counter
+golang.org/x/telemetry/internal/crashmonitor
+golang.org/x/telemetry/internal/mmap
+golang.org/x/telemetry/internal/telemetry
+golang.org/x/telemetry/internal/upload
+# golang.org/x/text v0.17.0
 ## explicit; go 1.18
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -237,7 +281,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.21.0
+# golang.org/x/tools v0.24.0
 ## explicit; go 1.19
 golang.org/x/tools/go/analysis
 golang.org/x/tools/go/ast/astutil
@@ -248,7 +292,6 @@ golang.org/x/tools/go/callgraph/vta
 golang.org/x/tools/go/callgraph/vta/internal/trie
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/cgo
-golang.org/x/tools/go/internal/packagesdriver
 golang.org/x/tools/go/loader
 golang.org/x/tools/go/packages
 golang.org/x/tools/go/ssa
@@ -272,15 +315,17 @@ golang.org/x/tools/internal/tokeninternal
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
 golang.org/x/tools/internal/versions
-# golang.org/x/vuln v1.1.0
-## explicit; go 1.18
+# golang.org/x/vuln v1.1.3
+## explicit; go 1.21
 golang.org/x/vuln/cmd/govulncheck
 golang.org/x/vuln/internal
 golang.org/x/vuln/internal/buildinfo
 golang.org/x/vuln/internal/client
 golang.org/x/vuln/internal/derrors
 golang.org/x/vuln/internal/gosym
+golang.org/x/vuln/internal/goversion
 golang.org/x/vuln/internal/govulncheck
+golang.org/x/vuln/internal/openvex
 golang.org/x/vuln/internal/osv
 golang.org/x/vuln/internal/sarif
 golang.org/x/vuln/internal/scan
@@ -289,8 +334,8 @@ golang.org/x/vuln/internal/traces
 golang.org/x/vuln/internal/vulncheck
 golang.org/x/vuln/internal/web
 golang.org/x/vuln/scan
-# google.golang.org/protobuf v1.34.1
-## explicit; go 1.17
+# google.golang.org/protobuf v1.34.2
+## explicit; go 1.20
 google.golang.org/protobuf/encoding/protodelim
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire

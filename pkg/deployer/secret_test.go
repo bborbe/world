@@ -24,7 +24,7 @@ var _ = Describe("SecretApplier", func() {
 			Namespace: "banana",
 			Name:      "banana",
 			Secrets: Secrets{
-				"secret": SecretValueStatic([]byte("hello world")),
+				"secret": SecretValueStatic("hello world"),
 			},
 		}
 		secret, err = secretDeployer.secret(context.Background())

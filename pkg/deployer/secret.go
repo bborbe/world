@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	teamvault "github.com/bborbe/teamvault-utils"
+	"github.com/bborbe/teamvault-utils"
 	"github.com/pkg/errors"
 
 	"github.com/bborbe/world/pkg/k8s"
@@ -103,8 +103,8 @@ func (s SecretFromTeamvaultHtpasswd) Validate(ctx context.Context) error {
 }
 
 func (s SecretFromTeamvaultHtpasswd) Value(ctx context.Context) ([]byte, error) {
-	htpasswd := teamvault.Htpasswd{Connector: s.TeamvaultConnector}
-	bytes, err := htpasswd.Generate(ctx, s.TeamvaultKey)
+	htpasswdGenerator := teamvault.NewHtpasswdGenerator(s.TeamvaultConnector)
+	bytes, err := htpasswdGenerator.Generate(ctx, s.TeamvaultKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "get teamvault htpasswd failed")
 	}

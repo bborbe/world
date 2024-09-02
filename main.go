@@ -218,7 +218,7 @@ func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error
 			App:           configuration.AppName(appName),
 			Cluster:       configuration.ClusterName(clusterName),
 			TeamvaultSecrets: &secret.Teamvault{
-				TeamvaultConnector: teamvault.NewCache(
+				TeamvaultConnector: teamvault.NewCacheConnector(
 					teamvault.NewDiskFallbackConnector(
 						teamvault.NewRemoteConnector(
 							libhttp.NewClientBuilder().WithTimeout(5*time.Second).Build(),

@@ -108,7 +108,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 		"screego": &service.Screego{
 			SSH:     ssh,
 			IP:      ip,
-			Version: "1.10.3", // https://hub.docker.com/r/screego/server/tags
+			Version: "1.10.5", // https://hub.docker.com/r/screego/server/tags
 		},
 		"bind": &service.Bind{
 			SSH: ssh,
