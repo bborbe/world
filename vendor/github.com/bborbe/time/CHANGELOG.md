@@ -8,6 +8,49 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
+## v1.7.2
+
+- add Date.Add() and UnixTime.Add()
+
+## v1.7.1
+
+- add Year(), Month(), Day(), Hour(), Minute(), Second() and Nanosecond() 
+
+## v1.7.0
+
+- add ParseUnixTime
+- go mod update
+
+## v1.6.2
+
+- add Before, After and Equal to TimeOfDay
+
+## v1.6.1
+
+- add Duration.String()
+
+## v1.6.0
+
+- add ParseDateTimeDefault
+- add ParseDurationDefault
+- add ParseTimeDefault
+- add ParseTimeOfDayDefault
+
+## v1.5.2
+
+- remove error from DateTime 
+- add Time
+
+## v1.5.1
+
+- add DateTime to TimeOfDay
+
+## v1.5.0
+
+- add Duration
+- marshal unmarshal Duration from duration string or number
+- go mod update
+
 ## v1.4.2
 
 - test marshal Date and DateTime

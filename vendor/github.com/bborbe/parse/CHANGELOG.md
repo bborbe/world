@@ -8,6 +8,15 @@ Please choose versions by [Semantic Versioning](http://semver.org/).
 * MINOR version when you add functionality in a backwards-compatible manner, and
 * PATCH version when you make backwards-compatible bug fixes.
 
+## v1.4.0
+
+- add ParseAscii
+
+## v1.3.2
+
+- improve ParseStrings
+- go mod update
+
 ## v1.3.1
 
 - allow more types for ParseString
