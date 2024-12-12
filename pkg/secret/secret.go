@@ -7,7 +7,7 @@ package secret
 import (
 	"context"
 
-	teamvault "github.com/bborbe/teamvault-utils"
+	teamvault "github.com/bborbe/teamvault-utils/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bborbe/world/pkg/deployer"

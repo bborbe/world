@@ -41,6 +41,24 @@ var UnitMap = map[string]Duration{
 
 var durationRegexp = regexp.MustCompile(`^((\d*\.?\d+)(w))?((\d*\.?\d+)(d))?((\d*\.?\d+)(h))?((\d*\.?\d+)(m))?((\d*\.?\d+)(s))?((\d*\.?\d+)(ms))?((\d*\.?\d+)(us))?((\d*\.?\d+)(ns))?$`)
 
+type Durations []Duration
+
+func (t Durations) Interfaces() []interface{} {
+	result := make([]interface{}, len(t))
+	for i, ss := range t {
+		result[i] = ss
+	}
+	return result
+}
+
+func (t Durations) Strings() []string {
+	result := make([]string, len(t))
+	for i, ss := range t {
+		result[i] = ss.String()
+	}
+	return result
+}
+
 func ParseDurationDefault(ctx context.Context, value interface{}, defaultValue Duration) Duration {
 	result, err := ParseDuration(ctx, value)
 	if err != nil {
@@ -104,12 +122,32 @@ func (d Duration) Duration() stdtime.Duration {
 	return stdtime.Duration(d)
 }
 
+func (d Duration) Abs() Duration {
+	return Duration(d.Duration().Abs())
+}
+
 func (d Duration) Ptr() *Duration {
 	return &d
 }
 
 func (d Duration) String() string {
-	return d.Duration().String()
+	var builder strings.Builder
+	remaining := d
+
+	if weeks := remaining / Week; weeks > 0 {
+		remaining = remaining - weeks*Week
+		builder.WriteString(strconv.Itoa(int(weeks)))
+		builder.WriteString("w")
+	}
+
+	if days := remaining / Day; days > 0 {
+		remaining = remaining - days*Day
+		builder.WriteString(strconv.Itoa(int(days)))
+		builder.WriteString("d")
+	}
+
+	builder.WriteString(remaining.Duration().String())
+	return builder.String()
 }
 
 func (d *Duration) UnmarshalJSON(b []byte) error {
@@ -129,5 +167,6 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 func (d Duration) MarshalJSON() ([]byte, error) {
+	// use stdtime.Duration.String to produce output in standard golang format
 	return json.Marshal(d.Duration().String())
 }

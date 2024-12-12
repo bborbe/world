@@ -17,6 +17,32 @@ import (
 	"github.com/bborbe/validation"
 )
 
+type UnixTimes []UnixTime
+
+func (t UnixTimes) Interfaces() []interface{} {
+	result := make([]interface{}, len(t))
+	for i, ss := range t {
+		result[i] = ss
+	}
+	return result
+}
+
+func (t UnixTimes) Strings() []string {
+	result := make([]string, len(t))
+	for i, ss := range t {
+		result[i] = ss.String()
+	}
+	return result
+}
+
+func UnixTimeFromBinary(ctx context.Context, value []byte) (*UnixTime, error) {
+	var t stdtime.Time
+	if err := t.UnmarshalBinary(value); err != nil {
+		return nil, errors.Wrapf(ctx, err, "unmarshalBinary failed")
+	}
+	return UnixTime(t).Ptr(), nil
+}
+
 func ParseUnixTimeDefault(ctx context.Context, value interface{}, defaultValue UnixTime) UnixTime {
 	result, err := ParseUnixTime(ctx, value)
 	if err != nil {
@@ -152,4 +178,16 @@ func (u UnixTime) MarshalBinary() ([]byte, error) {
 
 func (u UnixTime) Add(duration stdtime.Duration) UnixTime {
 	return UnixTime(u.Time().Add(duration))
+}
+
+func (u UnixTime) Sub(duration DateTime) Duration {
+	return Duration(u.Time().Sub(duration.Time()))
+}
+
+func (u UnixTime) UnixMicro() int64 {
+	return u.Time().UnixMicro()
+}
+
+func (u UnixTime) Unix() int64 {
+	return u.Time().Unix()
 }

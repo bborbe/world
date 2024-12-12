@@ -16,6 +16,32 @@ import (
 	"github.com/bborbe/validation"
 )
 
+type Dates []Date
+
+func (d Dates) Interfaces() []interface{} {
+	result := make([]interface{}, len(d))
+	for i, ss := range d {
+		result[i] = ss
+	}
+	return result
+}
+
+func (d Dates) Strings() []string {
+	result := make([]string, len(d))
+	for i, ss := range d {
+		result[i] = ss.String()
+	}
+	return result
+}
+
+func DateFromBinary(ctx context.Context, value []byte) (*Date, error) {
+	var t stdtime.Time
+	if err := t.UnmarshalBinary(value); err != nil {
+		return nil, errors.Wrapf(ctx, err, "unmarshalBinary failed")
+	}
+	return Date(t).Ptr(), nil
+}
+
 func ParseDate(ctx context.Context, value interface{}) (*Date, error) {
 	str, err := parse.ParseString(ctx, value)
 	if err != nil {
@@ -127,4 +153,16 @@ func (d *Date) ComparePtr(stdTime *Date) int {
 
 func (d Date) Add(duration stdtime.Duration) Date {
 	return Date(d.Time().Add(duration))
+}
+
+func (d Date) Sub(duration DateTime) Duration {
+	return Duration(d.Time().Sub(duration.Time()))
+}
+
+func (d Date) UnixMicro() int64 {
+	return d.Time().UnixMicro()
+}
+
+func (d Date) Unix() int64 {
+	return d.Time().Unix()
 }

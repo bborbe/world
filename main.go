@@ -14,10 +14,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bborbe/errors"
 	libhttp "github.com/bborbe/http"
-	"github.com/bborbe/teamvault-utils"
+	"github.com/bborbe/teamvault-utils/v4"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -102,14 +102,14 @@ func createApplyCommand(ctx context.Context) *cobra.Command {
 			flag.Parse()
 			runner, err := createRunner(ctx, cmd)
 			if err != nil {
-				return errors.Wrap(err, "create runner failed")
+				return errors.Wrap(ctx, err, "create runner failed")
 			}
 			if err := runner.Validate(ctx); err != nil {
-				return errors.Wrap(err, "validate failed")
+				return errors.Wrap(ctx, err, "validate failed")
 			}
 			glog.V(4).Infof("validate finished")
 			if err := runner.Apply(ctx); err != nil {
-				return errors.Wrap(err, "apply failed")
+				return errors.Wrap(ctx, err, "apply failed")
 			}
 			glog.V(4).Infof("apply finished")
 			return nil
@@ -170,21 +170,21 @@ func createSetDnsCommand(ctx context.Context) *cobra.Command {
 	return command
 }
 
-func createYamlToStructCommand(context.Context) *cobra.Command {
+func createYamlToStructCommand(ctx context.Context) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "yaml-to-struct",
 		Short: "Convert the given yaml to world struct",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			filename, err := cmd.Flags().GetString("file")
 			if err != nil {
-				return errors.Wrap(err, "get parameter file failed")
+				return errors.Wrap(ctx, err, "get parameter file failed")
 			}
 			file, err := os.Open(filename)
 			if err != nil {
-				return errors.Wrap(err, "open file failed")
+				return errors.Wrap(ctx, err, "open file failed")
 			}
 			defer file.Close()
-			return errors.Wrap(k8s.YamlToStruct(file, os.Stdout), "convert to struct failed")
+			return errors.Wrap(ctx, k8s.YamlToStruct(file, os.Stdout), "convert to struct failed")
 		},
 	}
 	command.Flags().StringP("file", "f", "", "filename")
@@ -195,11 +195,11 @@ func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error
 	teamvaultConfigPath := teamvault.TeamvaultConfigPath("~/.teamvault.json")
 	teamvaultConfigPath, err := teamvaultConfigPath.NormalizePath()
 	if err != nil {
-		return nil, errors.Wrap(err, "normalize teamvaul path failed")
+		return nil, errors.Wrap(ctx, err, "normalize teamvaul path failed")
 	}
 	teamvaultConfig, err := teamvaultConfigPath.Parse()
 	if err != nil {
-		return nil, errors.Wrap(err, "parse teamvault config failed")
+		return nil, errors.Wrap(ctx, err, "parse teamvault config failed")
 	}
 	appName, err := cmd.Flags().GetString("app")
 	if err != nil {
@@ -212,6 +212,11 @@ func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error
 	}
 	glog.V(4).Infof("flag cluster: %s", clusterName)
 
+	httpClient, err := libhttp.NewClientBuilder().WithTimeout(5 * time.Second).Build(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(ctx, err, "create httpClient failed")
+	}
+
 	builder := world.Builder{
 		Configuration: &configuration.World{
 			HetznerClient: hetzner.NewClient(),
@@ -221,7 +226,7 @@ func createRunner(ctx context.Context, cmd *cobra.Command) (*world.Runner, error
 				TeamvaultConnector: teamvault.NewCacheConnector(
 					teamvault.NewDiskFallbackConnector(
 						teamvault.NewRemoteConnector(
-							libhttp.NewClientBuilder().WithTimeout(5*time.Second).Build(),
+							httpClient,
 							teamvaultConfig.Url,
 							teamvaultConfig.User,
 							teamvaultConfig.Password,

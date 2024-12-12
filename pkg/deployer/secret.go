@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/bborbe/teamvault-utils"
+	"github.com/bborbe/teamvault-utils/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bborbe/world/pkg/k8s"

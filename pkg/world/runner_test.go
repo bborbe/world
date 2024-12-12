@@ -8,7 +8,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bborbe/teamvault-utils"
+	"github.com/bborbe/teamvault-utils/v4"
 
 	"github.com/bborbe/world/configuration"
 	"github.com/bborbe/world/pkg/hetzner"

@@ -7,8 +7,8 @@ package secret_test
 import (
 	"context"
 
-	"github.com/bborbe/teamvault-utils"
-	"github.com/bborbe/teamvault-utils/mocks"
+	"github.com/bborbe/teamvault-utils/v4"
+	"github.com/bborbe/teamvault-utils/v4/mocks"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
