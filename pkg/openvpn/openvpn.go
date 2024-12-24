@@ -27,6 +27,7 @@ func (d Device) String() string {
 }
 
 const Tap Device = "tap"
+
 const Tun Device = "tun"
 
 type ClientName string
@@ -34,6 +35,7 @@ type ClientName string
 func (c ClientName) String() string {
 	return string(c)
 }
+
 func (c ClientName) Validate(ctx context.Context) error {
 	if c == "" {
 		return errors.New("ClientName empty")
@@ -46,6 +48,7 @@ type ServerName string
 func (s ServerName) String() string {
 	return string(s)
 }
+
 func (s ServerName) Validate(ctx context.Context) error {
 	if s == "" {
 		return errors.New("ServerName empty")
@@ -58,6 +61,7 @@ type ServerAddress string
 func (s ServerAddress) String() string {
 	return string(s)
 }
+
 func (s ServerAddress) Validate(ctx context.Context) error {
 	if s == "" {
 		return errors.New("ServerName empty")

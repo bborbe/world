@@ -15,6 +15,7 @@ type Device string
 func (d Device) String() string {
 	return string(d)
 }
+
 func (d Device) Validate(ctx context.Context) error {
 	if d == "" {
 		return errors.Errorf("device missing")

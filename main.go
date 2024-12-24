@@ -133,6 +133,7 @@ func createValidateCommand(ctx context.Context) *cobra.Command {
 		},
 	}
 }
+
 func createSetDnsCommand(ctx context.Context) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "set-dns",

@@ -50,6 +50,7 @@ func (i IPNetFromIP) IPNet(ctx context.Context) (net.IPNet, error) {
 	return *ipnet, nil
 
 }
+
 func (i IPNetFromIP) Validate(ctx context.Context) error {
 	return i.IP.Validate(ctx)
 }

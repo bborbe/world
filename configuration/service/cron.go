@@ -22,7 +22,9 @@ import (
 )
 
 var cronNameValidChars = regexp.MustCompile(`^[a-z0-9_-]+$`)
+
 var cronNameRemoveInvalidChars = regexp.MustCompile(`[^a-z0-9_-]`)
+
 var cronNameUnderscore = regexp.MustCompile(`_+`)
 
 func BuildCronName(parts ...string) CronName {

@@ -23,6 +23,7 @@ func (n *Now) Validate(ctx context.Context) error {
 		n.Image,
 	)
 }
+
 func (n *Now) Children(ctx context.Context) (world.Configurations, error) {
 	return world.Configurations{
 		build.Configuration(
