@@ -140,7 +140,7 @@ func (w *World) hetzner1() map[AppName]world.Configuration {
 			SSH:          ssh,
 			IP:           ip,
 			Domain:       TeamvaultHostname,
-			Target:       fmt.Sprintf("http://%s:8000", Sun.VpnIP),
+			Target:       fmt.Sprintf("http://%s", FireK3sMaster.VpnIP),
 			Requirements: buildDNSRequirements(ip, TeamvaultHostname),
 		},
 		"screego-proxy": &service.NginxProxy{
